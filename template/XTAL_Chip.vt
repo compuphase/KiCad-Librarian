@@ -1,0 +1,44 @@
+#VRML V2.0 utf8
+#model XTAL_Chip
+{BW 2 / @DX   BL 2 / @DY   1.0 @?BH}
+DEF body Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.58
+          diffuseColor 0.47 0.36 0.09
+          specularColor 0.33 0.26 0.17
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.3
+          transparency 0.0
+        }
+      }
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {DX}   {DY}   0.0,
+          {DX ~} {DY}   0.0,
+          {DX ~} {DY ~} 0.0,
+          {DX}   {DY ~} 0.0,
+          {DX}   {DY}   {BH},
+          {DX ~} {DY}   {BH},
+          {DX ~} {DY ~} {BH},
+          {DX}   {DY ~} {BH} ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          4, 5, 6, 7, -1,
+          0, 4, 7, 3, -1,
+          1, 5, 4, 0, -1,
+          2, 6, 5, 1, -1,
+          3, 7, 6, 2, -1 ]
+      }
+    }
+  ]
+}
+DEF pins Transform {
+  children [
+    Shape {
+    }
+  ]
+}

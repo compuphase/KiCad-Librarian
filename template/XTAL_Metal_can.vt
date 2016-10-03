@@ -1,0 +1,180 @@
+#VRML V2.0 utf8
+#model XTAL_Metal_can
+{BW 2 / @DX   BL 2 / @DY   BL 2 / 0.15 - @R   BW 2 / R - 0.3 - @HX   R 1.6 * @?BH}
+DEF body Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.42
+          diffuseColor 0.13 0.13 0.13
+          specularColor 0.72 0.72 0.70
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.65
+          transparency 0.0
+        }
+      }
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {DX}   {DY}   0.0,
+          {DX ~} {DY}   0.0,
+          {DX ~} {DY ~} 0.0,
+          {DX}   {DY ~} 0.0,
+          {DX}   {DY}   0.5,
+          {DX ~} {DY}   0.5,
+          {DX ~} {DY ~} 0.5,
+          {DX}   {DY ~} 0.5 ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          4, 5, 6, 7, -1,
+          0, 4, 7, 3, -1,
+          1, 5, 4, 0, -1,
+          2, 6, 5, 1, -1,
+          3, 7, 6, 2, -1 ]
+      }
+    }
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.28
+          diffuseColor 0.82 0.82 0.78
+          specularColor 0.33 0.26 0.17
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.7
+          transparency 0.0
+        }
+      }
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {0 cos R * HX +}   {0 sin R *}   0.5,
+          {15 cos R * HX +}  {15 sin R *}  0.5,
+          {30 cos R * HX +}  {30 sin R *}  0.5,
+          {45 cos R * HX +}  {45 sin R *}  0.5,
+          {60 cos R * HX +}  {60 sin R *}  0.5,
+          {75 cos R * HX +}  {75 sin R *}  0.5,
+          {90 cos R * HX +}  {90 sin R *}  0.5,
+          {90 cos R * HX -}  {90 sin R *}  0.5,
+          {105 cos R * HX -} {105 sin R *} 0.5,
+          {120 cos R * HX -} {120 sin R *} 0.5,
+          {135 cos R * HX -} {135 sin R *} 0.5,
+          {150 cos R * HX -} {150 sin R *} 0.5,
+          {165 cos R * HX -} {165 sin R *} 0.5,
+          {180 cos R * HX -} {180 sin R *} 0.5,
+          {195 cos R * HX -} {195 sin R *} 0.5,
+          {210 cos R * HX -} {210 sin R *} 0.5,
+          {225 cos R * HX -} {225 sin R *} 0.5,
+          {240 cos R * HX -} {240 sin R *} 0.5,
+          {255 cos R * HX -} {255 sin R *} 0.5,
+          {270 cos R * HX -} {270 sin R *} 0.5,
+          {270 cos R * HX +} {270 sin R *} 0.5,
+          {285 cos R * HX +} {285 sin R *} 0.5,
+          {300 cos R * HX +} {300 sin R *} 0.5,
+          {315 cos R * HX +} {315 sin R *} 0.5,
+          {330 cos R * HX +} {330 sin R *} 0.5,
+          {345 cos R * HX +} {345 sin R *} 0.5,
+          {0 cos R * HX +}   {0 sin R *}   {BH},
+          {15 cos R * HX +}  {15 sin R *}  {BH},
+          {30 cos R * HX +}  {30 sin R *}  {BH},
+          {45 cos R * HX +}  {45 sin R *}  {BH},
+          {60 cos R * HX +}  {60 sin R *}  {BH},
+          {75 cos R * HX +}  {75 sin R *}  {BH},
+          {90 cos R * HX +}  {90 sin R *}  {BH},
+          {90 cos R * HX -}  {90 sin R *}  {BH},
+          {105 cos R * HX -} {105 sin R *} {BH},
+          {120 cos R * HX -} {120 sin R *} {BH},
+          {135 cos R * HX -} {135 sin R *} {BH},
+          {150 cos R * HX -} {150 sin R *} {BH},
+          {165 cos R * HX -} {165 sin R *} {BH},
+          {180 cos R * HX -} {180 sin R *} {BH},
+          {195 cos R * HX -} {195 sin R *} {BH},
+          {210 cos R * HX -} {210 sin R *} {BH},
+          {225 cos R * HX -} {225 sin R *} {BH},
+          {240 cos R * HX -} {240 sin R *} {BH},
+          {255 cos R * HX -} {255 sin R *} {BH},
+          {270 cos R * HX -} {270 sin R *} {BH},
+          {270 cos R * HX +} {270 sin R *} {BH},
+          {285 cos R * HX +} {285 sin R *} {BH},
+          {300 cos R * HX +} {300 sin R *} {BH},
+          {315 cos R * HX +} {315 sin R *} {BH},
+          {330 cos R * HX +} {330 sin R *} {BH},
+          {345 cos R * HX +} {345 sin R *} {BH} ] }
+        coordIndex [
+          25, 24, 23, 22, 21, 20, 19, 18, 17, 16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1,
+          26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1,
+          0, 26, 51, 25, -1,
+          1, 27, 26, 0, -1,
+          2, 28, 27, 1, -1,
+          3, 29, 26, 2, -1,
+          4, 30, 29, 3, -1,
+          5, 31, 30, 4, -1,
+          6, 32, 31, 5, -1,
+          7, 33, 32, 6, -1,
+          8, 34, 33, 7, -1,
+          9, 35, 34, 8, -1,
+          10, 36, 35, 9, -1,
+          11, 37, 36, 10, -1,
+          12, 38, 37, 11, -1,
+          13, 39, 38, 12, -1,
+          14, 40, 39, 13, -1,
+          15, 41, 40, 14, -1,
+          16, 42, 41, 15, -1,
+          17, 43, 42, 16, -1,
+          18, 44, 43, 17, -1,
+          19, 45, 44, 18, -1,
+          20, 46, 45, 19, -1,
+          21, 47, 46, 20, -1,
+          22, 48, 47, 21, -1,
+          23, 49, 48, 22, -1,
+	  24, 50, 49, 23, -1,
+	  25, 51, 50, 24, -1 ]
+      }
+    }
+  ]
+}
+
+DEF pins Transform {
+  children [
+    Shape {
+{?:DEFMATERIAL PN 1 =}
+      appearance Appearance {
+        material DEF metal Material {
+          ambientIntensity 0.28
+          diffuseColor 0.82 0.82 0.78
+          specularColor 0.33 0.26 0.17
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.7
+          transparency 0.0
+        }
+      }
+:DEFMATERIAL
+{?:USEMATERIAL PN 1 >}
+      appearance Appearance {
+	    material USE metal
+	  }
+:USEMATERIAL
+      geometry IndexedFaceSet {
+        {? PN 1 =}{BW 2 / ~ @X1   PP 2 / ~ PW 0.4 * - @X2   PL 0.4 * @CY}
+        {? PN 2 =}{BW 2 / @X2     PP 2 / PW 0.4 * + @X1     PL 0.4 * @CY}
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {X1} {CY}   0.0,
+          {X2} {CY}   0.0,
+          {X2} {CY ~} 0.0,
+          {X1} {CY ~} 0.0,
+          {X1} {CY}   0.15,
+          {X2} {CY}   0.15,
+          {X2} {CY ~} 0.15,
+          {X1} {CY ~} 0.15 ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          4, 5, 6, 7, -1,
+          0, 4, 7, 3, -1,
+          1, 5, 4, 0, -1,
+          2, 6, 5, 1, -1,
+          3, 7, 6, 2, -1 ]
+      }
+    }
+  ]
+}

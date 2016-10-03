@@ -1,0 +1,106 @@
+#VRML V2.0 utf8
+#model SOD
+{BW 0.45 * @DX   BL 0.45 * @DY   DY 1 * @?BH   PW 0.45 * @CX   PL 0.45 * @CY}
+DEF body Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.42
+          diffuseColor 0.13 0.13 0.13
+          specularColor 0.72 0.72 0.70
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.65
+          transparency 0.0
+        }
+      }
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {DX}   {DY}   0.0,
+          {DX ~} {DY}   0.0,
+          {DX ~} {DY ~} 0.0,
+          {DX}   {DY ~} 0.0,
+          {DX}   {DY}   {BH},
+          {DX ~} {DY}   {BH},
+          {DX ~} {DY ~} {BH},
+          {DX}   {DY ~} {BH} ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          4, 5, 6, 7, -1,
+          0, 4, 7, 3, -1,
+          1, 5, 4, 0, -1,
+          2, 6, 5, 1, -1,
+          3, 7, 6, 2, -1 ]
+      }
+    }
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.08
+          diffuseColor 0.69 0.66 0.60
+          specularColor 0.0 0.0 0.0
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.01
+          transparency 0.0
+        }
+      }
+      geometry IndexedFaceSet {
+        {DX ~ 0.2 + @X1   X1 DX 0.2 * + @X2   BH 0.05 + @YBAR}
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {X2} {DY}   {YBAR},
+          {X1} {DY}   {YBAR},
+          {X1} {DY ~} {YBAR},
+          {X2} {DY ~} {YBAR} ] }
+        coordIndex [
+          0, 1, 2, 3, -1 ]
+      }
+    }
+  ]
+}
+
+DEF pins Transform {
+  children [
+    Shape {
+{?:DEFMATERIAL PN 1 =}
+      appearance Appearance {
+        material DEF metal Material {
+          ambientIntensity 0.28
+          diffuseColor 0.82 0.82 0.78
+          specularColor 0.33 0.26 0.17
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.7
+          transparency 0.0
+        }
+      }
+:DEFMATERIAL
+{?:USEMATERIAL PN 1 >}
+      appearance Appearance {
+	    material USE metal
+	  }
+:USEMATERIAL
+      geometry IndexedFaceSet {
+        {? PN 1 =}{DX CX + ~ @X2   DX ~ @X1}
+        {? PN 2 =}{DX CX + @X1   DX @X2}
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {X1} {CY}   0.0,
+          {X2} {CY}   0.0,
+          {X2} {CY ~} 0.0,
+          {X1} {CY ~} 0.0,
+          {X1} {CY}   0.15,
+          {X2} {CY}   0.15,
+          {X2} {CY ~} 0.15,
+          {X1} {CY ~} 0.15 ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          4, 5, 6, 7, -1,
+          0, 4, 7, 3, -1,
+          1, 5, 4, 0, -1,
+          2, 6, 5, 1, -1,
+          3, 7, 6, 2, -1 ]
+      }
+    }
+  ]
+}

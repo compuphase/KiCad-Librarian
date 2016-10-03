@@ -1,0 +1,184 @@
+#VRML V2.0 utf8
+#model MELF
+{PP 0.55 * @DX   PL 0.7 * @?BH   BH 2 / @RAD   DX 0.6 * @CAP}
+DEF body Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.8
+          diffuseColor 0.7 0.2 0.1
+          specularColor 0.3 0.4 0.2
+          emissiveColor 0 0 0
+          shininess 0.3
+          transparency 0.0
+        }
+      }
+      {RAD 0.05 - @RD2}
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {CAP ~} {0 sin RD2 *}   {RD2 0 cos RD2 * -},
+          {CAP}   {0 sin RD2 *}   {RD2 0 cos RD2 * -},
+          {CAP ~} {30 sin RD2 *}  {RD2 30 cos RD2 * -},
+          {CAP}   {30 sin RD2 *}  {RD2 30 cos RD2 * -},
+          {CAP ~} {60 sin RD2 *}  {RD2 60 cos RD2 * -},
+          {CAP}   {60 sin RD2 *}  {RD2 60 cos RD2 * -},
+          {CAP ~} {90 sin RD2 *}  {RD2 90 cos RD2 * -},
+          {CAP}   {90 sin RD2 *}  {RD2 90 cos RD2 * -},
+          {CAP ~} {120 sin RD2 *} {RD2 120 cos RD2 * -},
+          {CAP}   {120 sin RD2 *} {RD2 120 cos RD2 * -},
+          {CAP ~} {150 sin RD2 *} {RD2 150 cos RD2 * -},
+          {CAP}   {150 sin RD2 *} {RD2 150 cos RD2 * -},
+          {CAP ~} {180 sin RD2 *} {RD2 180 cos RD2 * -},
+          {CAP}   {180 sin RD2 *} {RD2 180 cos RD2 * -},
+          {CAP ~} {210 sin RD2 *} {RD2 210 cos RD2 * -},
+          {CAP}   {210 sin RD2 *} {RD2 210 cos RD2 * -},
+          {CAP ~} {240 sin RD2 *} {RD2 240 cos RD2 * -},
+          {CAP}   {240 sin RD2 *} {RD2 240 cos RD2 * -},
+          {CAP ~} {270 sin RD2 *} {RD2 270 cos RD2 * -},
+          {CAP}   {270 sin RD2 *} {RD2 270 cos RD2 * -},
+          {CAP ~} {300 sin RD2 *} {RD2 300 cos RD2 * -},
+          {CAP}   {300 sin RD2 *} {RD2 300 cos RD2 * -},
+          {CAP ~} {330 sin RD2 *} {RD2 330 cos RD2 * -},
+          {CAP}   {330 sin RD2 *} {RD2 330 cos RD2 * -} ] }
+        coordIndex [
+          3, 1, 0, 2, -1,
+          5, 3, 2, 4, -1,
+          7, 5, 4, 6, -1,
+          9, 7, 6, 8, -1,
+          11, 9, 8, 10, -1,
+          13, 11, 10, 12, -1,
+          15, 13, 12, 14, -1,
+          17, 15, 14, 16, -1,
+          19, 17, 16, 18, -1,
+          21, 19, 18, 20, -1,
+          23, 21, 20, 22, -1,
+          1, 23, 22, 0, -1 ]
+      }
+    }
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.42
+          diffuseColor 0.13 0.13 0.13
+          specularColor 0.72 0.72 0.70
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.3
+          transparency 0.0
+        }
+      }
+      {CAP ~ 0.2 + @X2   X2 0.3 + @X1}
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {X2} {0 sin RAD *}   {RAD 0 cos RAD * -},
+          {X1} {0 sin RAD *}   {RAD 0 cos RAD * -},
+          {X2} {30 sin RAD *}  {RAD 30 cos RAD * -},
+          {X1} {30 sin RAD *}  {RAD 30 cos RAD * -},
+          {X2} {60 sin RAD *}  {RAD 60 cos RAD * -},
+          {X1} {60 sin RAD *}  {RAD 60 cos RAD * -},
+          {X2} {90 sin RAD *}  {RAD 90 cos RAD * -},
+          {X1} {90 sin RAD *}  {RAD 90 cos RAD * -},
+          {X2} {120 sin RAD *} {RAD 120 cos RAD * -},
+          {X1} {120 sin RAD *} {RAD 120 cos RAD * -},
+          {X2} {150 sin RAD *} {RAD 150 cos RAD * -},
+          {X1} {150 sin RAD *} {RAD 150 cos RAD * -},
+          {X2} {180 sin RAD *} {RAD 180 cos RAD * -},
+          {X1} {180 sin RAD *} {RAD 180 cos RAD * -},
+          {X2} {210 sin RAD *} {RAD 210 cos RAD * -},
+          {X1} {210 sin RAD *} {RAD 210 cos RAD * -},
+          {X2} {240 sin RAD *} {RAD 240 cos RAD * -},
+          {X1} {240 sin RAD *} {RAD 240 cos RAD * -},
+          {X2} {270 sin RAD *} {RAD 270 cos RAD * -},
+          {X1} {270 sin RAD *} {RAD 270 cos RAD * -},
+          {X2} {300 sin RAD *} {RAD 300 cos RAD * -},
+          {X1} {300 sin RAD *} {RAD 300 cos RAD * -},
+          {X2} {330 sin RAD *} {RAD 330 cos RAD * -},
+          {X1} {330 sin RAD *} {RAD 330 cos RAD * -} ] }
+        coordIndex [
+          3, 1, 0, 2, -1,
+          5, 3, 2, 4, -1,
+          7, 5, 4, 6, -1,
+          9, 7, 6, 8, -1,
+          11, 9, 8, 10, -1,
+          13, 11, 10, 12, -1,
+          15, 13, 12, 14, -1,
+          17, 15, 14, 16, -1,
+          19, 17, 16, 18, -1,
+          21, 19, 18, 20, -1,
+          23, 21, 20, 22, -1,
+          1, 23, 22, 0, -1 ]
+      }
+    }
+  ]
+}
+
+DEF pins Transform {
+  children [
+    Shape {
+{?:DEFMATERIAL PN 1 =}
+      appearance Appearance {
+        material DEF metal Material {
+          ambientIntensity 0.28
+          diffuseColor 0.82 0.82 0.78
+          specularColor 0.33 0.26 0.17
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.7
+          transparency 0.0
+        }
+      }
+:DEFMATERIAL
+{?:USEMATERIAL PN 1 >}
+      appearance Appearance {
+	    material USE metal
+	  }
+:USEMATERIAL
+      geometry IndexedFaceSet {
+        {? PN 1 =}{DX ~ @X2   CAP ~ @X1}
+        {? PN 2 =}{DX @X1   CAP @X2}
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {X2} {0 sin RAD *}   {RAD 0 cos RAD * -},
+          {X1} {0 sin RAD *}   {RAD 0 cos RAD * -},
+          {X2} {30 sin RAD *}  {RAD 30 cos RAD * -},
+          {X1} {30 sin RAD *}  {RAD 30 cos RAD * -},
+          {X2} {60 sin RAD *}  {RAD 60 cos RAD * -},
+          {X1} {60 sin RAD *}  {RAD 60 cos RAD * -},
+          {X2} {90 sin RAD *}  {RAD 90 cos RAD * -},
+          {X1} {90 sin RAD *}  {RAD 90 cos RAD * -},
+          {X2} {120 sin RAD *} {RAD 120 cos RAD * -},
+          {X1} {120 sin RAD *} {RAD 120 cos RAD * -},
+          {X2} {150 sin RAD *} {RAD 150 cos RAD * -},
+          {X1} {150 sin RAD *} {RAD 150 cos RAD * -},
+          {X2} {180 sin RAD *} {RAD 180 cos RAD * -},
+          {X1} {180 sin RAD *} {RAD 180 cos RAD * -},
+          {X2} {210 sin RAD *} {RAD 210 cos RAD * -},
+          {X1} {210 sin RAD *} {RAD 210 cos RAD * -},
+          {X2} {240 sin RAD *} {RAD 240 cos RAD * -},
+          {X1} {240 sin RAD *} {RAD 240 cos RAD * -},
+          {X2} {270 sin RAD *} {RAD 270 cos RAD * -},
+          {X1} {270 sin RAD *} {RAD 270 cos RAD * -},
+          {X2} {300 sin RAD *} {RAD 300 cos RAD * -},
+          {X1} {300 sin RAD *} {RAD 300 cos RAD * -},
+          {X2} {330 sin RAD *} {RAD 330 cos RAD * -},
+          {X1} {330 sin RAD *} {RAD 330 cos RAD * -} ] }
+        coordIndex [
+          3, 1, 0, 2, -1,
+          5, 3, 2, 4, -1,
+          7, 5, 4, 6, -1,
+          9, 7, 6, 8, -1,
+          11, 9, 8, 10, -1,
+          13, 11, 10, 12, -1,
+          15, 13, 12, 14, -1,
+          17, 15, 14, 16, -1,
+          19, 17, 16, 18, -1,
+          21, 19, 18, 20, -1,
+          23, 21, 20, 22, -1,
+          1, 23, 22, 0, -1,
+          22, 20, 18, 16, 14, 12, 10, 8, 6, 4, 2, 0, -1,
+          1, 3, 5, 7, 9, 11, 13, 15, 17, 19, 21, 23, -1 ]
+      }
+    }
+  ]
+}

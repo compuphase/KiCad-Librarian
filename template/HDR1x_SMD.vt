@@ -1,0 +1,98 @@
+#VRML V2.0 utf8
+#model HDR1x_SMD
+{BW 0.5 * @DX   BL 0.5 * @DY   1.0 @DZ   PW 0.45 * @CX   PL 0.45 * @CY   CY 2 * @PINW   6 @?BH}
+{? PINW 0.8 >}{0.8 @PINW   PINW 2 / @PY}
+DEF body Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.42
+          diffuseColor 0.13 0.13 0.13
+          specularColor 0.72 0.72 0.70
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.65
+          transparency 0.0
+        }
+      }
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {DX}   {DY}   {PINW},
+          {DX ~} {DY}   {PINW},
+          {DX ~} {DY ~} {PINW},
+          {DX}   {DY ~} {PINW},
+          {DX}   {DY}   {DZ PINW +},
+          {DX ~} {DY}   {DZ PINW +},
+          {DX ~} {DY ~} {DZ PINW +},
+          {DX}   {DY ~} {DZ PINW +} ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          4, 5, 6, 7, -1,
+          0, 4, 7, 3, -1,
+          1, 5, 4, 0, -1,
+          2, 6, 5, 1, -1,
+          3, 7, 6, 2, -1 ]
+      }
+    }
+  ]
+}
+DEF pins Transform {
+  children [
+    Shape {
+{?:DEFMATERIAL PN 1 =}
+      appearance Appearance {
+        material DEF metal Material {
+          ambientIntensity 0.38
+          diffuseColor 0.86 0.74 0.50
+          specularColor 0.14 0.15 0.18
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.40
+          transparency 0.0
+        }
+      }
+:DEFMATERIAL
+{?:USEMATERIAL PN 1 >}
+      appearance Appearance {
+	    material USE metal
+	  }
+:USEMATERIAL
+{? PN even}{SH 2 / CX + ~ @X2   PY @X1}
+{? PN odd}{PY ~ @X2   SH 2 / CX + @X1}
+{PT 2 / 0.5 + ~ PN + PP * @CY}
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {X1}   {CY PY +} 0.0,
+          {X2}   {CY PY +} 0.0,
+          {X2}   {CY PY -} 0.0,
+          {X1}   {CY PY -} 0.0,
+          {X1}   {CY PY +} {PINW},
+          {X2}   {CY PY +} {PINW},
+          {X2}   {CY PY -} {PINW},
+          {X1}   {CY PY -} {PINW},
+          {PY}   {CY PY +} {DZ PINW +},
+          {PY ~} {CY PY +} {DZ PINW +},
+          {PY ~} {CY PY -} {DZ PINW +},
+          {PY}   {CY PY -} {DZ PINW +},
+          {PY}   {CY PY +} {BH},
+          {PY ~} {CY PY +} {BH},
+          {PY ~} {CY PY -} {BH},
+          {PY}   {CY PY -} {BH} ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          4, 5, 6, 7, -1,
+          0, 4, 7, 3, -1,
+          1, 5, 4, 0, -1,
+          2, 6, 5, 1, -1,
+          3, 7, 6, 2, -1,
+          11, 10, 9, 8, -1,
+          12, 13, 14, 15, -1,
+          8, 12, 15, 11, -1,
+          9, 13, 12, 8, -1,
+          10, 14, 13, 9, -1,
+          11, 15, 14, 10, -1 ]
+      }
+    }
+  ]
+}

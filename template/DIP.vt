@@ -1,0 +1,196 @@
+#VRML V2.0 utf8
+#model DIP
+{PP 0.6 * @PINWW   0.8 @PINNW   0.3 @THK   BW 2 / 0.5 + @DX   BL 2 / @DY   2.0 @?BH}
+{PT 1 - PT PT odd ? @PINS}
+DEF body Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.12
+          diffuseColor 0.25 0.26 0.28
+          specularColor 0.32 0.28 0.18
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.25
+          transparency 0.0
+        }
+      }
+      {DX 0.2 - @CX   DY 0.2 - @CY   BH 0.4 * @CZ}
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {CX}   {CY}   0.0,
+          {CX ~} {CY}   0.0,
+          {CX ~} {CY ~} 0.0,
+          {CX}   {CY ~} 0.0,
+          {DX}   {DY}   {CZ},
+          {DX ~} {DY}   {CZ},
+          {DX ~} {DY ~} {CZ},
+          {DX}   {DY ~} {CZ},
+          {CX}   {CY}   {BH},
+          {CX ~} {CY}   {BH},
+          {CX ~} {CY ~} {BH},
+          {CX}   {CY ~} {BH} ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          8, 9, 10, 11, -1,
+          0, 4, 7, 3, -1,
+          1, 5, 4, 0, -1,
+          2, 6, 5, 1, -1,
+          3, 7, 6, 2, -1,
+          4, 8, 11, 7, -1,
+          5, 9, 8, 4, -1,
+          6, 10, 9, 5, -1,
+          7, 11, 10, 6, -1 ]
+      }
+    }
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.08
+          diffuseColor 0.69 0.66 0.60
+          specularColor 0.0 0.0 0.0
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.01
+          transparency 0.0
+        }
+      }
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        {DX ~ 1 + @X   DY 1 - @Y   BH 0.05 + @ZDOT}
+        coord Coordinate { point [
+          {0 cos 3 / X +}   {0 sin 3 / Y +}   {ZDOT},
+          {30 cos 3 / X +}  {30 sin 3 / Y +}  {ZDOT},
+          {60 cos 3 / X +}  {60 sin 3 / Y +}  {ZDOT},
+          {90 cos 3 / X +}  {90 sin 3 / Y +}  {ZDOT},
+          {120 cos 3 / X +} {120 sin 3 / Y +} {ZDOT},
+          {150 cos 3 / X +} {150 sin 3 / Y +} {ZDOT},
+          {180 cos 3 / X +} {180 sin 3 / Y +} {ZDOT},
+          {210 cos 3 / X +} {210 sin 3 / Y +} {ZDOT},
+          {240 cos 3 / X +} {240 sin 3 / Y +} {ZDOT},
+          {270 cos 3 / X +} {270 sin 3 / Y +} {ZDOT},
+          {300 cos 3 / X +} {300 sin 3 / Y +} {ZDOT},
+          {330 cos 3 / X +} {330 sin 3 / Y +} {ZDOT} ] }
+        coordIndex [
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, -1 ]
+      }
+    }
+  ]
+}
+
+DEF pins Transform {
+  children [
+    Shape {
+{?:NOTAUX PN PINS <=}
+{?:DEFMATERIAL PN 1 =}
+      appearance Appearance {
+        material DEF metal Material {
+          ambientIntensity 0.28
+          diffuseColor 0.82 0.82 0.78
+          specularColor 0.33 0.26 0.17
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.7
+          transparency 0.0
+        }
+      }
+:DEFMATERIAL
+{?:USEMATERIAL PN 1 >}
+      appearance Appearance {
+        material USE metal
+      }
+:USEMATERIAL
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+{?:LEFTPIN PN PINS 2 / <=}
+        {DX 0.05 - ~ @BX   SH 2 / THK 2 / + ~ @EX   EX THK + @IX}
+        {PINS -0.25 * 0.5 - PN + PP * @CY   CY PINWW 2 / + @WYT   WYT PINWW - @WYB   CY PINNW 2 / + @NYT   NYT PINNW - @NYB}
+        coord Coordinate { point [
+            {IX}  {WYB}  {CZ THK +},
+            {BX}  {WYB}  {CZ THK +},
+            {BX}  {WYT}  {CZ THK +},
+            {IX}  {WYT}  {CZ THK +},
+            {IX}  {WYB}  {CZ},
+            {BX}  {WYB}  {CZ},
+            {BX}  {WYT}  {CZ},
+            {IX}  {WYT}  {CZ},
+            {EX}  {WYT}  {CZ},
+            {EX}  {WYB}  {CZ},
+            {EX}  {WYB}  {CZ 0.5 *},
+            {IX}  {WYB}  {CZ 0.5 *},
+            {IX}  {WYT}  {CZ 0.5 *},
+            {EX}  {WYT}  {CZ 0.5 *},
+            {EX}  {NYB}  0.00,
+            {IX}  {NYB}  0.00,
+            {IX}  {NYT}  0.00,
+            {EX}  {NYT}  0.00,
+            {EX}  {NYB}  -2.00,
+            {IX}  {NYB}  -2.00,
+            {IX}  {NYT}  -2.00,
+            {EX}  {NYT}  -2.00 ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          7, 6, 5, 4, -1,
+          9, 0, 3, 8, -1,
+          9, 5, 1, 0, -1,
+          3, 2, 6, 8, -1,
+          8, 13, 17, 14, 10, 9, -1,
+          17, 21, 18, 14, -1,
+          7, 4, 11, 15, 16, 13, -1,
+          19, 20, 16, 15, -1,
+          4, 9, 10, 11, -1,
+          10, 14, 15, 11, -1,
+          14, 18, 19, 15, -1,
+          8, 7, 12, 13, -1,
+          13, 12, 16, 17, -1,
+          17, 16, 20, 21, -1,
+          21, 20, 19, 18, -1 ]
+:LEFTPIN
+{?:RIGHTPIN PN PINS 2 / >}
+        {DX 0.05 - @BX   SH 2 / THK 2 / + @EX   EX THK - @IX}
+        {PINS 0.75 * 0.5 + PN - PP * @CY   CY PINWW 2 / + @WYT   WYT PINWW - @WYB   CY PINNW 2 / + @NYT   NYT PINNW - @NYB}
+        coord Coordinate { point [
+            {IX}  {WYB}  {CZ THK +},
+            {BX}  {WYB}  {CZ THK +},
+            {BX}  {WYT}  {CZ THK +},
+            {IX}  {WYT}  {CZ THK +},
+            {IX}  {WYB}  {CZ},
+            {BX}  {WYB}  {CZ},
+            {BX}  {WYT}  {CZ},
+            {IX}  {WYT}  {CZ},
+            {EX}  {WYT}  {CZ},
+            {EX}  {WYB}  {CZ},
+            {EX}  {WYB}  {CZ 0.5 *},
+            {IX}  {WYB}  {CZ 0.5 *},
+            {IX}  {WYT}  {CZ 0.5 *},
+            {EX}  {WYT}  {CZ 0.5 *},
+            {EX}  {NYB}  0.00,
+            {IX}  {NYB}  0.00,
+            {IX}  {NYT}  0.00,
+            {EX}  {NYT}  0.00,
+            {EX}  {NYB}  -2.00,
+            {IX}  {NYB}  -2.00,
+            {IX}  {NYT}  -2.00,
+            {EX}  {NYT}  -2.00 ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          4, 5, 6, 7, -1,
+          9, 8, 3, 0, -1,
+          0, 1, 5, 9, -1,
+          8, 6, 2, 3 -1,
+          9, 10, 14, 17, 13, 8, -1
+          14, 18, 21, 17, -1,
+          12, 16, 15, 11, 4, 7, -1,
+          15, 16, 20, 19, -1,
+          11, 10, 9, 4, -1,
+          11, 15, 14, 10, -1,
+          14, 15, 19, 18, -1,
+          7, 8, 13, 12, -1,
+          12, 13, 17, 16, -1,
+          16, 17, 21, 20, -1,
+          18, 19, 20, 21, -1 ]
+:RIGHTPIN
+      }
+:NOTAUX
+    }
+  ]
+}

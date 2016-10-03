@@ -1,0 +1,84 @@
+#VRML V2.0 utf8
+#model MLD
+{BW 0.45 * @DX   BL 0.45 * @DY   DY 1.6 * @?BH   DX 0.15 - @CX   PL 0.45 * @CY   BH 0.6 * @CZ}
+{PP PW - 2 / @CLIP}
+DEF body Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.42
+          diffuseColor 0.13 0.13 0.13
+          specularColor 0.72 0.72 0.70
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.65
+          transparency 0.0
+        }
+      }
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {CX}   {DY}   0.05,
+          {CX ~} {DY}   0.05,
+          {CX ~} {DY ~} 0.05,
+          {CX}   {DY ~} 0.05,
+          {CX}   {DY}   {BH},
+          {CX ~} {DY}   {BH},
+          {CX ~} {DY ~} {BH},
+          {CX}   {DY ~} {BH} ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          4, 5, 6, 7, -1,
+          0, 4, 7, 3, -1,
+          1, 5, 4, 0, -1,
+          2, 6, 5, 1, -1,
+          3, 7, 6, 2, -1 ]
+      }
+    }
+  ]
+}
+
+DEF pins Transform {
+  children [
+    Shape {
+{?:DEFMATERIAL PN 1 =}
+      appearance Appearance {
+        material DEF metal Material {
+          ambientIntensity 0.28
+          diffuseColor 0.82 0.82 0.78
+          specularColor 0.33 0.26 0.17
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.7
+          transparency 0.0
+        }
+      }
+:DEFMATERIAL
+{?:USEMATERIAL PN 1 >}
+      appearance Appearance {
+	    material USE metal
+	  }
+:USEMATERIAL
+      geometry IndexedFaceSet {
+        {? PN 1 =}{DX ~ @X2   CLIP ~ @X1}
+        {? PN 2 =}{DX @X1   CLIP @X2}
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {X1} {CY}   0.0,
+          {X2} {CY}   0.0,
+          {X2} {CY ~} 0.0,
+          {X1} {CY ~} 0.0,
+          {X1} {CY}   {CZ},
+          {X2} {CY}   {CZ},
+          {X2} {CY ~} {CZ},
+          {X1} {CY ~} {CZ} ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          4, 5, 6, 7, -1,
+          0, 4, 7, 3, -1,
+          1, 5, 4, 0, -1,
+          2, 6, 5, 1, -1,
+          3, 7, 6, 2, -1 ]
+      }
+    }
+  ]
+}

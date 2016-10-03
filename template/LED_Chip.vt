@@ -1,0 +1,164 @@
+#VRML V2.0 utf8
+#model LED_Chip
+{PP 0.5 * PW 0.25 * + @DX   BL 0.45 * @DY   BL 0.45 * @RAD   RAD 0.2 + @?BH   DX 0.8 * @CX   PL 0.45 * @CY}
+{BH RAD - 0.2 max @CZ}
+DEF body Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.35
+          diffuseColor 0.5 0.5 0.5
+          specularColor 0.6 0.6 0.6
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.4
+          transparency 0.0
+        }
+      }
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {CX}   {DY}   0.0,
+          {CX ~} {DY}   0.0,
+          {CX ~} {DY ~} 0.0,
+          {CX}   {DY ~} 0.0,
+          {CX}   {DY}   {CZ},
+          {CX ~} {DY}   {CZ},
+          {CX ~} {DY ~} {CZ},
+          {CX}   {DY ~} {CZ} ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          4, 5, 6, 7, -1,
+          0, 4, 7, 3, -1,
+          1, 5, 4, 0, -1,
+          2, 6, 5, 1, -1,
+          3, 7, 6, 2, -1 ]
+      }
+    }
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.8
+          diffuseColor 0.7 0.2 0.1
+          specularColor 0.3 0.4 0.2
+          emissiveColor 0 0 0
+          shininess 0.2
+          transparency 0.0
+        }
+      }
+      {BH CZ - 0.7 * CZ + @HZ}
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        coord Coordinate { point [
+            {0 cos RAD *}   {0 sin RAD *} {CZ},
+	   {30 cos RAD *}  {30 sin RAD *} {CZ},
+           {60 cos RAD *}  {60 sin RAD *} {CZ},
+           {90 cos RAD *}  {90 sin RAD *} {CZ},
+          {120 cos RAD *} {120 sin RAD *} {CZ},
+          {150 cos RAD *} {150 sin RAD *} {CZ},
+          {180 cos RAD *} {180 sin RAD *} {CZ},
+          {210 cos RAD *} {210 sin RAD *} {CZ},
+          {240 cos RAD *} {240 sin RAD *} {CZ},
+	  {270 cos RAD *} {270 sin RAD *} {CZ},
+          {300 cos RAD *} {300 sin RAD *} {CZ},
+          {330 cos RAD *} {330 sin RAD *} {CZ},
+	    {0 cos RAD * 0.7 *}   {0 sin RAD * 0.7 *} {HZ},
+	   {30 cos RAD * 0.7 *}  {30 sin RAD * 0.7 *} {HZ},
+	   {60 cos RAD * 0.7 *}  {60 sin RAD * 0.7 *} {HZ},
+	   {90 cos RAD * 0.7 *}  {90 sin RAD * 0.7 *} {HZ},
+	  {120 cos RAD * 0.7 *} {120 sin RAD * 0.7 *} {HZ},
+	  {150 cos RAD * 0.7 *} {150 sin RAD * 0.7 *} {HZ},
+	  {180 cos RAD * 0.7 *} {180 sin RAD * 0.7 *} {HZ},
+	  {210 cos RAD * 0.7 *} {210 sin RAD * 0.7 *} {HZ},
+	  {240 cos RAD * 0.7 *} {240 sin RAD * 0.7 *} {HZ},
+	  {270 cos RAD * 0.7 *} {270 sin RAD * 0.7 *} {HZ},
+	  {300 cos RAD * 0.7 *} {300 sin RAD * 0.7 *} {HZ},
+	  {330 cos RAD * 0.7 *} {330 sin RAD * 0.7 *} {HZ},
+	    {0 cos RAD * 0.34 *}   {0 sin RAD * 0.34 *} {BH},
+	   {30 cos RAD * 0.34 *}  {30 sin RAD * 0.34 *} {BH},
+	   {60 cos RAD * 0.34 *}  {60 sin RAD * 0.34 *} {BH},
+	   {90 cos RAD * 0.34 *}  {90 sin RAD * 0.34 *} {BH},
+	  {120 cos RAD * 0.34 *} {120 sin RAD * 0.34 *} {BH},
+	  {150 cos RAD * 0.34 *} {150 sin RAD * 0.34 *} {BH},
+	  {180 cos RAD * 0.34 *} {180 sin RAD * 0.34 *} {BH},
+	  {210 cos RAD * 0.34 *} {210 sin RAD * 0.34 *} {BH},
+	  {240 cos RAD * 0.34 *} {240 sin RAD * 0.34 *} {BH},
+	  {270 cos RAD * 0.34 *} {270 sin RAD * 0.34 *} {BH},
+	  {300 cos RAD * 0.34 *} {300 sin RAD * 0.34 *} {BH},
+	  {330 cos RAD * 0.34 *} {330 sin RAD * 0.34 *} {BH} ] }
+        coordIndex [
+          11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1,
+          24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, -1,
+          0, 12, 23, 11, -1,
+          1, 13, 12, 0, -1,
+          2, 14, 13, 1, -1,
+          3, 15, 14, 2, -1,
+          4, 16, 15, 3, -1,
+          5, 17, 16, 4, -1,
+          6, 18, 17, 5, -1,
+          7, 19, 18, 6, -1,
+          8, 20, 19, 7, -1,
+          9, 21, 20, 8, -1,
+          10, 22, 21, 9, -1,
+          11, 23, 22, 10, -1,
+          12, 24, 35, 23, -1,
+          13, 25, 24, 12, -1,
+          14, 26, 25, 13, -1,
+          15, 27, 26, 14, -1,
+          16, 28, 27, 15, -1,
+          17, 29, 28, 16, -1,
+          18, 30, 29, 17, -1,
+          19, 31, 30, 18, -1,
+          20, 32, 31, 19, -1,
+          21, 33, 32, 20, -1,
+          22, 34, 33, 21, -1,
+          23, 35, 34, 22, -1 ]
+      }
+    }
+  ]
+}
+
+DEF pins Transform {
+  children [
+    Shape {
+{?:DEFMATERIAL PN 1 =}
+      appearance Appearance {
+        material DEF metal Material {
+          ambientIntensity 0.28
+          diffuseColor 0.82 0.82 0.78
+          specularColor 0.33 0.26 0.17
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.7
+          transparency 0.0
+        }
+      }
+:DEFMATERIAL
+{?:USEMATERIAL PN 1 >}
+      appearance Appearance {
+	    material USE metal
+	  }
+:USEMATERIAL
+      geometry IndexedFaceSet {
+        {? PN 1 =}{CX ~ @X2   DX ~ @X1}
+        {? PN 2 =}{CX @X1   DX @X2}
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {X2} {CY}   0.0,
+          {X1} {CY}   0.0,
+          {X1} {CY ~} 0.0,
+          {X2} {CY ~} 0.0,
+          {X2} {CY}   {CZ},
+          {X1} {CY}   {CZ},
+          {X1} {CY ~} {CZ},
+          {X2} {CY ~} {CZ} ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          4, 5, 6, 7, -1,
+          0, 4, 7, 3, -1,
+          1, 5, 4, 0, -1,
+          2, 6, 5, 1, -1,
+          3, 7, 6, 2, -1 ]
+      }
+    }
+  ]
+}

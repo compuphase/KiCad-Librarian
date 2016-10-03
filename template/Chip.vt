@@ -1,0 +1,93 @@
+#VRML V2.0 utf8
+#model Chip
+{PP 0.57 * @DX   PL 0.425 * @DY   DY 0.8 * @?BH   DX 0.6 * @CAP}
+DEF body Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+{?:CERAMIC BH DY >}
+          ambientIntensity 0.5
+          diffuseColor 0.5 0.3 0.1
+          specularColor 0.3 0.3 0.2
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.3
+          transparency 0.0
+:CERAMIC
+{?:EPOXY BH DY <=}
+          ambientIntensity 0.4
+          diffuseColor 0.13 0.13 0.13
+          specularColor 0.72 0.72 0.70
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.65
+          transparency 0.0
+:EPOXY
+        }
+      }
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {CAP}   {DY}   0.0,
+          {CAP ~} {DY}   0.0,
+          {CAP ~} {DY ~} 0.0,
+          {CAP}   {DY ~} 0.0,
+          {CAP}   {DY}   {BH},
+          {CAP ~} {DY}   {BH},
+          {CAP ~} {DY ~} {BH},
+          {CAP}   {DY ~} {BH} ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          4, 5, 6, 7, -1,
+          0, 4, 7, 3, -1,
+          1, 5, 4, 0, -1,
+          2, 6, 5, 1, -1,
+          3, 7, 6, 2, -1 ]
+      }
+    }
+  ]
+}
+
+DEF pins Transform {
+  children [
+    Shape {
+{?:DEFMATERIAL PN 1 =}
+      appearance Appearance {
+        material DEF metal Material {
+          ambientIntensity 0.28
+          diffuseColor 0.82 0.82 0.78
+          specularColor 0.33 0.26 0.17
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.7
+          transparency 0.0
+        }
+      }
+:DEFMATERIAL
+{?:USEMATERIAL PN 1 >}
+      appearance Appearance {
+	    material USE metal
+	  }
+:USEMATERIAL
+      geometry IndexedFaceSet {
+        {? PN 1 =}{DX ~ @X2   CAP ~ @X1}
+        {? PN 2 =}{DX @X1   CAP @X2}
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {X1} {DY}   0.0,
+          {X2} {DY}   0.0,
+          {X2} {DY ~} 0.0,
+          {X1} {DY ~} 0.0,
+          {X1} {DY}   {BH},
+          {X2} {DY}   {BH},
+          {X2} {DY ~} {BH},
+          {X1} {DY ~} {BH} ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          4, 5, 6, 7, -1,
+          0, 4, 7, 3, -1,
+          1, 5, 4, 0, -1,
+          2, 6, 5, 1, -1,
+          3, 7, 6, 2, -1 ]
+      }
+    }
+  ]
+}

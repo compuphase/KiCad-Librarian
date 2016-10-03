@@ -1,0 +1,140 @@
+#VRML V2.0 utf8
+#model QFN
+{PL 0.5 * @PAD   BW 0.5 * @DX   BL 0.5 * @DY   1.0 @?BH}
+{PT 1 - PT PT odd ? @PINS   PINS 4 / round @ROWPINS}
+DEF body Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.12
+          diffuseColor 0.25 0.26 0.28
+          specularColor 0.32 0.28 0.18
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.25
+          transparency 0.0
+        }
+      }
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {DX}   {DY}   0.0,
+          {DX ~} {DY}   0.0,
+          {DX ~} {DY ~} 0.0,
+          {DX}   {DY ~} 0.0,
+          {DX}   {DY}   {BH},
+          {DX ~} {DY}   {BH},
+          {DX ~} {DY ~} {BH},
+          {DX}   {DY ~} {BH} ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          4, 5, 6, 7, -1,
+          0, 4, 7, 3, -1,
+          1, 5, 4, 0, -1,
+          2, 6, 5, 1, -1,
+          3, 7, 6, 2, -1 ]
+      }
+    }
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.08
+          diffuseColor 0.69 0.66 0.60
+          specularColor 0.0 0.0 0.0
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.01
+          transparency 0.0
+        }
+      }
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        {0.5 DX - @X   DY 0.5 - @Y   BH 0.05 + @ZDOT}
+        coord Coordinate { point [
+          {0 cos 4 / X +}   {0 sin 4 / Y +}   {ZDOT},
+          {30 cos 4 / X +}  {30 sin 4 / Y +}  {ZDOT},
+          {60 cos 4 / X +}  {60 sin 4 / Y +}  {ZDOT},
+          {90 cos 4 / X +}  {90 sin 4 / Y +}  {ZDOT},
+          {120 cos 4 / X +} {120 sin 4 / Y +} {ZDOT},
+          {150 cos 4 / X +} {150 sin 4 / Y +} {ZDOT},
+          {180 cos 4 / X +} {180 sin 4 / Y +} {ZDOT},
+          {210 cos 4 / X +} {210 sin 4 / Y +} {ZDOT},
+          {240 cos 4 / X +} {240 sin 4 / Y +} {ZDOT},
+          {270 cos 4 / X +} {270 sin 4 / Y +} {ZDOT},
+          {300 cos 4 / X +} {300 sin 4 / Y +} {ZDOT},
+          {330 cos 4 / X +} {330 sin 4 / Y +} {ZDOT} ] }
+        coordIndex [
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, -1 ]
+      }
+    }
+  ]
+}
+
+DEF pins Transform {
+  children [
+    Shape {
+{?:NOTAUX PN PINS <=}
+{?:DEFMATERIAL PN 1 =}
+      appearance Appearance {
+        material DEF metal Material {
+          ambientIntensity 0.28
+          diffuseColor 0.82 0.82 0.78
+          specularColor 0.33 0.26 0.17
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.7
+          transparency 0.0
+        }
+      }
+:DEFMATERIAL
+{?:USEMATERIAL PN 1 >}
+      appearance Appearance {
+        material USE metal
+      }
+:USEMATERIAL
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        {PN 1 - ROWPINS / floor @ROW}
+{?:LEFTRIGHT ROW even}
+        {? ROW 0 =}{-0.05 DX - @CX  ROWPINS -0.5 * 0.5 - PN + PP * @CY  PAD 2 / @CZ}
+        {? ROW 2 =}{DX 0.05 + @CX   ROWPINS 2.5 * 0.5 + PN - PP * @CY   PAD 2 / @CZ}
+        coord Coordinate { point [
+            {CX}  {CY PAD +}           0.0,
+            {CX}  {CY 0 cos PAD * +}   {CZ 0 sin PAD * +},
+            {CX}  {CY 20 cos PAD * +}  {CZ 20 sin PAD * +},
+            {CX}  {CY 40 cos PAD * +}  {CZ 40 sin PAD * +},
+            {CX}  {CY 60 cos PAD * +}  {CZ 60 sin PAD * +},
+            {CX}  {CY 80 cos PAD * +}  {CZ 80 sin PAD * +},
+            {CX}  {CY 100 cos PAD * +} {CZ 100 sin PAD * +},
+            {CX}  {CY 120 cos PAD * +} {CZ 120 sin PAD * +},
+            {CX}  {CY 140 cos PAD * +} {CZ 140 sin PAD * +},
+            {CX}  {CY 160 cos PAD * +} {CZ 160 sin PAD * +},
+            {CX}  {CY 180 cos PAD * +} {CZ 170 sin PAD * +},
+            {CX}  {CY PAD -}           0.0 ] }
+        coordIndex [
+            {? ROW 0 =} 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1 ]
+            {? ROW 2 =} 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, -1 ]
+:LEFTRIGHT
+{?:TOPBOTTOM ROW odd}
+        {? ROW 1 =}{ROWPINS -1.5 * 0.5 - PN + PP * @CX  -0.05 DY - @CY  PAD 2 / @CZ}
+        {? ROW 3 =}{ROWPINS 3.5 * 0.5 + PN - PP * @CX   DY 0.05 + @CY   PAD 2 / @CZ}
+        coord Coordinate { point [
+            {CX PAD +}           {CY}  0.0,
+            {CX 0 cos PAD * +}   {CY}  {CZ 0 sin PAD * +},
+            {CX 20 cos PAD * +}  {CY}  {CZ 20 sin PAD * +},
+            {CX 40 cos PAD * +}  {CY}  {CZ 40 sin PAD * +},
+            {CX 60 cos PAD * +}  {CY}  {CZ 60 sin PAD * +},
+            {CX 80 cos PAD * +}  {CY}  {CZ 80 sin PAD * +},
+            {CX 100 cos PAD * +} {CY}  {CZ 100 sin PAD * +},
+            {CX 120 cos PAD * +} {CY}  {CZ 120 sin PAD * +},
+            {CX 140 cos PAD * +} {CY}  {CZ 140 sin PAD * +},
+            {CX 160 cos PAD * +} {CY}  {CZ 160 sin PAD * +},
+            {CX 180 cos PAD * +} {CY}  {CZ 170 sin PAD * +},
+            {CX PAD -}           {CY}  0.0 ] }
+        coordIndex [
+            {? ROW 1 =} 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, -1 ]
+            {? ROW 3 =}11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0, -1 ]
+:TOPBOTTOM
+      }
+:NOTAUX
+    }
+  ]
+}

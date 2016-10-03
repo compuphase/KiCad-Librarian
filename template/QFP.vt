@@ -1,0 +1,245 @@
+#VRML V2.0 utf8
+#model QFP
+{0.7 @PINW   PL 0.4 * @PINL   SH 2 / PINW - @DX   SV 2 / PINW - @DY   1.0 @?BH}
+{PT 1 - PT PT odd ? @PINS   PINS 4 / round @ROWPINS}
+DEF body Transform {
+  children [
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.12
+          diffuseColor 0.25 0.26 0.28
+          specularColor 0.32 0.28 0.18
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.25
+          transparency 0.0
+        }
+      }
+      {DX 0.1 - @CX   DY 0.1 - @CY   BH 0.4 * @CZ}
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        coord Coordinate { point [
+          {CX}   {CY}   0.0,
+          {CX ~} {CY}   0.0,
+          {CX ~} {CY ~} 0.0,
+          {CX}   {CY ~} 0.0,
+          {DX}   {DY}   {CZ},
+          {DX ~} {DY}   {CZ},
+          {DX ~} {DY ~} {CZ},
+          {DX}   {DY ~} {CZ},
+          {CX}   {CY}   {BH},
+          {CX ~} {CY}   {BH},
+          {CX ~} {CY ~} {BH},
+          {CX}   {CY ~} {BH} ] }
+        coordIndex [
+          3, 2, 1, 0, -1,
+          8, 9, 10, 11, -1,
+          0, 4, 7, 3, -1,
+          1, 5, 4, 0, -1,
+          2, 6, 5, 1, -1,
+          3, 7, 6, 2, -1,
+          4, 8, 11, 7, -1,
+          5, 9, 8, 4, -1,
+          6, 10, 9, 5, -1,
+          7, 11, 10, 6, -1 ]
+      }
+    }
+    Shape {
+      appearance Appearance {
+        material Material {
+          ambientIntensity 0.08
+          diffuseColor 0.69 0.66 0.60
+          specularColor 0.0 0.0 0.0
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.01
+          transparency 0.0
+        }
+      }
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        {DX ~ 1 + @X   DY 1 - @Y   BH 0.05 + @ZDOT}
+        coord Coordinate { point [
+          {0 cos 3 / X +}   {0 sin 3 / Y +}   {ZDOT},
+          {30 cos 3 / X +}  {30 sin 3 / Y +}  {ZDOT},
+          {60 cos 3 / X +}  {60 sin 3 / Y +}  {ZDOT},
+          {90 cos 3 / X +}  {90 sin 3 / Y +}  {ZDOT},
+          {120 cos 3 / X +} {120 sin 3 / Y +} {ZDOT},
+          {150 cos 3 / X +} {150 sin 3 / Y +} {ZDOT},
+          {180 cos 3 / X +} {180 sin 3 / Y +} {ZDOT},
+          {210 cos 3 / X +} {210 sin 3 / Y +} {ZDOT},
+          {240 cos 3 / X +} {240 sin 3 / Y +} {ZDOT},
+          {270 cos 3 / X +} {270 sin 3 / Y +} {ZDOT},
+          {300 cos 3 / X +} {300 sin 3 / Y +} {ZDOT},
+          {330 cos 3 / X +} {330 sin 3 / Y +} {ZDOT} ] }
+        coordIndex [
+          0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, -1 ]
+      }
+    }
+  ]
+}
+
+DEF pins Transform {
+  children [
+    Shape {
+{?:NOTAUX PN PINS <=}
+{?:DEFMATERIAL PN 1 =}
+      appearance Appearance {
+        material DEF metal Material {
+          ambientIntensity 0.28
+          diffuseColor 0.82 0.82 0.78
+          specularColor 0.33 0.26 0.17
+          emissiveColor 0.0 0.0 0.0
+          shininess 0.7
+          transparency 0.0
+        }
+      }
+:DEFMATERIAL
+{?:USEMATERIAL PN 1 >}
+      appearance Appearance {
+        material USE metal
+      }
+:USEMATERIAL
+      geometry IndexedFaceSet {
+        normalPerVertex TRUE
+        {PN 1 - ROWPINS / floor @ROW}
+{?:LEFTPIN ROW 0 =}
+        {DX ~ @CX   ROWPINS -0.5 * 0.5 - PN + PP * @CY}
+        coord Coordinate { point [
+            {CX PINW 0.4 * -}  {CY PINL -}  {CZ 0.15 +},
+            {CX 0.05 +}        {CY PINL -}  {CZ 0.15 +},
+            {CX 0.05 +}        {CY PINL +}  {CZ 0.15 +},
+            {CX PINW 0.4 * -}  {CY PINL +}  {CZ 0.15 +},
+            {CX PINW 0.3 * -}  {CY PINL -}  {CZ},
+            {CX 0.05 +}        {CY PINL -}  {CZ},
+            {CX 0.05 +}        {CY PINL +}  {CZ},
+            {CX PINW 0.3 * -}  {CY PINL +}  {CZ},
+            {CX PINW 1.0 * -}  {CY PINL -}  0.15,
+            {CX PINW 0.7 * -}  {CY PINL -}  0.15,
+            {CX PINW 0.7 * -}  {CY PINL +}  0.15,
+            {CX PINW 1.0 * -}  {CY PINL +}  0.15,
+            {CX PINW 1.0 * -}  {CY PINL -}  0.0,
+            {CX PINW 0.6 * -}  {CY PINL -}  0.0,
+            {CX PINW 0.6 * -}  {CY PINL +}  0.0,
+            {CX PINW 1.0 * -}  {CY PINL +}  0.0 ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          0, 3, 10, 9, -1,
+          8, 9, 10, 11, -1,
+          7, 6, 5, 4, -1,
+          14, 7, 4, 13, -1,
+          15, 14, 13, 12, -1,
+          1, 0, 4, 5, -1,
+          0, 9, 13, 4, -1,
+          9, 8, 12, 13, -1,
+          6, 7, 3, 2, -1,
+          7, 14, 10, 3, -1,
+          14, 15, 11, 10, -1,
+          8, 11, 15, 12, -1 ]
+:LEFTPIN
+{?:BOTTOMPIN ROW 1 =}
+        {ROWPINS -1.5 * 0.5 - PN + PP * @CX   DX ~ @CY}
+        coord Coordinate { point [
+            {CX PINL +}  {CY PINW 0.4 * -}  {CZ 0.15 +},
+            {CX PINL +}  {CY 0.05 +}        {CZ 0.15 +},
+            {CX PINL -}  {CY 0.05 +}        {CZ 0.15 +},
+            {CX PINL -}  {CY PINW 0.4 * -}  {CZ 0.15 +},
+            {CX PINL +}  {CY PINW 0.3 * -}  {CZ},
+            {CX PINL +}  {CY 0.05 +}        {CZ},
+            {CX PINL -}  {CY 0.05 +}        {CZ},
+            {CX PINL -}  {CY PINW 0.3 * -}  {CZ},
+            {CX PINL +}  {CY PINW 1.0 * -}  0.15,
+            {CX PINL +}  {CY PINW 0.7 * -}  0.15,
+            {CX PINL -}  {CY PINW 0.7 * -}  0.15,
+            {CX PINL -}  {CY PINW 1.0 * -}  0.15,
+            {CX PINL +}  {CY PINW 1.0 * -}  0.0,
+            {CX PINL +}  {CY PINW 0.6 * -}  0.0,
+            {CX PINL -}  {CY PINW 0.6 * -}  0.0,
+            {CX PINL -}  {CY PINW 1.0 * -}  0.0 ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          9, 0, 3, 10, -1,
+          8, 9, 10, 11, -1,
+          7, 6, 5, 4, -1,
+          10, 7, 4, 9, -1,
+          15, 14, 13, 12, -1,
+          4, 5, 1, 0, -1,
+          13, 4, 0, 9, -1,
+          12, 13, 9, 8, -1,
+          7, 3, 2, 6, -1,
+          14, 10, 3, 7, -1,
+          15, 11, 10, 14, -1,
+          15, 12, 8, 11, -1 ]
+:BOTTOMPIN
+{?:RIGHTPIN ROW 2 =}
+        {DX @CX   ROWPINS 2.5 * 0.5 + PN - PP * @CY}
+        coord Coordinate { point [
+            {CX 0.05 -}        {CY PINL -}  {CZ 0.15 +},
+            {CX PINW 0.4 * +}  {CY PINL -}  {CZ 0.15 +},
+            {CX PINW 0.4 * +}  {CY PINL +}  {CZ 0.15 +},
+            {CX 0.05 -}        {CY PINL +}  {CZ 0.15 +},
+            {CX 0.05 -}        {CY PINL -}  {CZ},
+            {CX PINW 0.3 * +}  {CY PINL -}  {CZ},
+            {CX PINW 0.3 * +}  {CY PINL +}  {CZ},
+            {CX 0.05 -}        {CY PINL +}  {CZ}
+            {CX PINW 0.7 * +}  {CY PINL -}  0.15,
+            {CX PINW 1.0 * +}  {CY PINL -}  0.15,
+            {CX PINW 1.0 * +}  {CY PINL +}  0.15,
+            {CX PINW 0.7 * +}  {CY PINL +}  0.15,
+            {CX PINW 0.6 * +}  {CY PINL -}  0,
+            {CX PINW 1.0 * +}  {CY PINL -}  0,
+            {CX PINW 1.0 * +}  {CY PINL +}  0,
+            {CX PINW 0.6 * +}  {CY PINL +}  0 ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          1, 8, 11, 2, -1,
+          8, 9, 10, 11, -1,
+          7, 6, 5, 4, -1,
+          6, 15, 12, 5, -1,
+          15, 14, 13, 12, -1,
+          0, 4, 5, 1, -1,
+          1, 5, 12, 8, -1,
+          8, 12, 13, 9, -1,
+          3, 2, 6, 7, -1,
+          2, 11, 15, 6, -1,
+          11, 10, 14, 15, -1,
+          9, 13, 14, 10, -1 ]
+:RIGHTPIN
+{?:TOPPIN ROW 3 =}
+        {ROWPINS 3.5 * 0.5 + PN - PP * @CX   DX @CY}
+        coord Coordinate { point [
+            {CX PINL +}  {CY 0.05 -}        {CZ 0.15 +},
+            {CX PINL +}  {CY PINW 0.4 * +}  {CZ 0.15 +},
+            {CX PINL -}  {CY PINW 0.4 * +}  {CZ 0.15 +},
+            {CX PINL -}  {CY 0.05 -}        {CZ 0.15 +},
+            {CX PINL +}  {CY 0.05 -}        {CZ},
+            {CX PINL +}  {CY PINW 0.3 * +}  {CZ},
+            {CX PINL -}  {CY PINW 0.3 * +}  {CZ},
+            {CX PINL -}  {CY 0.05 -}        {CZ},
+            {CX PINL +}  {CY PINW 0.7 * +}  0.15,
+            {CX PINL +}  {CY PINW 1.0 * +}  0.15,
+            {CX PINL -}  {CY PINW 1.0 * +}  0.15,
+            {CX PINL -}  {CY PINW 0.7 * +}  0.15,
+            {CX PINL +}  {CY PINW 0.6 * +}  0.0,
+            {CX PINL +}  {CY PINW 1.0 * +}  0.0,
+            {CX PINL -}  {CY PINW 1.0 * +}  0.0,
+            {CX PINL -}  {CY PINW 0.6 * +}  0.0 ] }
+        coordIndex [
+          0, 1, 2, 3, -1,
+          1, 8, 11, 2, -1,
+          8, 9, 10, 11, -1,
+          7, 6, 5, 4, -1,
+          6, 15, 12, 5, -1,
+          15, 14, 13, 12, -1,
+          1, 0, 4, 5, -1,
+          8, 1, 5, 12, -1,
+          9, 8, 12, 13, -1,
+          6, 7, 3, 2, -1,
+          15, 6, 2, 11, -1,
+          14, 15, 11, 10, -1,
+          9, 13, 14, 10, -1 ]
+:TOPPIN
+      }
+:NOTAUX
+    }
+  ]
+}

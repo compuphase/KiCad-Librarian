@@ -1,0 +1,19 @@
+The KiCad Librarian uses the following components that are distributed under
+their own licenses.
+
+wxWidgets: wxWidgets is copyright by Julian Smart, Robert Roebling et al., and
+distributed under the wxWindows license (essentially LGPL).
+
+Haru PDF library (libHaru): copyright Takeshi Kanno. It is distributed under
+the zlib/libPNG license.
+
+newstroke font: the newstroke font was created by Vladimir Uryvaev, and
+distributed under the CC-BY license. It was converted to CXF format by
+Brian Bidulock.
+
+libCURL: this library is used for access to the remote repository. The
+functionality for the remote repository is optional; it can be disabled at
+build time (when disabled, libCURL is not needed).
+
+CyberX3D: a library for parsing VRML models, it is copyright Satoshi Konno
+and distributed under the BSD license.

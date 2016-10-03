@@ -1,0 +1,60 @@
+/* Librarian for KiCad, a free EDA CAD application.
+ *
+ * Copyright 2013-2015 CompuPhase
+ * $Id: librarymanager.rc 5366 2015-10-05 16:46:22Z thiadmer $
+ */
+
+#include <windows.h>
+#include <winver.h>
+#include "svnrev.h"
+
+AppIcon ICON "res/logo.ico"
+
+/*  Version information
+ *
+ *  All strings MUST have an explicit \0. See the Windows SDK documentation
+ *  for details on version information and the VERSIONINFO structure.
+ */
+#define VERSION              1
+#define REVISION             1
+#define BUILD                SVN_REV
+#define VERSIONSTR           SVN_REVSTR "\0"
+#define VERSIONNAME          "Librarian.exe\0"
+#define VERSIONDESCRIPTION   "KiCad Librarian\0"
+#define VERSIONCOMPANYNAME   "CompuPhase\0"
+#define VERSIONPRODUCTNAME   "LibraryManager\0"
+#define VERSIONCOPYRIGHT     "Copyright \251 ITB CompuPhase 2013-2015\0"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION    VERSION, REVISION, BUILD, 0
+PRODUCTVERSION VERSION, REVISION, BUILD, 0
+FILEFLAGSMASK  0x0000003FL
+FILEFLAGS      0
+#if defined(WIN32)
+  FILEOS       VOS__WINDOWS32
+#else
+  FILEOS       VOS__WINDOWS16
+#endif
+FILETYPE       VFT_APP
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904E4"
+        BEGIN
+            VALUE "CompanyName",      VERSIONCOMPANYNAME
+            VALUE "FileDescription",  VERSIONDESCRIPTION
+            VALUE "FileVersion",      VERSIONSTR
+            VALUE "InternalName",     VERSIONNAME
+            VALUE "LegalCopyright",   VERSIONCOPYRIGHT
+            VALUE "OriginalFilename", VERSIONNAME
+            VALUE "ProductName",      VERSIONPRODUCTNAME
+            VALUE "ProductVersion",   VERSIONSTR
+        END
+    END
+
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x409, 1252
+    END
+END
+

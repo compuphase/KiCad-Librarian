@@ -1,0 +1,11 @@
+[Desktop Entry]
+Version=1.0
+Name=KiCad Librarian
+Comment=A library manager for KiCad
+Exec=/opt/kicadlibrarian/bin/kicadlibrarian
+Icon=kicadlibrarian32
+Terminal=false
+Type=Application
+Categories=Graphics;X-EDA
+MimeType=application/x-kicadlibrarian-item;
+GenericName=KiCad Librarian

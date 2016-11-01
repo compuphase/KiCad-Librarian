@@ -16,4 +16,5 @@ functionality for the remote repository is optional; it can be disabled at
 build time (when disabled, libCURL is not needed).
 
 CyberX3D: a library for parsing VRML models, it is copyright Satoshi Konno
-and distributed under the BSD license.
+and distributed under the BSD license. The 3D viewer is optional; it can
+be disabled at build time.

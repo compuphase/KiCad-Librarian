@@ -17,7 +17,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: libmngr_frame.cpp 5582 2016-10-03 10:32:01Z thiadmer $
+ *  $Id: libmngr_frame.cpp 5593 2016-11-01 14:15:26Z  $
  */
 #include "librarymanager.h"
 #include "libmngr_frame.h"
@@ -234,7 +234,7 @@ AppFrame(parent)
 	   must be delayed, because of the internals of wxWidgets) */
 	m_Timer = new wxTimer(this, IDM_TIMER);
 	Connect(IDM_TIMER, wxEVT_TIMER, wxTimerEventHandler(libmngrFrame::OnTimer));
-	m_Timer->Start(250, true);
+	m_Timer->Start(500);
 
 	wxString path = theApp->GetFontFile();
 	VFont.Read(path.mb_str(wxConvFile));
@@ -243,17 +243,35 @@ AppFrame(parent)
 void libmngrFrame::OnTimer(wxTimerEvent& /*event*/)
 {
 	wxFileConfig *config = new wxFileConfig(APP_NAME, VENDOR_NAME, theApp->GetINIPath());
+    int ok_count = 0;
 	long pos;
-	if (config->Read(wxT("settings/splitter"), &pos))
-		m_splitter->SetSashPosition(pos);
-	if (config->Read(wxT("settings/splitterpanel"), &pos) && pos > 0)
-		m_splitterViewPanel->SetSashPosition(-pos);
+	if (config->Read(wxT("settings/splitter"), &pos)) {
+        if (pos == m_splitter->GetSashPosition())
+            ok_count++;
+        else
+		    m_splitter->SetSashPosition(pos);
+    }
+	if (config->Read(wxT("settings/splitterpanel"), &pos)) {
+        wxSize size = m_splitterViewPanel->GetSize();
+        if (pos <= 0 || pos == size.GetWidth() - m_splitterViewPanel->GetSashPosition())
+            ok_count++;
+        else
+		    m_splitterViewPanel->SetSashPosition(-pos);
+    }
 	delete config;
 
-	/* force a resize, to lay out the subfields */
-	wxSize sz = GetSize();
-	SetSize(sz.GetWidth() + 1, sz.GetHeight());
-	SetSize(sz.GetWidth(), sz.GetHeight());
+    static int idle_count = 0;
+    if (ok_count == 2) {
+        /* all sashes already at the good position, clear the timer */
+        if (++idle_count >= 4)  /* position has stayed good for 2 seconds */
+            m_Timer->Stop();
+    } else {
+	    /* force a resize, to lay out the subfields */
+	    wxSize sz = GetSize();
+	    SetSize(sz.GetWidth() + 1, sz.GetHeight());
+	    SetSize(sz.GetWidth(), sz.GetHeight());
+        idle_count = 0;
+    }
 }
 
 void libmngrFrame::OnCloseApp(wxCloseEvent& event)
@@ -2155,6 +2173,7 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
 		bool show_pinnr = true, show_pinname = true;
 		for (int idx = 0; idx < (int)PartData[fp].Count(); idx++) {
 			wxString line = PartData[fp][idx];
+            wxASSERT(line.Length() > 0);
 			if (line[0] == wxT('#'))
 				continue;
 			wxString token = GetToken(&line);
@@ -2165,7 +2184,7 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
 				pinname_offset = GetTokenLong(&line) * scale;
 				show_pinnr = GetToken(&line) == wxT('Y');
 				show_pinname = GetToken(&line) == wxT('Y');
-			} else if (token[0] == wxT('F') && isdigit(token[1])) {
+			} else if (token[0] == wxT('F') && token.Length() >= 2 && isdigit(token[1])) {
 				if (ShowLabels) {
 					wxString name = GetToken(&line);
 					double x = midx + GetTokenLong(&line) * scale;
@@ -3525,34 +3544,6 @@ void libmngrFrame::OnSizeViewport(wxSizeEvent& /*event*/)
 		m_statusBar->GetFieldRect(1, rect);
 		m_editFilter->SetSize(rect.GetLeft(), rect.GetTop(), rect.GetWidth(), rect.GetHeight(), 0);
 	}
-	/* keeping the left/right panels equal size no longer works in wxWidgets 3.0,
-	   so try to do it manually */
-	#if wxMAJOR_VERSION >= 3
-		wxSizer *sizerTop = m_panelTop->GetSizer();
-		wxASSERT(sizerTop->GetItemCount() == 3);
-		wxSizerItem* item = sizerTop->GetItem((size_t)0);
-		wxASSERT(item != NULL);
-		wxSizer *sizerLeft = item->GetSizer();
-		wxASSERT(sizerLeft != NULL);
-		item = sizerTop->GetItem((size_t)1);
-		wxASSERT(item != NULL);
-		wxSizer *sizerMid = item->GetSizer();
-		wxASSERT(sizerMid != NULL);
-		item = sizerTop->GetItem((size_t)2);
-		wxASSERT(item != NULL);
-		wxSizer *sizerRight = item->GetSizer();
-		wxASSERT(sizerRight != NULL);
-		/* calculate the best new size */
-		wxSize topSize = sizerTop->GetSize();
-		wxSize midSize = sizerMid->GetSize();
-		int width = (topSize.GetWidth() - midSize.GetWidth() - 10) / 2;
-		/* set this as the maximum of the library/module lists */
-		m_choiceModuleLeft->SetMaxSize(wxSize(width, -1));
-		m_choiceModuleRight->SetMaxSize(wxSize(width, -1));
-		m_listModulesLeft->SetMaxSize(wxSize(width, -1));
-		m_listModulesRight->SetMaxSize(wxSize(width, -1));
-		m_panelTop->Layout();
-	#endif
 }
 
 void libmngrFrame::OnZoomIn(wxCommandEvent& /*event*/)
@@ -4052,7 +4043,12 @@ void libmngrFrame::HandleLibrarySelect(wxChoice* choice, wxListCtrl* list, int s
 		filter.MakeLower();
 	}
 
+    wxString title = SymbolMode ? wxT("Collecting symbols") : wxT("Collecting footprints");
+    wxString msg = (filter.Length() > 0) ? wxT("Filtering library, please wait...") : wxT("Please wait...");
+    wxProgressDialog* progress = new wxProgressDialog(title, msg, 100, this, wxPD_APP_MODAL|wxPD_AUTO_HIDE|wxPD_ELAPSED_TIME|wxPD_ESTIMATED_TIME|wxPD_REMAINING_TIME);
+
 	if (filename.CmpNoCase(LIB_ALL) == 0) {
+        progress->SetRange(choice->GetCount() - 1);
 		for (idx = 0; idx < (int)choice->GetCount(); idx++) {
 			wxString filename = choice->GetString(idx);
 			wxASSERT(filename.length() > 0);
@@ -4062,6 +4058,7 @@ void libmngrFrame::HandleLibrarySelect(wxChoice* choice, wxListCtrl* list, int s
 				CollectSymbols(filename, list, filter);
 			else
 				CollectFootprints(filename, list, filter);
+            progress->Update(idx);
 		}
 	} else if (filename.CmpNoCase(LIB_REPOS) == 0) {
 		#if defined NO_CURL
@@ -4088,9 +4085,9 @@ void libmngrFrame::HandleLibrarySelect(wxChoice* choice, wxListCtrl* list, int s
 		#endif
 	} else {
 		if (SymbolMode)
-			CollectSymbols(filename, list, filter);
+			CollectSymbols(filename, list, filter, progress);
 		else
-			CollectFootprints(filename, list, filter);
+			CollectFootprints(filename, list, filter, progress);
 	}
 
 	list->SetColumnWidth(0, wxLIST_AUTOSIZE);
@@ -4100,7 +4097,7 @@ void libmngrFrame::HandleLibrarySelect(wxChoice* choice, wxListCtrl* list, int s
 	list->SetColumnWidth(0, list->GetColumnWidth(0) + 2);
 	list->SetColumnWidth(1, list->GetColumnWidth(1) + 2);
 
-	wxString msg;
+    delete progress;
 	if (SymbolMode)
 		msg = wxString::Format(wxT("Loaded %d symbols"), list->GetItemCount());
 	else
@@ -4121,7 +4118,7 @@ void libmngrFrame::HandleLibrarySelect(wxChoice* choice, wxListCtrl* list, int s
 	}
 }
 
-void libmngrFrame::CollectSymbols(const wxString &path, wxListCtrl* list, const wxString& filter)
+void libmngrFrame::CollectSymbols(const wxString &path, wxListCtrl* list, const wxString& filter, wxProgressDialog* progress)
 {
 	wxString libname;
 	if (ShowFullPaths) {
@@ -4136,6 +4133,9 @@ void libmngrFrame::CollectSymbols(const wxString &path, wxListCtrl* list, const 
 		wxMessageBox(wxT("Failed to open symbol library ") + path);
 		return;
 	}
+
+    if (progress)
+        progress->SetRange(file.GetLineCount() - 1);
 
 	/* verify the header */
 	wxString line = file.GetLine(0);
@@ -4182,12 +4182,14 @@ void libmngrFrame::CollectSymbols(const wxString &path, wxListCtrl* list, const 
 			list->SetItem(item, 1, libname);
 			list->SetItem(item, 2, path);
 		}
+       if (progress)
+            progress->Update(idx);
 	}
 
 	file.Close();
 }
 
-void libmngrFrame::CollectFootprints(const wxString &path, wxListCtrl* list, const wxString& filter)
+void libmngrFrame::CollectFootprints(const wxString &path, wxListCtrl* list, const wxString& filter, wxProgressDialog* progress)
 {
 	wxFileName fname(path);
 	wxString libname = ShowFullPaths ? path : fname.GetFullName();
@@ -4199,6 +4201,8 @@ void libmngrFrame::CollectFootprints(const wxString &path, wxListCtrl* list, con
 			return; /* error message already given */
 		wxArrayString modlist;
 		dir.GetAllFiles(path, &modlist, wxT("*.kicad_mod"), wxDIR_FILES);
+        if (progress)
+            progress->SetRange(modlist.Count() - 1);
 		for (unsigned idx = 0; idx < modlist.Count(); idx++) {
 			wxFileName modfile(modlist[idx]);
 			wxString name = modfile.GetName();
@@ -4223,7 +4227,9 @@ void libmngrFrame::CollectFootprints(const wxString &path, wxListCtrl* list, con
 			long item = list->InsertItem(insertpos, name);
 			list->SetItem(item, 1, libname);
 			list->SetItem(item, 2, path);
-		}
+            if (progress)
+                progress->Update(idx);
+        }
 	} else if (fname.GetExt().Cmp(wxT("kicad_mod")) == 0) {
 		wxString name = fname.GetName();
 		bool match = true;
@@ -4272,11 +4278,23 @@ void libmngrFrame::CollectFootprints(const wxString &path, wxListCtrl* list, con
 			if (line.CmpNoCase(wxT("$INDEX")) == 0)
 				break;
 		}
-		/* read the index */
-		while (idx < file.GetLineCount()) {
-			line = file.GetLine(idx);
+        /* find the end of the index */
+        unsigned tail = idx;
+        while (tail < file.GetLineCount()) {
+			line = file.GetLine(tail);
 			if (line.CmpNoCase(wxT("$EndINDEX")) == 0)
 				break;
+            tail++;
+        }
+		/* read the modules (browse through the index) */
+        if (progress) {
+            progress->SetRange(tail - 1);
+            wxASSERT(idx > 0);
+            progress->Update(idx - 1);
+        }
+		while (idx < tail) {
+			line = file.GetLine(idx);
+			wxASSERT(line.CmpNoCase(wxT("$EndINDEX")) != 0);
 			bool match = true;
 			if (filter.Length() > 0) {
 				match = false;
@@ -4298,6 +4316,8 @@ void libmngrFrame::CollectFootprints(const wxString &path, wxListCtrl* list, con
 				list->SetItem(item, 1, libname);
 				list->SetItem(item, 2, path);
 			}
+            if (progress)
+                progress->Update(idx);
 			idx++;
 		}
 

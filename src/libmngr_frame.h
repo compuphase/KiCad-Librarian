@@ -237,8 +237,8 @@ private:
         CyberX3D::SceneGraph sceneGraph;
         wxGLCanvas *glCanvas;
         wxGLContext *glContext;
-        bool Update3DModel(const wxArrayString& module);
     #endif
+    bool Update3DModel(const wxArrayString& module);
 
     long OffsetX, OffsetY;      /* offset from centre (when dragging) */
     long DragOrgX, DragOrgY;

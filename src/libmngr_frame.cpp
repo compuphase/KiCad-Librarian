@@ -3534,7 +3534,9 @@ void libmngrFrame::OnPaintViewport(wxPaintEvent& /*event*/)
 void libmngrFrame::OnSizeViewport(wxSizeEvent& /*event*/)
 {
 	if (ModelMode) {
-		wxASSERT(glCanvas && glContext);
+        #if !defined NO_3DMODEL
+            wxASSERT(glCanvas && glContext);
+        #endif
 		ResizeModelViewport();
 	}
 	m_panelView->Refresh();

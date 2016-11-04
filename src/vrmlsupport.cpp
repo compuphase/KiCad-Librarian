@@ -8,6 +8,8 @@
 *
 ******************************************************************/
 
+#if !defined NO_3DMODEL
+
 #include <wx/glcanvas.h>
 #include "vrmlsupport.h"
 
@@ -510,3 +512,4 @@ void DrawSceneGraph(SceneGraph *sg, int drawMode, float AngleX, float AngleZ)
 	glFlush();
 }
 
+#endif /* !defined NO_3DMODEL */

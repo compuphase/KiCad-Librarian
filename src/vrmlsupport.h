@@ -21,6 +21,8 @@
 #ifndef VRMLSUPPORT_H
 #define VRMLSUPPORT_H
 
+#if !defined NO_3DMODEL
+
 #define CX3D_SUPPORT_OPENGL
 #include <cybergarage/x3d/CyberX3D.h>
 
@@ -32,5 +34,7 @@ enum {
 void DrawSceneGraph(CyberX3D::SceneGraph* sceneGraph, int drawMode, float AngleX, float AngleZ);
 
 void SetSceneGraphBackground(unsigned long rgb);
+
+#endif /* !defined NO_3DMODEL */
 
 #endif /* VRMLSUPPORT_H */

@@ -23,7 +23,7 @@ AppIcon ICON "res/logo.ico"
 #define VERSIONDESCRIPTION   "KiCad Librarian\0"
 #define VERSIONCOMPANYNAME   "CompuPhase\0"
 #define VERSIONPRODUCTNAME   "LibraryManager\0"
-#define VERSIONCOPYRIGHT     "Copyright \251 ITB CompuPhase 2013-2015\0"
+#define VERSIONCOPYRIGHT     "Copyright \251 ITB CompuPhase 2013-2017\0"
 
 VS_VERSION_INFO VERSIONINFO
 FILEVERSION    VERSION, REVISION, BUILD, 0

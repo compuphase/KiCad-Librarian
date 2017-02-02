@@ -25,9 +25,13 @@ else (LIBCX3D_LIBRARIES AND LIBCX3D_INCLUDE_DIRS)
     CyberX3D.h
     PATHS
     /usr/include
+    /usr/include/CyberX3D-1.0/cybergarage/x3d
     /usr/local/include
+    /usr/local/include/CyberX3D-1.0/cybergarage/x3d
     /opt/local/include
+    /opt/local/include/CyberX3D-1.0/cybergarage/x3d
     /sw/include
+    /sw/include/CyberX3D-1.0/cybergarage/x3d
     )
 
   SET(CX3D_LIBNAME cx3d-1.0)

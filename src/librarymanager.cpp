@@ -2,7 +2,7 @@
  *  Librarian for KiCad, a free EDA CAD application.
  *  This file is just the definition of the application.
  *
- *  Copyright (C) 2013-2015 CompuPhase
+ *  Copyright (C) 2013-2017 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -49,10 +49,20 @@ bool LibraryManagerApp::OnInit()
     strDocumentationPath = strRootPath + wxT(DIRSEP_STR) wxT("doc");
     strFontFile = strRootPath + wxT(DIRSEP_STR) wxT("font") wxT(DIRSEP_STR) wxT("newstroke.cxf");
 
+    /* get the path for storing user data */
+    strUserDataPath = wxStandardPaths::Get().GetUserDataDir();
+    if (!wxDirExists(strUserDataPath)) {
+        #if defined _WIN32
+            wxMkDir(strUserDataPath);
+        #else
+            wxMkDir(strUserDataPath.utf8_str(), 0777);
+        #endif
+    }
+
     /* try to locate the INI file in the "root" of KiCad Librarian */
     strINIPath = strRootPath + wxT(DIRSEP_STR) APP_NAME wxT(".ini");
     if (!wxFileName::FileExists(strINIPath))
-        strINIPath = wxEmptyString;
+        strINIPath = strUserDataPath + wxT(DIRSEP_STR) APP_NAME wxT(".ini");
 
     wxImage::AddHandler(new wxPNGHandler);
     libmngrFrame *frame = new libmngrFrame(NULL);

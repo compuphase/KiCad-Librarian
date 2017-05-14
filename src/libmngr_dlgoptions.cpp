@@ -2,7 +2,7 @@
  *  Librarian for KiCad, a free EDA CAD application.
  *  The dialog for the user-interface settings.
  *
- *  Copyright (C) 2013-2015 CompuPhase
+ *  Copyright (C) 2013-2017 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -75,6 +75,10 @@ DlgOptions( parent )
 	config->Read(wxT("settings/confirmdelete"), &confirmdelete, true);
 	m_chkConfirmDelete->SetValue(confirmdelete);
 
+	bool reloadsession;
+	config->Read(wxT("settings/reloadsession"), &reloadsession, true);
+	m_chkReloadSession->SetValue(reloadsession);
+
 	delete config;
 }
 
@@ -118,6 +122,9 @@ void libmngrDlgOptions::OnOK( wxCommandEvent& event )
 
 	bool confirmdelete = m_chkConfirmDelete->GetValue();
 	config->Write(wxT("settings/confirmdelete"), confirmdelete);
+
+	bool reloadsession = m_chkReloadSession->GetValue();
+	config->Write(wxT("settings/reloadsession"), reloadsession);
 
 	delete config;
 	event.Skip();

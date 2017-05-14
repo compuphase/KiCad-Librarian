@@ -2,7 +2,7 @@
  *  Librarian for KiCad, a free EDA CAD application.
  *  Report generation functions, based on libHaru.
  *
- *  Copyright (C) 2013-2015 CompuPhase
+ *  Copyright (C) 2013-2017 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -26,8 +26,10 @@
 #include "pdfreport.h"
 #include "librarymanager.h"
 #include "libraryfunctions.h"
+#include <wx/hashmap.h>
 #include <wx/msgdlg.h>
 #include <wx/progdlg.h>
+#include <wx/tokenzr.h> 
 #include "svnrev.h"
 
 
@@ -47,7 +49,12 @@
 #define COLUMN_1      INCH(1.2)
 #define COLUMN_2      INCH(3.0) /* for portrait */
 #define COLUMN_2_L    INCH(4.0) /* for landscape */
+#define INDEXLINES    68
 
+static int CompareFootprint(const wxString& first, const wxString& second)
+{
+    return first.CmpNoCase(second);
+}
 
 bool PdfReport::SetPage(const wxString& paper, bool landscape)
 {
@@ -101,6 +108,10 @@ hpdf_ErrorHandler(HPDF_STATUS error_no, HPDF_STATUS detail_no, void *user_data)
 
 /** FootprintReport() generates a report for the library. It assumes that the
  *  paper size and orientation have already been set (see SetPage()).
+ *  \param parent       The parent window.
+ *  \param library      The pathname to the library that is printed
+ *  \param modules      An array with all the footprint names in the library
+ *  \param reportfile   The path to the generated report
  */
 bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const wxArrayString& modules, const wxString& reportfile)
 {
@@ -109,7 +120,7 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
 
   int progresspos = 0;
   wxProgressDialog progress(wxT("Generating report"), wxT("Reading resources"),
-                            2*(int)modules.Count() + 1, parent,
+                            2*(int)modules.Count() + 2, parent,
                             wxPD_AUTO_HIDE | wxPD_APP_MODAL | wxPD_SMOOTH | wxPD_ELAPSED_TIME | wxPD_REMAINING_TIME | wxPD_ESTIMATED_TIME);
 
   HPDF_Doc pdf=HPDF_New(hpdf_ErrorHandler,0);
@@ -140,6 +151,8 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
   HPDF_Page_SetWidth(page,PageWidth);
   HPDF_Page_SetHeight(page,PageHeight);
 
+  wxStringToStringHashMap FootprintIndex;
+
   ModuleHeight.Clear();
   ModuleWidth.Clear();
   OffsetLeft.Clear();
@@ -147,10 +160,11 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
   double column1=COLUMN_1;
   double column2=(PaperOrientation==HPDF_PAGE_LANDSCAPE) ? COLUMN_2_L : COLUMN_2;
   int pagecount=0;
+  int pagenr=0;
   DryRun=true;
   wxASSERT(library.length() > 0);
   do {
-    int pagenr=0;
+    pagenr=0;
     double ypos=2*PAGEMARGIN;
     wxASSERT(font!=NULL);
     for (unsigned mod=0; mod<modules.Count(); mod++) {
@@ -741,13 +755,78 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
         if (height<MM(extent_y2-extent_y1))
             height=MM(extent_y2-extent_y1);
       }
+      /* add to index */
+      if (DryRun) {
+        wxString key = modules[mod];
+        if (FootprintIndex.find(key) == FootprintIndex.end())
+          FootprintIndex[key] = wxString::Format(wxT("%d"), pagenr);
+        else
+          FootprintIndex[key] += wxString::Format(wxT(", %d"), pagenr);
+        wxString keywords = GetKeywords(module, false);
+        keywords = keywords.Trim();
+        if (keywords.Length() > 0) {
+          wxArrayString aliases = wxStringTokenize(keywords, wxT(" \t,;"), wxTOKEN_STRTOK);
+          for (size_t a = 0; a < aliases.Count(); a++) {
+            wxString alias = aliases[a];
+            if (alias.CmpNoCase(key) != 0) {
+              if (FootprintIndex.find(alias) == FootprintIndex.end())
+                FootprintIndex[alias] = wxT("see ") + key + wxString::Format(wxT(" (%d)"), pagenr);
+              else
+                FootprintIndex[alias] += wxT(", see ") + key + wxString::Format(wxT(" (%d)"), pagenr);
+            }
+          }
+        }
+      }
       /* prepare for the next line */
       progress.Update(++progresspos);
       ypos+=height+ROWSEPARATION;
     }
-    pagecount=pagenr;
+    pagecount=pagenr+(FootprintIndex.size()+INDEXLINES-1)/INDEXLINES; /* add the pages for the index */
     DryRun=!DryRun;
   } while (!DryRun);
+
+  /* sort the index */
+  wxSortedArrayString SortedIndex(CompareFootprint);
+  for (wxStringToStringHashMap::iterator iter = FootprintIndex.begin(); iter != FootprintIndex.end(); iter++) {
+    wxString line = iter->first + wxT(" : ") + iter->second;
+    SortedIndex.Add(line);
+  }
+  FootprintIndex.clear();
+
+  /* print the index */
+  progress.Update(++progresspos,wxT("Generating the index"));
+  DryRun=false;
+  size_t base=0;
+  while (base<SortedIndex.Count()) {
+    page=HPDF_AddPage(pdf);
+    wxASSERT(page!=NULL);
+    HPDF_Page_SetSize(page,PaperId,PaperOrientation);
+    HPDF_Page_SetWidth(page,PageWidth);
+    HPDF_Page_SetHeight(page,PageHeight);
+    /* page header & footer */
+    HPDF_Page_SetRGBFill(page,0,0,0);
+    PageHeader(pdf,page,library.utf8_str());
+    PageFooter(pdf,page,rawtime,true,++pagenr,pagecount);
+    double xpos=PAGEMARGIN;
+    double ypos=2*PAGEMARGIN+FontSize;
+    HPDF_Font HeaderFont=HPDF_GetFont(pdf,"Helvetica-BoldOblique","WinAnsiEncoding");
+    wxASSERT(HeaderFont!=NULL);
+    HPDF_Page_SetFontAndSize(page,HeaderFont,10);
+    if (base == 0)
+      Text(page,xpos,ypos,"Index",0,HPDF_TALIGN_LEFT);
+    else
+      Text(page,xpos,ypos,"Index (continued)",0,HPDF_TALIGN_LEFT);
+    ypos += 12;
+    HPDF_Page_SetFontAndSize(page,font,FontSize);
+    size_t top=base+INDEXLINES;
+    if (top>SortedIndex.Count())
+      top=SortedIndex.Count();
+    for (size_t idx=base; idx<top; idx++) {
+      Text(page,xpos,ypos,SortedIndex[idx].utf8_str(),0,HPDF_TALIGN_LEFT);
+      ypos += 1.2*FontSize;
+    }
+    base=top;
+  }
 
   HPDF_SaveToFile(pdf,reportfile.mb_str(wxConvFile));
   HPDF_Free(pdf);

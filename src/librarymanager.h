@@ -2,7 +2,7 @@
  *  Librarian for KiCad, a free EDA CAD application.
  *  This file is just the definition of the application.
  *
- *  Copyright (C) 2013-2015 CompuPhase
+ *  Copyright (C) 2013-2017 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -48,6 +48,7 @@ enum {
 	IDM_PINSECTION	= 2300,
 	/* ----- */
 	IDC_FILTER      = 3000,
+    IDC_EXPORT,
 };
 
 class LibraryManagerApp : public wxApp
@@ -63,6 +64,8 @@ public:
         { return strTemplates; }
     wxString GetDocumentationPath() const   /* the path where the documentation is */
         { return strDocumentationPath; }
+	wxString GetUserDataPath() const		/* the path where user data can be stored */
+		{ return strUserDataPath; }
     wxString GetFontFile() const            /* the full path/filename to the font */
         { return strFontFile; }
 	wxString GetINIPath() const				/* the full path/filename to the INI file, or wxEmptyString */
@@ -73,6 +76,7 @@ private:
     wxString strBinPath;
     wxString strTemplates;
     wxString strDocumentationPath;
+    wxString strUserDataPath;
     wxString strFontFile;
 	wxString strINIPath;
 };

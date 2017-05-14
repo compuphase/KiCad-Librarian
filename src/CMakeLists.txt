@@ -11,7 +11,7 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 SET(KiCadLibrarian_USE_CURL "TRUE" CACHE BOOL "Whether to include the remote repository functions, which require CURL")
 SET(KiCadLibrarian_USE_CX3D "TRUE" CACHE BOOL "Whether to include the 3D/VRML support, based on CyberX3D")
 
-FIND_PACKAGE(wxWidgets COMPONENTS base core adv gl QUIET)
+FIND_PACKAGE(wxWidgets COMPONENTS base core adv aui gl QUIET)
 IF(NOT wxWidgets_FOUND)
     FIND_PACKAGE(wxWidgets COMPONENTS mono REQUIRED)
 ENDIF(NOT wxWidgets_FOUND)
@@ -63,6 +63,7 @@ SET(LIBMAN_SRCS librarymanager.cpp          librarymanager.h
                 libraryfunctions.cpp        libraryfunctions.h
                 pdfreport.cpp               pdfreport.h
                 rpn.cpp                     rpn.h
+		unqlite.c                   unqlite.h
                 vrmlsupport.cpp             vrmlsupport.h
                 )
 IF(KiCadLibrarian_USE_CURL)

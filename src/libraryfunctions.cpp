@@ -2,7 +2,7 @@
  *  Librarian for KiCad, a free EDA CAD application.
  *  Utility functions for parsing and writing libraries.
  *
- *  Copyright (C) 2013-2016 CompuPhase
+ *  Copyright (C) 2013-2017 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -43,6 +43,10 @@
 #if !defined min
 	#define min(a, b)		((a) < (b) ? (a) : (b))
 #endif
+
+#include <wx/arrimpl.cpp>
+WX_DEFINE_OBJARRAY(ArrayCoordSize);
+
 
 /* a syntax changed for version 2.9 and higher; to also (still) support
    wxWidgets 2.8, a helper function is conditionally compiled */
@@ -253,7 +257,7 @@ bool SetSection(wxString& string, const wxString& token, const wxString& params)
 	bool instring = false;
 	int level = 0;
 	unsigned idx;
-	for (idx = pos + 1; idx < (int)string.length() && level >= 0; idx++) {
+	for (idx = pos; idx < string.length() && level >= 0; idx++) {
 		if (string[idx] == wxT('(') && !instring)
 			level++;
 		else if (string[idx] == wxT(')') && !instring)
@@ -265,6 +269,38 @@ bool SetSection(wxString& string, const wxString& token, const wxString& params)
 	}
 	string = string.erase(pos, idx - pos - 1);
 	string = string.insert(pos, params);
+	return true;
+}
+
+/** DeleteSection() removes a section in an s-expression.
+ *	The token parameter should not include the opening parenthesis.
+ */
+bool DeleteSection(wxString& string, const wxString& token)
+{
+	wxASSERT(token[0] != wxT('('));
+	int pos = string.Find(wxT("(") + token + wxT(" "));
+	if (pos < 0)
+		return false;
+	wxASSERT(pos < (int)string.length());
+	wxASSERT(string[pos] == wxT('('));
+	unsigned idx = pos + token.length() + 1;	/* +1 for the '(' */
+	wxASSERT(string[idx] == wxT(' '));
+	while (idx < (int)string.length() && string[idx] == wxT(' '))
+		idx++;
+	bool instring = false;
+	int level = 0;
+	while (idx < string.length() && level >= 0) {
+		if (string[idx] == wxT('(') && !instring)
+			level++;
+		else if (string[idx] == wxT(')') && !instring)
+			level--;
+		else if (string[idx] == wxT('"'))
+			instring = !instring;
+		else if (string[idx] == wxT('\\') && string[idx] == wxT('"'))
+			idx++;	/* skip both \ and " */
+        idx++;
+	}
+	string = string.erase(pos, idx - pos - 1);
 	return true;
 }
 
@@ -1409,8 +1445,11 @@ int AdjustPad(wxArrayString& module, FootprintInfo* current, const FootprintInfo
 	}
 
 	CoordPair padsize;
-	char padshape = '\0';									/* pad shape letter for legacy modules */
+	char padshape = '\0';					/* pad shape letter for legacy modules */
 	wxString padshape_s = wxEmptyString;	/* pad shape name for the s-expressions */
+    bool all_pads_smd = true;               /* if all pads are SMD, the module is marked SMD too */
+    bool footprint_smd = false;
+    unsigned footprint_attr_line = -1;
 	double drillsize = 0;
 	long pinnr = 0;
 	unsigned Start = 0;
@@ -1468,9 +1507,10 @@ int AdjustPad(wxArrayString& module, FootprintInfo* current, const FootprintInfo
 							module[i] = wxT("At STD N 00E0FFFF");
 					}
 				}
+                all_pads_smd = all_pads_smd && (drillsize > EPSILON);
 				Matches++;
 			} else if (pinnr > 0 && padshape == 'R' && drillsize < EPSILON
-								 && padsize.Equal(current->PadSize[1], TOLERANCE))
+					   && padsize.Equal(current->PadSize[1], TOLERANCE))
 			{
 				/* this pad matches the secondary pad, go through it again, to adjust it */
 				for (unsigned i = Start; i < module.Count(); i++) {
@@ -1517,6 +1557,10 @@ int AdjustPad(wxArrayString& module, FootprintInfo* current, const FootprintInfo
 			padsize.Set(width, height);
 		} else if (keyword.CmpNoCase(wxT("Dr")) == 0 && inpad) {
 			drillsize = GetTokenDim(&line, true);
+		} else if (keyword.CmpNoCase(wxT("At")) == 0 && !inpad) {
+			wxString type = GetToken(&line);
+            footprint_smd = (type.CmpNoCase(wxT("SMD")) == 0);
+            footprint_attr_line = idx;
 		} else if (keyword.CmpNoCase(wxT("(pad")) == 0) {
 			/* first parse the pad information */
 			wxString field = GetToken(&line);
@@ -1552,15 +1596,21 @@ int AdjustPad(wxArrayString& module, FootprintInfo* current, const FootprintInfo
 				/* this pad matches the primary pad, adjust it */
 				section = wxString::Format(wxT("%.4f %.4f"), MM(adjusted.PadSize[0].GetX()), MM(adjusted.PadSize[0].GetY()));
 				SetSection(line, wxT("size"), section);
-				section = wxString::Format(wxT("%.4f"), MM(adjusted.DrillSize));
-				SetSection(line, wxT("drill"), section);
+                if (adjusted.DrillSize > EPSILON) {
+				    section = wxString::Format(wxT("%.4f"), MM(adjusted.DrillSize));
+				    SetSection(line, wxT("drill"), section);    //??? this fails if there is no drill section yet (a new section must be inserted)
+                } else {
+                    DeleteSection(line, wxT("drill"));
+                }
 				if (adjusted.PadShape == 'S' && pinnr == 1)
 					line.Replace(padshape_s, wxT("rect"), false);
 				else
 					line.Replace(padshape_s, padshape_adj, false);
 				module[idx] = line;
+                all_pads_smd = all_pads_smd && (drillsize > EPSILON);
+                Matches++;
 			} else if (pinnr > 0 && padshape == 'R' && drillsize < EPSILON
-								 && padsize.Equal(current->PadSize[1], TOLERANCE))
+					   && padsize.Equal(current->PadSize[1], TOLERANCE))
 			{
 				/* this pad matches the secondary pad, adjust it */
 				if (padsize.Equal(current->PadSize[1], 0.01))
@@ -1570,14 +1620,44 @@ int AdjustPad(wxArrayString& module, FootprintInfo* current, const FootprintInfo
 				section = wxString::Format(wxT("%.4f %.4f"), MM(padsize.GetX()), MM(padsize.GetY()));
 				SetSection(line, wxT("size"), section);
 				module[idx] = line;
+                Matches++;
 			}
 			padsize.Set(0, 0);
 			padshape = '\0';
 			padshape_s = wxEmptyString;
 			drillsize = 0;
 			pinnr = 0;
+		} else if (keyword.CmpNoCase(wxT("(attr")) == 0) {
+			wxString type = GetToken(&line);
+            footprint_smd = (type.CmpNoCase(wxT("smd")) == 0);
+            footprint_attr_line = idx;
 		}
 	}
+
+    if (all_pads_smd && !footprint_smd) {
+        /* set the module attribute to SMD, first find out the type */
+        int type = VER_INVALID;
+        unsigned idx;
+        for (idx = 0; type == VER_INVALID && idx < module.Count(); idx++) {
+		    wxString line = module[0];  /* check whether this is s-exprssion or legacy */
+            wxString keyword = GetToken(&line);
+            if (keyword.CmpNoCase(wxT("(module")) == 0)
+                type = VER_S_EXPR;
+            else if (keyword.CmpNoCase(wxT("$MODULE")) == 0)
+                type = VER_MM;          /* for the attribute, it does not matter whether the type is VER_MM or VER_MIL */
+        }
+        /* the At or (attr ) line may be absent, in which case it must be inserted */
+        if (footprint_attr_line < 0 && type != VER_INVALID) {
+            /* insert the attribute after the header line */
+            footprint_attr_line = idx + 1;
+            module.Insert(wxT(""), footprint_attr_line);
+        }
+        wxASSERT(footprint_attr_line >= 0 && footprint_attr_line < module.Count());
+		if (type == VER_S_EXPR)
+            module[footprint_attr_line] = wxT("(attr smd)");
+        else
+            module[footprint_attr_line] = wxT("At SMD");
+    }
 
 	/* the module data was adjusted in-place, now also copy the pad/shape
 	   information structure back */
@@ -1990,8 +2070,10 @@ bool ExistFootprint(const wxString& filename, const wxString& name, const wxStri
 }
 
 /** InsertFootprint() adds a footprint to a library.
- *	\param	filename	The target library name; for s-expressions, this is a directory name.
- *	\param	name		The name of the footprint; this becomes a filename for a s-expression library.
+ *	\param	filename	The target library name; for s-expressions, this is a 
+ *                      directory name.
+ *	\param	name		The name of the footprint; this becomes a filename for 
+ *                      an s-expression library.
  *  \param	module		The complete contents of the footprint; this may be in
  *  					either legacy or s-expression format (and it must
  *  					already match the format of the library)
@@ -2341,12 +2423,12 @@ bool RenameFootprint(const wxString& filename, const wxString& oldname, const wx
  *  \param author		The name of the author of the footprint; only used for the
  *  					repository
  *  \param striplink	If true, the link with the template is stripped from the
- *  			 module
+ *  			        module
  *  \param module		The array that will hold the footprint data on output
- *  \param version	The library file format version
+ *  \param version	    The library file format version
  */
 bool LoadFootprint(const wxString& filename, const wxString& name, const wxString& author,
-									 bool striplink, wxArrayString* module, int* version)
+				   bool striplink, wxArrayString* module, int* version)
 {
 	wxASSERT(module != NULL);
 	module->Clear();
@@ -2390,7 +2472,7 @@ bool LoadFootprint(const wxString& filename, const wxString& name, const wxStrin
 				line = file.GetLine(idx);
 				line.Trim(false);			/* remove leading and trailing white-space */
 				line.Trim(true);
-				if (total.length() > 0 && line[0] != wxT(')'))
+				if (total.length() > 0 && line.length() > 0 && line[0] != wxT(')'))
 					total += wxT(" ");	/* put one space between sections/keywords */
 				total += line;
 				if (line.Find(wxT('#')) >= 0)
@@ -2414,8 +2496,12 @@ bool LoadFootprint(const wxString& filename, const wxString& name, const wxStrin
 			total.Trim(false);	/* trim leading */
 			wxASSERT(total[0] == wxT('('));
 			unsigned start = 1;
-			while (start < total.length() && !(total[start] == wxT('(') || total[start] == wxT(')')))
+            bool instring = false;
+			while (start < total.length() && (!(total[start] == wxT('(') || total[start] == wxT(')')) || instring)) {
+                if (total[start] == wxT('"'))
+                    instring = !instring;
 				start++;
+            }
 			line = total.Left(start);
 			line.Trim(true);
 			module->Add(line);
@@ -2424,10 +2510,13 @@ bool LoadFootprint(const wxString& filename, const wxString& name, const wxStrin
 			while (total[0] != wxT(')')) {
 				wxASSERT(total[0] == wxT('('));
 				int level = 0;
+                instring = false;
 				for (start = 1; start < total.length() && level >= 0; start++) {
-					if (total[start] == wxT('('))
+                    if (total[start] == wxT('"'))
+                        instring = !instring;
+					if (total[start] == wxT('(') && !instring)
 						level++;
-					else if (total[start] == wxT(')'))
+					else if (total[start] == wxT(')') && !instring)
 						level--;
 				}
 				line = total.Left(start);
@@ -2986,10 +3075,10 @@ wxString GetVRMLPath(const wxString& library, const wxArrayString& module)
 			rpath = rpath.Mid(idx + 1);
 	} else {
 		/* for local libraries, first check whether the "relative" path actually is
-			 an absolute path (there is nothing to do in that case) */
+		   an absolute path (there is nothing to do in that case) */
 		if (rpath[0] != '/' && (rpath.length() < 3 || rpath[1] != ':' || (rpath[2] != '\\' && rpath[2] != '/'))) {
 			/* so it is a true relative path; strip the filename from the local
-				 library path, add the "packages3d" path and the relative path */
+			   library path, add the "packages3d" path and the relative path */
 			int idx = library.Find('/', true);
 			if (idx < 0)
 				idx = library.Find('\\', true);
@@ -3004,6 +3093,9 @@ wxString GetVRMLPath(const wxString& library, const wxArrayString& module)
 		#if DIRSEP_CHAR != '\\'
 			rpath.Replace(wxT("\\"), wxT(DIRSEP_STR));
 		#endif
+        /* add the extension, if not present */
+        if (rpath.Length() < 4 || rpath.Right(4).CmpNoCase(wxT(".wrl")) != 0)
+            rpath = rpath + wxT(".wrl");
 	}
 
 	return rpath;
@@ -3605,6 +3697,46 @@ wxString GetKeywords(const wxArrayString& module, bool symbolmode)
 		}
 	}
 	return wxEmptyString;
+}
+
+/* For symbols and footprints */
+bool SetKeywords(wxArrayString& module, const wxString& keywords, bool symbolmode)
+{
+	for (unsigned idx = 0; idx < module.Count(); idx++) {
+		wxString line = module[idx];
+		wxString keyword = GetToken(&line);
+		if (!symbolmode && keyword.CmpNoCase(wxT("Kw")) == 0) {
+			module[idx] = wxT("Kw ") + keywords;
+			return true;
+		} else if (!symbolmode && keyword.Cmp(wxT("(tags")) == 0) {
+            module[idx] = wxT("(tags \"") + keywords + wxT("\")");
+			return true;
+		} else if (symbolmode && keyword.CmpNoCase(wxT("K")) == 0) {
+			if (keywords.length() == 0)
+				module.RemoveAt(idx);
+			else
+				module[idx] = wxT("K ") + keywords;
+			return true;
+		}
+	}
+	/* if a symbol did not already have aliases, they should be inserted */
+	if (keywords.length() == 0)
+		return true;	/* nothing to insert */
+	for (unsigned idx = 0; idx < module.Count(); idx++) {
+		wxString line = module[idx];
+		wxString keyword = GetToken(&line);
+		if (!symbolmode && keyword.CmpNoCase(wxT("$MODULE")) == 0) {
+			module.Insert(wxT("Kw ") + keywords, idx + 1);
+			return true;
+		} else if (!symbolmode && keyword.Cmp(wxT("(module")) == 0) {
+			module.Insert(wxT("(tags \"") + keywords + wxT("\")"), idx + 1);
+			return true;
+        } else if (symbolmode && keyword.CmpNoCase(wxT("$ENDCMP")) == 0) {
+			module.Insert(wxT("K ") + keywords, idx);
+			return true;
+		}
+	}
+	return false;
 }
 
 /* For symbols */
@@ -5002,6 +5134,16 @@ bool TranslatePadInfo(wxArrayString* module, FootprintInfo* info)
         }
     }
 
+    /* copy pad outline (coordinates) into the footprint information, for ease of export */
+	for (int pinnr = 1; pinnr < padcount; pinnr++) {
+		if (padlist[pinnr].startidx > 0) {
+            CoordSize cs(padlist[pinnr].x - padlist[pinnr].width / 2,
+                         padlist[pinnr].y - padlist[pinnr].height / 2,
+                         padlist[pinnr].width, padlist[pinnr].height);
+            info->Pads.Add(cs);
+        }
+    }
+
 	delete[] padlist;
 	return true;
 }
@@ -5207,6 +5349,9 @@ bool InsertSymbol(const wxString& filename, const wxString& name, const wxArrayS
 					file.Close();
 					return false;
 				}
+            } else if (line[0] == wxT('#') && line.CmpNoCase(wxT("#End Library")) == 0) {
+                /* if not yet broken out of the loop, the symbol must be at the end of the list */
+                insertionpoint = idx;
 			}
 		}
 		/* move the insertion point up to above the comment (there usually is one) */
@@ -5222,7 +5367,7 @@ bool InsertSymbol(const wxString& filename, const wxString& name, const wxArrayS
             wxString tmp = symbol[linenr];
 			file.InsertLine(tmp, insertionpoint + linenr);
 			linenr += 1;
-			if (symbol[linenr-1].CmpNoCase(wxT("ENDDEF")) == 0)
+			if (tmp.CmpNoCase(wxT("ENDDEF")) == 0)
 				break;
 		}
 		file.Write();
@@ -5260,7 +5405,10 @@ bool InsertSymbol(const wxString& filename, const wxString& name, const wxArrayS
 						file.Close();
 						return false;
 					}
-				}
+                } else if (line[0] == wxT('#') && line.CmpNoCase(wxT("#End Library")) == 0) {
+                    /* if not yet broken out of the loop, the symbol must be at the end of the list */
+                    insertionpoint = idx;
+                }
 			}
 			/* move the insertion point up to above the comment (there usually is one) */
 			while (insertionpoint > 1) {

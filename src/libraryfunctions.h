@@ -2,7 +2,7 @@
  *  Librarian for KiCad, a free EDA CAD application.
  *  Utility functions for parsing and writing libraries.
  *
- *  Copyright (C) 2013-2015 CompuPhase
+ *  Copyright (C) 2013-2017 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -21,6 +21,7 @@
 #ifndef LIBRARYFUNCTIONS_H
 #define LIBRARYFUNCTIONS_H
 
+#include <wx/dynarray.h>
 #include "rpn.h"
 
 #define TOLERANCE	0.03		/* in mm, tolerance for matching pad and drill sizes */
@@ -76,6 +77,9 @@ public:
 	double GetWidth() const { return m_width; }
 	double GetHeight() const { return m_height; }
 
+    double GetMidX() const { return m_x + m_width / 2; }
+    double GetMidY() const { return m_y + m_height / 2; }
+
 	double GetLeft() const { return m_x; }
 	double GetTop() const { return m_y; }
 	double GetRight() const { return m_x + m_width; }
@@ -100,6 +104,7 @@ enum {	/* module format version */
 	VER_S_EXPR,
 };
 
+WX_DECLARE_OBJARRAY(CoordSize, ArrayCoordSize);
 
 class FootprintInfo {
 public:
@@ -122,6 +127,7 @@ public:
 		Type = type;
 		for (int idx = 0; idx < 2; idx++)
 			PadRightAngle[idx] = false;
+        Pads.Clear();
 	}
 
 	/* The difference between pitch and span is that the pitch is between
@@ -130,7 +136,7 @@ public:
 	   be between pins 1 and 16 (or between pins 8 and 9, which is the same
 	   value). */
 
-	double Pitch;	/* pad pitch */
+	double Pitch;	        /* pad pitch */
 	CoordPair PitchPins[2];	/* the anchor pins for the pitch */
 	bool PitchVertical;		/* whether the pitch is in the vertical direction (instead of horizontal) */
 	bool PitchValid;		/* is the pitch/pad layout supported? */
@@ -149,6 +155,8 @@ public:
 	bool PadRightAngle[2];	/* true if rotated by 90 or 270 degrees */
 	char PadShape;
 	double DrillSize;
+
+    ArrayCoordSize Pads;  /* array with pad positions (outlines) */
 
 	/* for 3-pin SOT23, the pitch is measured between pins 1 and 3, while for
 	   all others, it is between pins 1 and 2; for a 5-pin SOT23, there is a
@@ -295,6 +303,7 @@ wxString GetTemplateName(const wxArrayString& module);
 wxString GetDescription(const wxArrayString& module, bool symbolmode);
 bool SetDescription(wxArrayString& module, const wxString& description, bool symbolmode);
 wxString GetKeywords(const wxArrayString& module, bool symbolmode);
+bool SetKeywords(wxArrayString& module, const wxString& keywords, bool symbolmode);
 bool GetBodySize(const wxArrayString& module, BodyInfo* info, bool symbolmode, bool unit_mm);
 bool GetTextLabelSize(const wxArrayString& module, LabelInfo* info, bool symbolmode, bool unit_mm);
 void SetTextLabelSize(wxArrayString& module, const LabelInfo& info, bool symbolmode, bool unit_mm);

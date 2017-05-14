@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Feb 16 2016)
+// C++ code generated with wxFormBuilder (version Feb 14 2017)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO "NOT" EDIT THIS FILE!
@@ -24,7 +24,8 @@
 #include <wx/sizer.h>
 #include <wx/button.h>
 #include <wx/panel.h>
-#include <wx/toolbar.h>
+#include <wx/aui/aui.h>
+#include <wx/aui/auibar.h>
 #include <wx/stattext.h>
 #include <wx/radiobut.h>
 #include <wx/textctrl.h>
@@ -106,14 +107,14 @@ class AppFrame : public wxFrame
 		wxChoice* m_choiceModuleRight;
 		wxListCtrl* m_listModulesRight;
 		wxPanel* m_panelBottom;
-		wxToolBar* m_toolBar;
-		wxToolBarToolBase* m_toolZoomIn; 
-		wxToolBarToolBase* m_toolZoomOut; 
-		wxToolBarToolBase* m_tool3DView; 
-		wxToolBarToolBase* m_toolMeasure; 
-		wxToolBarToolBase* m_toolDetailsPanel; 
-		wxToolBarToolBase* m_toolLeftFootprint; 
-		wxToolBarToolBase* m_toolRightFootprint; 
+		wxAuiToolBar* m_toolBar;
+		wxAuiToolBarItem* m_toolZoomIn; 
+		wxAuiToolBarItem* m_toolZoomOut; 
+		wxAuiToolBarItem* m_tool3DView; 
+		wxAuiToolBarItem* m_toolMeasure; 
+		wxAuiToolBarItem* m_toolDetailsPanel; 
+		wxAuiToolBarItem* m_toolLeftFootprint; 
+		wxAuiToolBarItem* m_toolRightFootprint; 
 		wxSplitterWindow* m_splitterViewPanel;
 		wxPanel* m_panelView;
 		wxScrolledWindow* m_panelSettings;
@@ -354,6 +355,8 @@ class DlgOptions : public wxDialog
 		wxStaticLine* m_staticline2;
 		wxCheckBox* m_chkConfirmOverwrite;
 		wxCheckBox* m_chkConfirmDelete;
+		wxStaticLine* m_staticline4;
+		wxCheckBox* m_chkReloadSession;
 		wxStdDialogButtonSizer* m_sdbSizer;
 		wxButton* m_sdbSizerOK;
 		wxButton* m_sdbSizerCancel;

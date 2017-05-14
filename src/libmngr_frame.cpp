@@ -3,7 +3,7 @@
  *  This file contains the code for the main frame, which is almost all of the
  *  user-interface code.
  *
- *  Copyright (C) 2013-2016 CompuPhase
+ *  Copyright (C) 2013-2017 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -56,6 +56,10 @@
 #include <wx/utils.h>
 #include <math.h>
 
+extern "C" {
+  #include "unqlite.h"
+}
+
 #include "res/logo32.xpm"
 #include "res/logo64.xpm"
 
@@ -83,7 +87,7 @@
 
 #define IMG_WIDTH_FP	128
 #define IMG_HEIGHT_FP   128
-#define IMG_SCALE_FP	80
+#define IMG_SCALE_FP	96
 #define IMG_WIDTH_SYM   160
 #define IMG_HEIGHT_SYM  160
 #define IMG_SCALE_SYM   450
@@ -119,7 +123,7 @@ AppFrame(parent)
 		m_btnRevertPart->SetWindowStyle(m_btnRevertPart->GetWindowStyle() | wxBORDER_NONE);
 	#endif
 
-	wxAcceleratorEntry entries[8];
+	wxAcceleratorEntry entries[9];
 	entries[0].Set(wxACCEL_CTRL, '+', IDT_ZOOMIN);  	// Ctrl-+
 	entries[1].Set(wxACCEL_CTRL, '=', IDT_ZOOMIN);  	// On US keyboards, Ctrl-= is needed instead of Ctrl-+
 	entries[2].Set(wxACCEL_CTRL, WXK_NUMPAD_ADD, IDT_ZOOMIN);
@@ -128,11 +132,13 @@ AppFrame(parent)
 	entries[5].Set(wxACCEL_CTRL, 'S', IDT_SAVE);
 	entries[6].Set(wxACCEL_CTRL, 'Z', IDT_REVERT);
 	entries[7].Set(wxACCEL_CTRL, 'V', IDM_PASTEGENERAL);
+    entries[8].Set(wxACCEL_ALT, 'X', IDC_EXPORT);
 	wxAcceleratorTable accel(sizearray(entries), entries);
 	SetAcceleratorTable(accel);
 
 	/* add bindings for commands that are not attached to a menu item or button */
 	Connect(IDM_PASTEGENERAL, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(libmngrFrame::OnPasteGeneral));
+	Connect(IDC_EXPORT, wxEVT_COMMAND_MENU_SELECTED, wxCommandEventHandler(libmngrFrame::OnExportGeneral));
 
 	/* restore application size */
 	wxFileConfig *config = new wxFileConfig(APP_NAME, VENDOR_NAME, theApp->GetINIPath());
@@ -168,6 +174,7 @@ AppFrame(parent)
 	config->Read(wxT("settings/disabletemplate"), &DontRebuildTemplate, false);
 	config->Read(wxT("settings/confirmoverwrite"), &ConfirmOverwrite, true);
 	config->Read(wxT("settings/confirmdelete"), &ConfirmDelete, true);
+	config->Read(wxT("settings/reloadsession"), &ReloadSession, true);
 	ShowPinNumbers = true;
 	ShowMeasurements = true;
 
@@ -200,14 +207,18 @@ AppFrame(parent)
 	int widths[] = { -1, EDITF_WIDTH };
 	m_statusBar->SetFieldsCount(2, widths);
 	m_statusBar->SetStatusText(wxT("(no filter)"), 1);
-	m_editFilter = new wxTextCtrl(m_statusBar, IDC_FILTER, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+	m_editFilter = new wxSearchCtrl(m_statusBar, IDC_FILTER, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxTE_PROCESS_ENTER);
+    m_editFilter->SetDescriptiveText(wxT("keywords"));
 	m_editFilter->SetToolTip(wxT("Enter one or more keywords to filter the footprints/symbols on"));
+    m_editFilter->ShowCancelButton(true);
 	wxRect rect;
 	m_statusBar->GetFieldRect(1, rect);
 	m_editFilter->SetSize(rect.GetLeft(), rect.GetTop(), rect.GetWidth(), rect.GetHeight(), 0);
 	m_editFilter->Hide();
 	m_editFilter->Connect(wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler(libmngrFrame::OnFilterChange), NULL, this);
 	m_editFilter->Connect(wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler(libmngrFrame::OnFilterEnter), NULL, this);
+	m_editFilter->Connect(wxEVT_SEARCHCTRL_SEARCH_BTN, wxCommandEventHandler(libmngrFrame::OnFilterEnter), NULL, this);
+	m_editFilter->Connect(wxEVT_SEARCHCTRL_CANCEL_BTN, wxCommandEventHandler(libmngrFrame::OnFilterCancel), NULL, this);
 
 	/* configure the list controls (columns) */
 	m_listModulesLeft->InsertColumn(0, wxT("Part"), wxLIST_FORMAT_LEFT);
@@ -290,8 +301,26 @@ void libmngrFrame::OnCloseApp(wxCloseEvent& event)
         sceneGraph.clear();
     #endif
 
-	wxSize size = GetSize();
 	wxFileConfig *config = new wxFileConfig(APP_NAME, VENDOR_NAME, theApp->GetINIPath());
+
+    /* save the currently selected libraries and footprints/symbols */
+	int idx = m_choiceModuleLeft->GetCurrentSelection();
+	if (idx >= 0 && idx < (int)m_choiceModuleLeft->GetCount()) {
+		wxString name = m_choiceModuleLeft->GetString(idx);
+		if (name.length() > 0 && name[0] == wxT('('))
+			name = wxEmptyString;
+        config->Write(wxT("session/lib1"), name);
+	}
+	idx = m_choiceModuleRight->GetCurrentSelection();
+	if (idx >= 0 && idx < (int)m_choiceModuleRight->GetCount()) {
+		wxString name = m_choiceModuleRight->GetString(idx);
+		if (name.length() > 0 && name[0] == wxT('('))
+			name = wxEmptyString;
+        config->Write(wxT("session/lib2"), name);
+	}
+
+    /* save window size and settings */
+	wxSize size = GetSize();
 	config->Write(wxT("settings/framewidth"), size.GetWidth());
 	config->Write(wxT("settings/frameheight"), size.GetHeight());
 
@@ -301,7 +330,7 @@ void libmngrFrame::OnCloseApp(wxCloseEvent& event)
 	config->Write(wxT("settings/syncmode"), SyncMode);
 
 	config->Write(wxT("settings/splitter"), m_splitter->GetSashPosition());
-	if (m_splitterViewPanel->IsSplit() && m_toolBar->GetToolState(IDT_DETAILSPANEL)) {
+	if (m_splitterViewPanel->IsSplit() && m_toolBar->GetToolToggled(IDT_DETAILSPANEL)) {
 		size = m_splitterViewPanel->GetSize();
 		int pos = size.GetWidth() - m_splitterViewPanel->GetSashPosition();
 		config->Write(wxT("settings/splitterpanel"), pos);
@@ -309,7 +338,7 @@ void libmngrFrame::OnCloseApp(wxCloseEvent& event)
 		config->Write(wxT("settings/splitterpanel"), -1);
 	}
 
-	config->Write(wxT("display/measurements"), m_toolBar->GetToolState(IDT_MEASUREMENTS));
+	config->Write(wxT("display/measurements"), m_toolBar->GetToolToggled(IDT_MEASUREMENTS));
 
 	delete config;
 	event.Skip();
@@ -701,8 +730,7 @@ void libmngrFrame::OnNewSymbol(wxCommandEvent& /*event*/)
 		/* run over the expressions to create the initial shape */
 		RPNexpression rpn;
 		wxString description = GetTemplateHeaderField(dlg.GetTemplateName(), wxT("brief"), SymbolMode);
-		SetVarDefaults(&rpn, dlg.GetTemplateName(), dlg.GetSymbolName(), description,
-									 dlg.GetSymbolRef());
+		SetVarDefaults(&rpn, dlg.GetTemplateName(), dlg.GetSymbolName(), description, dlg.GetSymbolRef());
 		/* create default pin info structure from the pin count */
 		int pins = 0;
 		rpn.Set("PT");
@@ -948,8 +976,6 @@ void libmngrFrame::ToggleMode(bool symbolmode)
 	wxBoxSizer* bsizer;
 	wxFlexGridSizer* fgSidePanel = dynamic_cast<wxFlexGridSizer*>(m_panelSettings->GetSizer());
 	wxASSERT(fgSidePanel != 0);
-	fgSidePanel->Show(m_lblAlias, SymbolMode);
-	fgSidePanel->Show(m_txtAlias, SymbolMode);
 	fgSidePanel->Show(m_lblFootprintFilter, SymbolMode);
 	fgSidePanel->Show(m_txtFootprintFilter, SymbolMode);
 	fgSidePanel->Show(m_lblPinNames, SymbolMode);
@@ -981,6 +1007,12 @@ void libmngrFrame::ToggleMode(bool symbolmode)
     fgSidePanel->Layout();
 	m_panelSettings->Refresh();
 
+    /* the "keywords" field for footprints is used for aliases in symbol mode */
+	if (SymbolMode)
+		m_lblAlias->SetLabel(wxT("Alias"));
+	else
+		m_lblAlias->SetLabel(wxT("Keywords"));
+
 	/* "pins" is for symbols what "pads" is for footprints */
 	if (SymbolMode)
 		m_lblPadCount->SetLabel(wxT("Pin count"));
@@ -993,6 +1025,7 @@ void libmngrFrame::ToggleMode(bool symbolmode)
 	m_menubar->Enable(IDM_REPORTFOOTPRINT, !SymbolMode);
 	m_menubar->Enable(IDM_REPORTSYMBOL, SymbolMode);
 	m_toolBar->EnableTool(IDT_MEASUREMENTS, !SymbolMode);
+    m_toolBar->Refresh();
 
 	/* use a different background colour for both modes */
 	if (SymbolMode)
@@ -1004,6 +1037,22 @@ void libmngrFrame::ToggleMode(bool symbolmode)
 	OffsetX = OffsetY = 0;
 	EnableButtons(0);
 	CollectAllLibraries();
+    if (ReloadSession) {
+	    wxFileConfig *config = new wxFileConfig(APP_NAME, VENDOR_NAME, theApp->GetINIPath());
+	    wxString name = config->Read(wxT("session/lib1"), wxEmptyString);
+        int idx = m_choiceModuleLeft->FindString(name);
+        if (idx >= 0) 
+            m_choiceModuleLeft->SetSelection(idx);
+	    name = config->Read(wxT("session/lib2"), wxEmptyString);
+        idx = m_choiceModuleRight->FindString(name);
+        if (idx >= 0) 
+            m_choiceModuleRight->SetSelection(idx);
+        delete config;        
+        HandleLibrarySelect(m_choiceModuleLeft, m_listModulesLeft, LEFTPANEL);
+        HandleLibrarySelect(m_choiceModuleRight, m_listModulesRight, RIGHTPANEL);
+        Raise();
+        ReloadSession = false;
+    }
 	UpdateDetails(0);
 	m_panelView->Refresh();
 }
@@ -1066,6 +1115,7 @@ void libmngrFrame::OnUIOptions(wxCommandEvent& /*event*/)
 		config->Read(wxT("settings/disabletemplate"), &DontRebuildTemplate, false);
 		config->Read(wxT("settings/confirmoverwrite"), &ConfirmOverwrite, true);
 		config->Read(wxT("settings/confirmdelete"), &ConfirmDelete, true);
+	    config->Read(wxT("settings/reloadsession"), &ReloadSession, true);
 		delete config;
 
 	    if (SymbolMode)
@@ -1092,6 +1142,7 @@ void libmngrFrame::OnCompareMode(wxCommandEvent& /*event*/)
 	m_toolBar->EnableTool(IDT_RIGHTFOOTPRINT, CompareMode);
 	m_toolBar->ToggleTool(IDT_LEFTFOOTPRINT, CompareMode);
 	m_toolBar->ToggleTool(IDT_RIGHTFOOTPRINT, CompareMode);
+    m_toolBar->Refresh();
 	m_radioViewLeft->Enable(CompareMode);
 	m_radioViewRight->Enable(CompareMode);
 	m_radioViewLeft->SetValue(true);
@@ -1175,24 +1226,27 @@ void libmngrFrame::OnSyncMode(wxCommandEvent& /*event*/)
 
 void libmngrFrame::OnFilterToggle(wxCommandEvent& /*event*/)
 {
-	if (m_editFilter->IsShown()) {
+	if (m_editFilter->IsShown() && m_editFilter->HasFocus()) {
 		wxString filter = m_editFilter->GetValue();
 		m_editFilter->SetValue(wxEmptyString);  /* clear the filter */
 		m_editFilter->Hide();
-		if (filter.Length() > 0) {
+		if (filter.Length() > 0 || FilterChanged) {
 			HandleLibrarySelect(m_choiceModuleLeft, m_listModulesLeft, BOTHPANELS);
 			HandleLibrarySelect(m_choiceModuleRight, m_listModulesRight, BOTHPANELS);
 			SynchronizeLibraries(m_listModulesLeft, m_listModulesRight);
 			m_panelView->Refresh();
 		}
+    } else if (m_editFilter->IsShown()) {
+        m_editFilter->SetSelection(-1, -1);
+		m_editFilter->SetFocus();
 	} else {
 		m_editFilter->SetValue(wxEmptyString);  /* should already be empty */
 		m_editFilter->SetBackgroundColour(ENABLED);
 		m_editFilter->Show();
 		m_editFilter->SetFocus();
-		FilterChanged = false;
 	}
 	m_menubar->Check(IDM_FILTER, m_editFilter->IsShown());
+	FilterChanged = false;
 }
 
 void libmngrFrame::OnStatusBarDblClk(wxMouseEvent& event)
@@ -1238,6 +1292,19 @@ void libmngrFrame::OnFilterEnter(wxCommandEvent& /*event*/)
 	}
 }
 
+void libmngrFrame::OnFilterCancel(wxCommandEvent& /*event*/)
+{
+	wxString filter = m_editFilter->GetValue();
+	m_editFilter->SetValue(wxEmptyString);  /* clear the filter */
+	m_editFilter->Hide();
+	if (filter.Length() > 0 || FilterChanged) {
+		HandleLibrarySelect(m_choiceModuleLeft, m_listModulesLeft, BOTHPANELS);
+		HandleLibrarySelect(m_choiceModuleRight, m_listModulesRight, BOTHPANELS);
+		SynchronizeLibraries(m_listModulesLeft, m_listModulesRight);
+		m_panelView->Refresh();
+	}
+}
+
 void libmngrFrame::OnHelp(wxCommandEvent& /*event*/)
 {
 	wxString filename = theApp->GetDocumentationPath() + wxT(DIRSEP_STR) wxT("kicadlibrarian.pdf");
@@ -1266,13 +1333,11 @@ void libmngrFrame::OnAbout(wxCommandEvent& /*event*/)
 	info.SetName(wxT("KiCad Librarian"));
 	info.SetVersion(wxT(SVN_REVSTR));
 	info.SetDescription(description);
-	info.SetCopyright(wxT("(C) 2013-2016 ITB CompuPhase"));
+	info.SetCopyright(wxT("(C) 2013-2017 ITB CompuPhase"));
 	info.SetIcon(icon);
 	info.SetWebSite(wxT("http://www.compuphase.com/"));
-	info.AddDeveloper(wxT("The logo of KiCad Librarian is designed by http://icons8.com/"));
-	info.AddDeveloper(wxT("KiCad Librarian uses Haru PDF for the reports"));
-	info.AddDeveloper(wxT("KiCad Librarian uses Curl to access a remote repository"));
-	info.AddDeveloper(wxT("KiCad Librarian uses the wxWidgets GUI library"));
+	info.AddArtist(wxT("The logo of KiCad Librarian is designed by http://icons8.com/"));
+	info.AddDeveloper(wxT("KiCad Librarian uses Haru PDF for the reports, Curl to access a remote repository and the wxWidgets GUI library"));
 	wxAboutBox(info);
 }
 
@@ -1991,6 +2056,35 @@ void libmngrFrame::OnViewCentre(wxMouseEvent& /*event*/)
 	m_panelView->Refresh();
 }
 
+void libmngrFrame::OnExportGeneral(wxCommandEvent& /*event*/)
+{
+    wxString leftpath, rightpath;
+	wxString leftmod = GetSelection(m_listModulesLeft, m_choiceModuleLeft, &leftpath);
+	wxString rightmod = GetSelection(m_listModulesRight, m_choiceModuleRight, &rightpath);
+	wxASSERT(leftmod.IsEmpty() || rightmod.IsEmpty());
+	wxString modname, path;
+    if (leftmod.length() > 0) {
+        modname = leftmod;
+        path = leftpath;
+    } else {
+        modname = rightmod;
+        path = rightpath;
+    }
+    if (modname.IsEmpty())
+        return; /* nothing to export */
+
+    wxString libname = path.AfterLast(wxT(DIRSEP_CHAR));
+    path = path.BeforeLast(wxT(DIRSEP_CHAR)) + wxT(DIRSEP_STR);   /* strip filename from the full path */
+
+	if (SymbolMode) {
+		ExportSymbolBitmap(modname);
+	} else {
+        ExportFootprintBitmap(modname, false, 0, path + wxT("icons"));
+        ExportFootprintBitmap(modname, true, 1000, path + wxT("layouts"));
+        CacheMetadata(libname, modname, true, PartData[0], Footprint[0]);
+    }
+}
+
 wxString libmngrFrame::ExportSymbolBitmap(const wxString& modname)
 {
 	/* save a few settings, these are changed only for the image output */
@@ -2043,7 +2137,7 @@ wxString libmngrFrame::ExportSymbolBitmap(const wxString& modname)
 	return path;
 }
 
-wxString libmngrFrame::ExportFootprintBitmap(const wxString& modname)
+wxString libmngrFrame::ExportFootprintBitmap(const wxString& modname, bool bluescreen, int dpi, const wxString& DestPath)
 {
 	/* save a few settings, these are changed only for the image output */
 	bool showlabels = ShowLabels;
@@ -2051,30 +2145,53 @@ wxString libmngrFrame::ExportFootprintBitmap(const wxString& modname)
 	bool pinnumbers = ShowPinNumbers;
 	bool measurements = ShowMeasurements;
 	bool cmpmode = CompareMode;
-	double scale = Scale;
+    bool outline = OutlineMode;
+	double scale = Scale;   /* save, to be restored later */
 	double offsx = OffsetX;
 	double offsy = OffsetY;
 	ShowLabels = DrawCentreCross = ShowPinNumbers = ShowMeasurements = CompareMode = false;
+    OutlineMode = bluescreen;
 	OffsetX = OffsetY = 0;
+    int ImgWidth = IMG_WIDTH_FP;
+    int ImgHeight = IMG_HEIGHT_FP;
 
-	/* estimate scale from body size */
 	double padsize = Footprint[0].PadSize[0].GetX() <= Footprint[0].PadSize[0].GetY() ? Footprint[0].PadSize[0].GetX() : Footprint[0].PadSize[0].GetY();
-	double size = (BodySize[0].BodyLength >= BodySize[0].BodyWidth) ? BodySize[0].BodyLength : BodySize[0].BodyWidth;
-	if (size < Footprint[0].Pitch + padsize)
-		size = Footprint[0].Pitch + padsize;
-	if (size < Footprint[0].SpanHor + padsize)
-		size = Footprint[0].SpanHor + padsize;
-	if (size < Footprint[0].SpanVer + padsize)
-		size = Footprint[0].SpanVer + padsize;
-	Scale = IMG_SCALE_FP / size;
+    double hsize = BodySize[0].BodyWidth;
+	double vsize = BodySize[0].BodyLength;
+	if (hsize < Footprint[0].Pitch + padsize)
+		hsize = Footprint[0].Pitch + padsize;
+	if (hsize < Footprint[0].SpanHor + padsize)
+		hsize = Footprint[0].SpanHor + padsize;
+	if (vsize < Footprint[0].Pitch + padsize)
+		vsize = Footprint[0].Pitch + padsize;
+	if (vsize < Footprint[0].SpanVer + padsize)
+		vsize = Footprint[0].SpanVer + padsize;
+    if (dpi == 0) {
+	    /* estimate scale from body size */
+        if (hsize > vsize)
+	        Scale = IMG_SCALE_FP / hsize;
+        else
+	        Scale = IMG_SCALE_FP / vsize;
+        if (Scale > 600 / 25.4)
+            Scale = 600 / 25.4; /* limit scale */
+    } else {
+        Scale = (double)dpi / 25.4;
+        ImgWidth = (int)(hsize * Scale * 1.25);
+        ImgHeight = (int)(vsize * Scale * 1.25);
+    }
 
 	/* create the bitmaps and DCs */
-	wxBitmap *bmp = new wxBitmap(IMG_WIDTH_FP, IMG_HEIGHT_FP, 24);
+	wxBitmap *bmp = new wxBitmap(ImgWidth, ImgHeight, 24);
 	wxMemoryDC *mc = new wxMemoryDC(*bmp);
+    if (bluescreen)
+        mc->SetBackground(wxBrush(wxColour(0,0,255)));
+    else
+        mc->SetBackground(*wxBLACK_BRUSH);
+    mc->Clear();
 	wxGraphicsContext *gc = wxGraphicsContext::Create(*mc);
 
 	int transp[2] = { wxALPHA_OPAQUE, wxALPHA_OPAQUE };
-	DrawFootprints(gc, IMG_WIDTH_FP / 2, IMG_HEIGHT_FP / 2, transp);
+	DrawFootprints(gc, ImgWidth / 2, ImgHeight / 2, transp);
 	delete gc;
 	delete mc;
 
@@ -2085,8 +2202,38 @@ wxString libmngrFrame::ExportFootprintBitmap(const wxString& modname)
 		path[idx] = '-';
 	while ((idx = path.Find(' ')) >= 0)
 		path[idx] = '_';
-	path = wxStandardPaths::Get().GetTempDir() + wxT(DIRSEP_STR) + path + wxT(".png");
-	bmp->SaveFile(path, wxBITMAP_TYPE_PNG);
+    path += wxT(".png");
+    wxString fullpath = DestPath.IsEmpty() ? wxStandardPaths::Get().GetTempDir() : DestPath;
+    int len = fullpath.Length();
+    wxASSERT(len > 0);
+    if (fullpath[len - 1] != DIRSEP_CHAR)
+        fullpath += wxT(DIRSEP_STR);
+    fullpath += path;
+
+    if (bluescreen) {
+        wxImage img = bmp->ConvertToImage();
+        img.InitAlpha();
+        /* apply bluescreen */
+        wxASSERT(img.HasAlpha());
+        for (int iy = 0; iy < img.GetHeight(); iy++) {
+            unsigned char* pix = img.GetData() + iy * 3 * img.GetWidth();
+            unsigned char* msk = img.GetAlpha() + iy * img.GetWidth();
+            for (int ix = 0; ix < img.GetWidth(); ix++) {
+                #define K0 16
+                #define K1 16
+                #define K2 16
+                int alpha = (K0 * pix[1] - K1 * pix[2] + (K2 * 255)) / 16;
+                wxASSERT(alpha >= 0);
+                *msk = (alpha < 255) ? alpha : 255;
+                pix[2] = (pix[2] <= pix[1]) ? pix[2] : pix[1];
+                pix += 3;
+                msk += 1;
+            }
+        }
+        img.SaveFile(fullpath, wxBITMAP_TYPE_PNG);
+    } else {
+        bmp->SaveFile(fullpath, wxBITMAP_TYPE_PNG);
+    }
 	delete bmp;
 
 	/* clean up */
@@ -2098,8 +2245,9 @@ wxString libmngrFrame::ExportFootprintBitmap(const wxString& modname)
 	OffsetX = offsx;
 	OffsetY = offsy;
 	ShowMeasurements = measurements;
+    OutlineMode = outline;
 
-	return path;
+	return fullpath;
 }
 
 /** Draws a string using the plotter font, using the current pen. The brush is
@@ -2150,9 +2298,9 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
 
 	for (int fp = 0; fp < 2; fp++) {
 		/* check whether the symbol is visible */
-		if (fp == 0 && CompareMode && !m_toolBar->GetToolState(IDT_LEFTFOOTPRINT))
+		if (fp == 0 && CompareMode && !m_toolBar->GetToolToggled(IDT_LEFTFOOTPRINT))
 			continue;
-		if (fp == 1 && (!CompareMode || !m_toolBar->GetToolState(IDT_RIGHTFOOTPRINT)))
+		if (fp == 1 && (!CompareMode || !m_toolBar->GetToolToggled(IDT_RIGHTFOOTPRINT)))
 			continue;
 		if (PartData[fp].Count() == 0)
 			continue;
@@ -2168,392 +2316,406 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
 			clrText.Set(128, 32, 128, transp[fp]);
 			clrHiddenText.Set(192, 128, 192, transp[fp]);
 		}
-		bool indraw = false;
-		double pinname_offset = size_pinshape;
-		bool show_pinnr = true, show_pinname = true;
-		for (int idx = 0; idx < (int)PartData[fp].Count(); idx++) {
-			wxString line = PartData[fp][idx];
-            wxASSERT(line.Length() > 0);
-			if (line[0] == wxT('#'))
-				continue;
-			wxString token = GetToken(&line);
-			if (token.CmpNoCase(wxT("DEF")) == 0) {
-				GetToken(&line);	/* ignore name */
-				GetToken(&line);	/* ignore designator prefix */
-				GetToken(&line);	/* ignore reserved field */
-				pinname_offset = GetTokenLong(&line) * scale;
-				show_pinnr = GetToken(&line) == wxT('Y');
-				show_pinname = GetToken(&line) == wxT('Y');
-			} else if (token[0] == wxT('F') && token.Length() >= 2 && isdigit(token[1])) {
-				if (ShowLabels) {
-					wxString name = GetToken(&line);
-					double x = midx + GetTokenLong(&line) * scale;
-					double y = midy - GetTokenLong(&line) * scale;
-					long rawsize = GetTokenLong(&line);
-					double size = rawsize * scale;
-					wxString orient = GetToken(&line);
-					int angle = (orient == wxT('V')) ? 90 : 0;
-					wxString visflag = GetToken(&line);
-					bool visible = (visflag == wxT('V'));
-					wxString align = GetToken(&line);
-					int horalign = CXF_ALIGNCENTRE;
-					switch ((int)align[0]) {
-					case 'L':
-						horalign = CXF_ALIGNLEFT;
-						break;
-					case 'R':
-						horalign = CXF_ALIGNRIGHT;
-						break;
-					}
-					align = GetToken(&line);
-					int veralign = CXF_ALIGNCENTRE;
-					switch ((int)align[0]) {
-					case 'T':
-						veralign = CXF_ALIGNTOP;
-						break;
-					case 'B':
-						veralign = CXF_ALIGNBOTTOM;
-						break;
-					}
-					bool bold = (align.Length() >= 3 && align[2] == wxT('B'));
-					double penwidth = bold ? (size * 0.25) : (size * 0.15);
-					if (penwidth < DEFAULTPEN)
-						penwidth = DEFAULTPEN;
-					if (rawsize > 5) {
-						wxColour penclr = visible ? clrText : clrHiddenText;
-						wxPen pen(penclr, penwidth);
-						gc->SetPen(pen);
-						if (name.Length() > 0 && name[0] == '~')
-							name = name.Mid(1);
-						VFont.SetScale(size / CXF_CAPSHEIGHT, size / CXF_CAPSHEIGHT);
-						VFont.SetOverbar(false);
-						VFont.SetRotation(angle);
-						VFont.SetAlign(horalign, veralign);
-						DrawStrokeText(gc, x, y, name);
-					}
-				}
-			} else if (token.CmpNoCase(wxT("DRAW")) == 0) {
-				indraw = true;
-			} else if (token.CmpNoCase(wxT("ENDDRAW")) == 0) {
-				indraw = false;
-			} else if (indraw) {
-				//??? should draw all filled shapes before all non-filled shapes
-				double x, y, w, h, penwidth, length, size_nr, size_name, angle, endangle;
-				long count, orientation, bold, halign, valign;
-				bool visible;
-				wxPoint2DDouble *points;
-				wxGraphicsPath path;
-				wxString name, pin, field;
-				wxPen pen(clrForeground);
-				switch ((int)token[0]) {
-				case 'A':
-					x = midx + GetTokenLong(&line) * scale;
-					y = midy - GetTokenLong(&line) * scale;
-					w = GetTokenLong(&line) * scale;
-					angle = GetTokenLong(&line) * M_PI / 1800.0;
-					endangle = GetTokenLong(&line) * M_PI / 1800.0;
-					if (GetTokenLong(&line) > 1)
-						break;  		/* ignore parts other than part 1 */
-					if (GetTokenLong(&line) > 1)
-						break;  		/* ignore De Morgan converted shape */
-					if ((penwidth = GetTokenLong(&line) * scale) < DEFAULTPEN)
-						penwidth = DEFAULTPEN;
-					field = GetToken(&line);	/* fill parameter (save, analyze later) */
-					pen.SetWidth(penwidth);
-					gc->SetPen(pen);
-					if (field == wxT('f'))
-						gc->SetBrush(clrBackground);
-					else if (field == wxT('F'))
-						gc->SetBrush(clrForeground);
-					else
-						gc->SetBrush(*wxTRANSPARENT_BRUSH);
-					path = gc->CreatePath();
-					/* calculate the angle of rotation */
-					while (angle > M_PI)
-						angle -= 2*M_PI;
-					while (angle < -M_PI)
-						angle += 2*M_PI;
-					while (endangle > M_PI)
-						endangle -= 2*M_PI;
-					while (endangle < angle)
-						endangle += 2*M_PI;
-					h = endangle - angle;
-					wxASSERT(h > -EPSILON);
-					wxASSERT(h < 2*M_PI + EPSILON);
-					path.AddArc(x, y, w, -angle, -endangle, (h > M_PI));
-					gc->DrawPath(path);
-					break;
-				case 'B':
-					//??? Bezier curves apparently not yet handled by the KiCad Symbol Editor
-					break;
-				case 'C':
-					x = midx + GetTokenLong(&line) * scale;
-					y = midy - GetTokenLong(&line) * scale;
-					w = GetTokenLong(&line) * scale;
-					if (GetTokenLong(&line) > 1)
-						break;  /* ignore parts other than part 1 */
-					if (GetTokenLong(&line) > 1)
-						break;  /* ignore De Morgan converted shape */
-					if ((penwidth = GetTokenLong(&line) * scale) < DEFAULTPEN)
-						penwidth = DEFAULTPEN;
-					field = GetToken(&line);
-					pen.SetWidth(penwidth);
-					gc->SetPen(pen);
-					if (field == wxT('f'))
-						gc->SetBrush(clrBackground);
-					else if (field == wxT('F'))
-						gc->SetBrush(clrForeground);
-					else
-						gc->SetBrush(*wxTRANSPARENT_BRUSH);
-					gc->DrawEllipse(x - w, y - w, 2 * w, 2 * w);
-					break;
-				case 'P':
-					count = (int)GetTokenLong(&line);
-					if (GetTokenLong(&line) > 1)
-						break;  /* ignore parts other than part 1 */
-					if (GetTokenLong(&line) > 1)
-						break;  /* ignore De Morgan converted shape */
-					if ((penwidth = GetTokenLong(&line) * scale) < DEFAULTPEN)
-						penwidth = DEFAULTPEN;
-					wxASSERT(count > 0);
-					points = new wxPoint2DDouble[count + 1];	/* reserve 1 extra for filled polygons */
-					wxASSERT(points != NULL);
-					for (int p = 0; p < count; p++) {
-						points[p].m_x = midx + GetTokenLong(&line) * scale;
-						points[p].m_y = midy - GetTokenLong(&line) * scale;
-					}
-					field = GetToken(&line);
-					if (field == wxT('F') || field == wxT('f')) {
-						/* filled polygons are implicitly closed */
-						points[count] = points[0];
-						count += 1;
-					}
-					pen.SetWidth(penwidth);
-					gc->SetPen(pen);
-					if (field == wxT('f'))
-						gc->SetBrush(clrBackground);
-					else if (field == wxT('F'))
-						gc->SetBrush(clrForeground);
-					else
-						gc->SetBrush(*wxTRANSPARENT_BRUSH);
-					gc->DrawLines(count, points);
-					delete[] points;
-					break;
-				case 'S':
-					x = GetTokenLong(&line) * scale;
-					y = GetTokenLong(&line) * scale;
-					w = GetTokenLong(&line) * scale - x;
-					h =  GetTokenLong(&line) * scale - y;
-					if (GetTokenLong(&line) > 1)
-						break;  /* ignore parts other than part 1 */
-					if (GetTokenLong(&line) > 1)
-						break;  /* ignore De Morgan converted shape */
-					if ((penwidth = GetTokenLong(&line) * scale) < DEFAULTPEN)
-						penwidth = DEFAULTPEN;
-					field = GetToken(&line);
-					if (w < 0) {
-						x += w;
-						w = -w;
-					}
-					if (h < 0) {
-						y += h;
-						h = -h;
-					}
-					pen.SetWidth(penwidth);
-					gc->SetPen(pen);
-					if (field == wxT('f'))
-						gc->SetBrush(clrBackground);
-					else if (field == wxT('F'))
-						gc->SetBrush(clrForeground);
-					else
-						gc->SetBrush(*wxTRANSPARENT_BRUSH);
-					gc->DrawRectangle(midx + x, midy - (y + h), w, h);
-					break;
-				case 'T':
-					angle = GetTokenLong(&line) / 10.0;
-					x = midx + GetTokenLong(&line) * scale;
-					y = midy - GetTokenLong(&line) * scale;
-					h = GetTokenLong(&line) * scale;	/* text size */
-					visible = GetTokenLong(&line) == 0;
-					if (GetTokenLong(&line) > 1)
-						break;  /* ignore parts other than part 1 */
-					if (GetTokenLong(&line) > 1)
-						break;  /* ignore De Morgan converted shape */
-					name = GetToken(&line);
-					GetToken(&line);	//??? ignore Italic/Normal, because the CXF font currently does not support slanted text
-					bold = GetTokenLong(&line);
-					field = GetToken(&line);
-					if (field == wxT('L'))
-						halign = CXF_ALIGNLEFT;
-					else if (field == wxT('R'))
-						halign = CXF_ALIGNRIGHT;
-					else
-						halign = CXF_ALIGNCENTRE;
-					field = GetToken(&line);
-					if (field == wxT('T'))
-						valign = CXF_ALIGNTOP;
-					else if (field == wxT('B'))
-						valign = CXF_ALIGNBOTTOM;
-					else
-						valign = CXF_ALIGNCENTRE;
-					pen.SetWidth(bold ? h * 0.25 : h * 0.15);
-					pen.SetColour(visible ? clrText : clrHiddenText);
-					gc->SetPen(pen);
-					VFont.SetScale(h / CXF_CAPSHEIGHT, h / CXF_CAPSHEIGHT);
-					VFont.SetOverbar(false);
-					VFont.SetRotation((int)angle);
-					VFont.SetAlign(halign, valign);
-					DrawStrokeText(gc, x, y, name);
-					break;
-				case 'X':
-					name = GetToken(&line);
-					if (name == wxT('~'))
-						name = wxEmptyString;
-					pin = GetToken(&line);
-					if (pin == wxT('~'))
-						pin = wxEmptyString;
-					points = new wxPoint2DDouble[2];
-					wxASSERT(points != NULL);
-					points[0].m_x = midx + GetTokenLong(&line) * scale;
-					points[0].m_y = midy - GetTokenLong(&line) * scale;
-					length = GetTokenLong(&line) * scale;
-					field = GetToken(&line);
-					orientation = field[0];
-					size_nr = GetTokenLong(&line) * scale;
-					size_name = GetTokenLong(&line) * scale;
-					if (GetTokenLong(&line) > 1)
-						break;  /* ignore parts other than part 1 */
-					if (GetTokenLong(&line) > 1)
-						break;  /* ignore De Morgan converted shape */
-					GetToken(&line);	/* ignore type */
-					field = GetToken(&line);	/* pin shape */
-					points[1] = points[0];
-					switch (orientation) {
-					case 'L':
-						points[1].m_x = points[0].m_x - length;
-						angle = 0;
-						break;
-					case 'R':
-						points[1].m_x = points[0].m_x + length;
-						angle = 0;
-						break;
-					case 'U':
-						points[1].m_y = points[0].m_y - length;
-						angle = 90;
-						break;
-					case 'D':
-						points[1].m_y = points[0].m_y + length;
-						angle = 90;
-						break;
-					default:
-						wxASSERT(false);
-						angle = 0;  	/* just to avoid a compiler warning */
-					}
-					pen.SetWidth(DEFAULTPEN);
-					gc->SetPen(pen);
-					gc->DrawLines(2, points);
-					if (field.Length() > 0) {
-						gc->SetBrush(clrBackground);
-						if (field == wxT('I') || field == wxT("CI")) {
-							/* inverted or inverted clock */
-							wxPoint2DDouble ptShape = points[1];
-							if (!Equal(points[0].m_x, ptShape.m_x)) {
-								int sign = (points[0].m_x < ptShape.m_x) ? -1 : 1;
-								ptShape.m_x += sign * (size_pinshape + 1) / 2;
-							} else if (!Equal(points[0].m_y, ptShape.m_y)) {
-								int sign = (points[0].m_y < ptShape.m_y) ? -1 : 1;
-								ptShape.m_y += sign * (size_pinshape + 1) / 2;
-							}
-							gc->DrawEllipse(ptShape.m_x - size_pinshape / 2, ptShape.m_y - size_pinshape / 2, size_pinshape, size_pinshape);
-						}
-						if (field == wxT('C') || field == wxT("CI")) {
-							/* clock or inverted clock */
-							wxPoint2DDouble ptShape[3];
-							for (int i = 0; i < 3; i++)
-								ptShape[i] = points[1];
-							if (!Equal(points[0].m_x, ptShape[1].m_x)) {
-								int sign = (points[0].m_x < ptShape[1].m_x) ? 1 : -1;
-								ptShape[1].m_x += sign * (size_pinshape + 1) / 2;
-								ptShape[0].m_y -= (size_pinshape + 1) / 2;
-								ptShape[2].m_y += (size_pinshape + 1) / 2;
-							} else if (!Equal(points[0].m_y, ptShape[1].m_y)) {
-								int sign = (points[0].m_y < ptShape[1].m_y) ? 1 : -1;
-								ptShape[1].m_y += sign * (size_pinshape + 1) / 2;
-								ptShape[0].m_x -= (size_pinshape + 1) / 2;
-								ptShape[2].m_x += (size_pinshape + 1) / 2;
-							}
-							gc->DrawLines(3, ptShape);
-						}
-					}
-					gc->SetBrush(clrForeground);
-					gc->DrawEllipse(points[0].m_x - 2, points[0].m_y - 2, 4, 4);	/* cicle at the endpoint */
-					/* pin name and number */
-					pen.SetColour(clrText);
-					if (show_pinnr) {
-						pen.SetWidth(size_nr * 0.125);
-						gc->SetPen(pen);
-						VFont.SetScale(size_nr / CXF_CAPSHEIGHT, size_nr / CXF_CAPSHEIGHT);
-						VFont.SetOverbar(false);
-						VFont.SetRotation((int)angle);
-						VFont.SetAlign(CXF_ALIGNCENTRE, CXF_ALIGNBOTTOM);
-						if (angle > EPSILON) {
-							x = points[1].m_x;
-							y = (points[0].m_y + points[1].m_y) / 2;
-						} else {
-							x = (points[0].m_x + points[1].m_x) / 2;
-							y = points[1].m_y;
-						}
-						DrawStrokeText(gc, x, y, pin);
-					}
-					if (show_pinname) {
-						pen.SetWidth(size_name * 0.15);
-						gc->SetPen(pen);
-						VFont.SetScale(size_name / CXF_CAPSHEIGHT, size_name / CXF_CAPSHEIGHT);
-						if (name.length() > 0 && name[0] == wxT('~')) {
-							name = name.Mid(1);
-							VFont.SetOverbar(true);
-						}
-						if (pinname_offset < EPSILON) {
-							/* pin name is outside the shape */
-							VFont.SetAlign(CXF_ALIGNCENTRE, CXF_ALIGNTOP);
-							if (angle > EPSILON) {
-								x = points[1].m_x;
-								y = (points[0].m_y + points[1].m_y) / 2;
-							} else {
-								x = (points[0].m_x + points[1].m_x) / 2;
-								y = points[1].m_y;
-							}
-						} else {
-							/* pin name is inside the shape */
-							if (pinname_offset < size_name / 2)
-								pinname_offset = size_name / 2;
-							if (angle > EPSILON) {
-								x = points[1].m_x;
-								if (points[0].m_y < points[1].m_y) {
-									y = points[1].m_y + pinname_offset;
-									VFont.SetAlign(CXF_ALIGNRIGHT, CXF_ALIGNCENTRE);
-								} else {
-									y = points[1].m_y - pinname_offset;
-									VFont.SetAlign(CXF_ALIGNLEFT, CXF_ALIGNCENTRE);
-								}
-							} else {
-								if (points[0].m_x < points[1].m_x) {
-									x = points[1].m_x + pinname_offset;
-									VFont.SetAlign(CXF_ALIGNLEFT, CXF_ALIGNCENTRE);
-								} else {
-									x = points[1].m_x - pinname_offset;
-									VFont.SetAlign(CXF_ALIGNRIGHT, CXF_ALIGNCENTRE);
-								}
-								y = points[1].m_y;
-							}
-						}
-						DrawStrokeText(gc, x, y, name);
-					}
-					delete[] points;
-					break;
-				}
-			}
-		}
+        for (int pass = 0; pass < 2; pass++) {
+            /* on first pass, only draw filled shapes, on second pass, draw the rest */
+		    bool indraw = false;
+		    double pinname_offset = size_pinshape;
+		    bool show_pinnr = true, show_pinname = true;
+		    for (int idx = 0; idx < (int)PartData[fp].Count(); idx++) {
+			    wxString line = PartData[fp][idx];
+                wxASSERT(line.Length() > 0);
+			    if (line[0] == wxT('#'))
+				    continue;
+			    wxString token = GetToken(&line);
+			    if (token.CmpNoCase(wxT("DEF")) == 0 && pass > 0) {
+				    GetToken(&line);	/* ignore name */
+				    GetToken(&line);	/* ignore designator prefix */
+				    GetToken(&line);	/* ignore reserved field */
+				    pinname_offset = GetTokenLong(&line) * scale;
+				    show_pinnr = GetToken(&line) == wxT('Y');
+				    show_pinname = GetToken(&line) == wxT('Y');
+			    } else if (token[0] == wxT('F') && token.Length() >= 2 && isdigit(token[1]) && pass > 0) {
+				    if (ShowLabels) {
+					    wxString name = GetToken(&line);
+					    double x = midx + GetTokenLong(&line) * scale;
+					    double y = midy - GetTokenLong(&line) * scale;
+					    long rawsize = GetTokenLong(&line);
+					    double size = rawsize * scale;
+					    wxString orient = GetToken(&line);
+					    int angle = (orient == wxT('V')) ? 90 : 0;
+					    wxString visflag = GetToken(&line);
+					    bool visible = (visflag == wxT('V'));
+					    wxString align = GetToken(&line);
+					    int horalign = CXF_ALIGNCENTRE;
+					    switch ((int)align[0]) {
+					    case 'L':
+						    horalign = CXF_ALIGNLEFT;
+						    break;
+					    case 'R':
+						    horalign = CXF_ALIGNRIGHT;
+						    break;
+					    }
+					    align = GetToken(&line);
+					    int veralign = CXF_ALIGNCENTRE;
+					    switch ((int)align[0]) {
+					    case 'T':
+						    veralign = CXF_ALIGNTOP;
+						    break;
+					    case 'B':
+						    veralign = CXF_ALIGNBOTTOM;
+						    break;
+					    }
+					    bool bold = (align.Length() >= 3 && align[2] == wxT('B'));
+					    double penwidth = bold ? (size * 0.25) : (size * 0.15);
+					    if (penwidth < DEFAULTPEN)
+						    penwidth = DEFAULTPEN;
+					    if (rawsize > 5) {
+						    wxColour penclr = visible ? clrText : clrHiddenText;
+						    wxPen pen(penclr, penwidth);
+						    gc->SetPen(pen);
+						    if (name.Length() > 0 && name[0] == '~')
+							    name = name.Mid(1);
+						    VFont.SetScale(size / CXF_CAPSHEIGHT, size / CXF_CAPSHEIGHT);
+						    VFont.SetOverbar(false);
+						    VFont.SetRotation(angle);
+						    VFont.SetAlign(horalign, veralign);
+						    DrawStrokeText(gc, x, y, name);
+					    }
+				    }
+			    } else if (token.CmpNoCase(wxT("DRAW")) == 0) {
+				    indraw = true;
+			    } else if (token.CmpNoCase(wxT("ENDDRAW")) == 0) {
+				    indraw = false;
+			    } else if (indraw) {
+				    double x, y, w, h, penwidth, length, size_nr, size_name, angle, endangle;
+				    long count, orientation, bold, halign, valign;
+				    bool visible;
+				    wxPoint2DDouble *points;
+				    wxGraphicsPath path;
+				    wxString name, pin, field;
+				    wxPen pen(clrForeground);
+				    switch ((int)token[0]) {
+				    case 'A':
+					    x = midx + GetTokenLong(&line) * scale;
+					    y = midy - GetTokenLong(&line) * scale;
+					    w = GetTokenLong(&line) * scale;
+					    angle = GetTokenLong(&line) * M_PI / 1800.0;
+					    endangle = GetTokenLong(&line) * M_PI / 1800.0;
+					    if (GetTokenLong(&line) > 1)
+						    break;  		/* ignore parts other than part 1 */
+					    if (GetTokenLong(&line) > 1)
+						    break;  		/* ignore De Morgan converted shape */
+					    if ((penwidth = GetTokenLong(&line) * scale) < DEFAULTPEN)
+						    penwidth = DEFAULTPEN;
+					    field = GetToken(&line);	/* fill parameter (save, analyze later) */
+					    if (((field == wxT('f') || field == wxT('F')) && pass == 0) || (field == wxT('N') && pass > 0)) {
+					        pen.SetWidth(penwidth);
+					        gc->SetPen(pen);
+					        if (field == wxT('f'))
+						        gc->SetBrush(clrBackground);
+					        else if (field == wxT('F'))
+						        gc->SetBrush(clrForeground);
+					        else
+						        gc->SetBrush(*wxTRANSPARENT_BRUSH);
+					        path = gc->CreatePath();
+					        /* calculate the angle of rotation */
+					        while (angle > M_PI)
+						        angle -= 2*M_PI;
+					        while (angle < -M_PI)
+						        angle += 2*M_PI;
+					        while (endangle > M_PI)
+						        endangle -= 2*M_PI;
+					        while (endangle < angle)
+						        endangle += 2*M_PI;
+					        h = endangle - angle;
+					        wxASSERT(h > -EPSILON);
+					        wxASSERT(h < 2*M_PI + EPSILON);
+					        path.AddArc(x, y, w, -angle, -endangle, (h > M_PI));
+					        gc->DrawPath(path);
+                        }
+					    break;
+				    case 'B':
+					    //??? Bezier curves apparently not yet handled by the KiCad Symbol Editor
+					    break;
+				    case 'C':
+					    x = midx + GetTokenLong(&line) * scale;
+					    y = midy - GetTokenLong(&line) * scale;
+					    w = GetTokenLong(&line) * scale;
+					    if (GetTokenLong(&line) > 1)
+						    break;  /* ignore parts other than part 1 */
+					    if (GetTokenLong(&line) > 1)
+						    break;  /* ignore De Morgan converted shape */
+					    if ((penwidth = GetTokenLong(&line) * scale) < DEFAULTPEN)
+						    penwidth = DEFAULTPEN;
+					    field = GetToken(&line);
+					    if (((field == wxT('f') || field == wxT('F')) && pass == 0) || (field == wxT('N') && pass > 0)) {
+					        pen.SetWidth(penwidth);
+					        gc->SetPen(pen);
+					        if (field == wxT('f'))
+						        gc->SetBrush(clrBackground);
+					        else if (field == wxT('F'))
+						        gc->SetBrush(clrForeground);
+					        else
+						        gc->SetBrush(*wxTRANSPARENT_BRUSH);
+					        gc->DrawEllipse(x - w, y - w, 2 * w, 2 * w);
+                        }
+					    break;
+				    case 'P':
+					    count = (int)GetTokenLong(&line);
+					    if (GetTokenLong(&line) > 1)
+						    break;  /* ignore parts other than part 1 */
+					    if (GetTokenLong(&line) > 1)
+						    break;  /* ignore De Morgan converted shape */
+					    if ((penwidth = GetTokenLong(&line) * scale) < DEFAULTPEN)
+						    penwidth = DEFAULTPEN;
+					    wxASSERT(count > 0);
+					    points = new wxPoint2DDouble[count + 1];	/* reserve 1 extra for filled polygons */
+					    wxASSERT(points != NULL);
+					    for (int p = 0; p < count; p++) {
+						    points[p].m_x = midx + GetTokenLong(&line) * scale;
+						    points[p].m_y = midy - GetTokenLong(&line) * scale;
+					    }
+					    field = GetToken(&line);
+					    if (((field == wxT('f') || field == wxT('F')) && pass == 0) || (field == wxT('N') && pass > 0)) {
+					        if (field == wxT('F') || field == wxT('f')) {
+						        /* filled polygons are implicitly closed */
+						        points[count] = points[0];
+						        count += 1;
+					        }
+					        pen.SetWidth(penwidth);
+					        gc->SetPen(pen);
+					        if (field == wxT('f'))
+						        gc->SetBrush(clrBackground);
+					        else if (field == wxT('F'))
+						        gc->SetBrush(clrForeground);
+					        else
+						        gc->SetBrush(*wxTRANSPARENT_BRUSH);
+					        gc->DrawLines(count, points);
+                        }
+					    delete[] points;
+					    break;
+				    case 'S':
+					    x = GetTokenLong(&line) * scale;
+					    y = GetTokenLong(&line) * scale;
+					    w = GetTokenLong(&line) * scale - x;
+					    h =  GetTokenLong(&line) * scale - y;
+					    if (GetTokenLong(&line) > 1)
+						    break;  /* ignore parts other than part 1 */
+					    if (GetTokenLong(&line) > 1)
+						    break;  /* ignore De Morgan converted shape */
+					    if ((penwidth = GetTokenLong(&line) * scale) < DEFAULTPEN)
+						    penwidth = DEFAULTPEN;
+					    field = GetToken(&line);
+					    if (((field == wxT('f') || field == wxT('F')) && pass == 0) || (field == wxT('N') && pass > 0)) {
+					        if (w < 0) {
+						        x += w;
+						        w = -w;
+					        }
+					        if (h < 0) {
+						        y += h;
+						        h = -h;
+					        }
+					        pen.SetWidth(penwidth);
+					        gc->SetPen(pen);
+					        if (field == wxT('f'))
+						        gc->SetBrush(clrBackground);
+					        else if (field == wxT('F'))
+						        gc->SetBrush(clrForeground);
+					        else
+						        gc->SetBrush(*wxTRANSPARENT_BRUSH);
+					        gc->DrawRectangle(midx + x, midy - (y + h), w, h);
+                        }
+					    break;
+				    case 'T':
+                        if (pass > 0) {
+					        angle = GetTokenLong(&line) / 10.0;
+					        x = midx + GetTokenLong(&line) * scale;
+					        y = midy - GetTokenLong(&line) * scale;
+					        h = GetTokenLong(&line) * scale;	/* text size */
+					        visible = GetTokenLong(&line) == 0;
+					        if (GetTokenLong(&line) > 1)
+						        break;  /* ignore parts other than part 1 */
+					        if (GetTokenLong(&line) > 1)
+						        break;  /* ignore De Morgan converted shape */
+					        name = GetToken(&line);
+					        GetToken(&line);	//??? ignore Italic/Normal, because the CXF font currently does not support slanted text
+					        bold = GetTokenLong(&line);
+					        field = GetToken(&line);
+					        if (field == wxT('L'))
+						        halign = CXF_ALIGNLEFT;
+					        else if (field == wxT('R'))
+						        halign = CXF_ALIGNRIGHT;
+					        else
+						        halign = CXF_ALIGNCENTRE;
+					        field = GetToken(&line);
+					        if (field == wxT('T'))
+						        valign = CXF_ALIGNTOP;
+					        else if (field == wxT('B'))
+						        valign = CXF_ALIGNBOTTOM;
+					        else
+						        valign = CXF_ALIGNCENTRE;
+					        pen.SetWidth(bold ? h * 0.25 : h * 0.15);
+					        pen.SetColour(visible ? clrText : clrHiddenText);
+					        gc->SetPen(pen);
+					        VFont.SetScale(h / CXF_CAPSHEIGHT, h / CXF_CAPSHEIGHT);
+					        VFont.SetOverbar(false);
+					        VFont.SetRotation((int)angle);
+					        VFont.SetAlign(halign, valign);
+					        DrawStrokeText(gc, x, y, name);
+                        }
+					    break;
+				    case 'X':
+                        if (pass > 0) {
+					        name = GetToken(&line);
+					        if (name == wxT('~'))
+						        name = wxEmptyString;
+					        pin = GetToken(&line);
+					        if (pin == wxT('~'))
+						        pin = wxEmptyString;
+					        points = new wxPoint2DDouble[2];
+					        wxASSERT(points != NULL);
+					        points[0].m_x = midx + GetTokenLong(&line) * scale;
+					        points[0].m_y = midy - GetTokenLong(&line) * scale;
+					        length = GetTokenLong(&line) * scale;
+					        field = GetToken(&line);
+					        orientation = field[0];
+					        size_nr = GetTokenLong(&line) * scale;
+					        size_name = GetTokenLong(&line) * scale;
+					        if (GetTokenLong(&line) > 1)
+						        break;  /* ignore parts other than part 1 */
+					        if (GetTokenLong(&line) > 1)
+						        break;  /* ignore De Morgan converted shape */
+					        GetToken(&line);	/* ignore type */
+					        field = GetToken(&line);	/* pin shape */
+					        points[1] = points[0];
+					        switch (orientation) {
+					        case 'L':
+						        points[1].m_x = points[0].m_x - length;
+						        angle = 0;
+						        break;
+					        case 'R':
+						        points[1].m_x = points[0].m_x + length;
+						        angle = 0;
+						        break;
+					        case 'U':
+						        points[1].m_y = points[0].m_y - length;
+						        angle = 90;
+						        break;
+					        case 'D':
+						        points[1].m_y = points[0].m_y + length;
+						        angle = 90;
+						        break;
+					        default:
+						        wxASSERT(false);
+						        angle = 0;  	/* just to avoid a compiler warning */
+					        }
+					        pen.SetWidth(DEFAULTPEN);
+					        gc->SetPen(pen);
+					        gc->DrawLines(2, points);
+					        if (field.Length() > 0) {
+						        gc->SetBrush(clrBackground);
+						        if (field == wxT('I') || field == wxT("CI")) {
+							        /* inverted or inverted clock */
+							        wxPoint2DDouble ptShape = points[1];
+							        if (!Equal(points[0].m_x, ptShape.m_x)) {
+								        int sign = (points[0].m_x < ptShape.m_x) ? -1 : 1;
+								        ptShape.m_x += sign * (size_pinshape + 1) / 2;
+							        } else if (!Equal(points[0].m_y, ptShape.m_y)) {
+								        int sign = (points[0].m_y < ptShape.m_y) ? -1 : 1;
+								        ptShape.m_y += sign * (size_pinshape + 1) / 2;
+							        }
+							        gc->DrawEllipse(ptShape.m_x - size_pinshape / 2, ptShape.m_y - size_pinshape / 2, size_pinshape, size_pinshape);
+						        }
+						        if (field == wxT('C') || field == wxT("CI")) {
+							        /* clock or inverted clock */
+							        wxPoint2DDouble ptShape[3];
+							        for (int i = 0; i < 3; i++)
+								        ptShape[i] = points[1];
+							        if (!Equal(points[0].m_x, ptShape[1].m_x)) {
+								        int sign = (points[0].m_x < ptShape[1].m_x) ? 1 : -1;
+								        ptShape[1].m_x += sign * (size_pinshape + 1) / 2;
+								        ptShape[0].m_y -= (size_pinshape + 1) / 2;
+								        ptShape[2].m_y += (size_pinshape + 1) / 2;
+							        } else if (!Equal(points[0].m_y, ptShape[1].m_y)) {
+								        int sign = (points[0].m_y < ptShape[1].m_y) ? 1 : -1;
+								        ptShape[1].m_y += sign * (size_pinshape + 1) / 2;
+								        ptShape[0].m_x -= (size_pinshape + 1) / 2;
+								        ptShape[2].m_x += (size_pinshape + 1) / 2;
+							        }
+							        gc->DrawLines(3, ptShape);
+						        }
+					        }
+					        gc->SetBrush(clrForeground);
+					        gc->DrawEllipse(points[0].m_x - 2, points[0].m_y - 2, 4, 4);	/* cicle at the endpoint */
+					        /* pin name and number */
+					        pen.SetColour(clrText);
+					        if (show_pinnr) {
+						        pen.SetWidth(size_nr * 0.125);
+						        gc->SetPen(pen);
+						        VFont.SetScale(size_nr / CXF_CAPSHEIGHT, size_nr / CXF_CAPSHEIGHT);
+						        VFont.SetOverbar(false);
+						        VFont.SetRotation((int)angle);
+						        VFont.SetAlign(CXF_ALIGNCENTRE, CXF_ALIGNBOTTOM);
+						        if (angle > EPSILON) {
+							        x = points[1].m_x;
+							        y = (points[0].m_y + points[1].m_y) / 2;
+						        } else {
+							        x = (points[0].m_x + points[1].m_x) / 2;
+							        y = points[1].m_y;
+						        }
+						        DrawStrokeText(gc, x, y, pin);
+					        }
+					        if (show_pinname) {
+						        pen.SetWidth(size_name * 0.15);
+						        gc->SetPen(pen);
+						        VFont.SetScale(size_name / CXF_CAPSHEIGHT, size_name / CXF_CAPSHEIGHT);
+						        if (name.length() > 0 && name[0] == wxT('~')) {
+							        name = name.Mid(1);
+							        VFont.SetOverbar(true);
+						        }
+						        if (pinname_offset < EPSILON) {
+							        /* pin name is outside the shape */
+							        VFont.SetAlign(CXF_ALIGNCENTRE, CXF_ALIGNTOP);
+							        if (angle > EPSILON) {
+								        x = points[1].m_x;
+								        y = (points[0].m_y + points[1].m_y) / 2;
+							        } else {
+								        x = (points[0].m_x + points[1].m_x) / 2;
+								        y = points[1].m_y;
+							        }
+						        } else {
+							        /* pin name is inside the shape */
+							        if (pinname_offset < size_name / 2)
+								        pinname_offset = size_name / 2;
+							        if (angle > EPSILON) {
+								        x = points[1].m_x;
+								        if (points[0].m_y < points[1].m_y) {
+									        y = points[1].m_y + pinname_offset;
+									        VFont.SetAlign(CXF_ALIGNRIGHT, CXF_ALIGNCENTRE);
+								        } else {
+									        y = points[1].m_y - pinname_offset;
+									        VFont.SetAlign(CXF_ALIGNLEFT, CXF_ALIGNCENTRE);
+								        }
+							        } else {
+								        if (points[0].m_x < points[1].m_x) {
+									        x = points[1].m_x + pinname_offset;
+									        VFont.SetAlign(CXF_ALIGNLEFT, CXF_ALIGNCENTRE);
+								        } else {
+									        x = points[1].m_x - pinname_offset;
+									        VFont.SetAlign(CXF_ALIGNRIGHT, CXF_ALIGNCENTRE);
+								        }
+								        y = points[1].m_y;
+							        }
+						        }
+						        DrawStrokeText(gc, x, y, name);
+					        }
+					        delete[] points;
+                        }
+					    break;
+				    } /* switch token */
+			    }
+		    } /* for (idx over PartData[fp]) */
+        } /* for (pass) */
 	}
 }
 
@@ -2579,9 +2741,9 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 
 	for (int fp = 0; fp < 2; fp++) {
 		/* check whether the footprint is visible */
-		if (fp == 0 && CompareMode && !m_toolBar->GetToolState(IDT_LEFTFOOTPRINT))
+		if (fp == 0 && CompareMode && !m_toolBar->GetToolToggled(IDT_LEFTFOOTPRINT))
 			continue;
-		if (fp == 1 && (!CompareMode || !m_toolBar->GetToolState(IDT_RIGHTFOOTPRINT)))
+		if (fp == 1 && (!CompareMode || !m_toolBar->GetToolToggled(IDT_RIGHTFOOTPRINT)))
 			continue;
 		if (PartData[fp].Count() == 0)
 			continue;
@@ -2598,6 +2760,8 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 			clrText.Set(240, 64, 240, transp[fp]);
 			clrHiddenText.Set(160, 50, 160, transp[fp]);
 		}
+        if (OutlineMode)
+            clrBody.Set(80, 80, 80, transp[fp]);
 		/* Draw the outline, plus optionally the texts */
 		pen.SetColour(clrBody);
 		gc->SetPen(pen);
@@ -2689,8 +2853,12 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 					penwidth = DEFAULTPEN;
 				pen.SetWidth(penwidth);
 				gc->SetPen(pen);
-				wxBrush brush(clrBody);
-				gc->SetBrush(brush);
+                if (OutlineMode) {
+                    gc->SetBrush(*wxTRANSPARENT_BRUSH);
+                } else {
+				    wxBrush brush(clrBody);
+				    gc->SetBrush(brush);
+                }
 				wxPoint2DDouble *pt = new wxPoint2DDouble[count];
 				wxASSERT(pt != NULL);
 				for (long p = 0; p < count; p++) {
@@ -2849,8 +3017,12 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 					penwidth = DEFAULTPEN;
 				pen.SetWidth(penwidth);
 				gc->SetPen(pen);
-				wxBrush brush(clrBody);
-				gc->SetBrush(brush);
+                if (OutlineMode) {
+                    gc->SetBrush(*wxTRANSPARENT_BRUSH);
+                } else {
+				    wxBrush brush(clrBody);
+				    gc->SetBrush(brush);
+                }
 				/* first count the number of vertices */
 				section = GetSection(line, wxT("pts"));
 				long count = 0;
@@ -2916,9 +3088,18 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 		}
 
 		/* draw the pads */
-		wxBrush brush(clrPadFill);
-		pen.SetColour(clrPad);
-		pen.SetWidth(1);
+		wxBrush brush;
+        wxPen pen;
+        if (OutlineMode) {
+            brush = *wxTRANSPARENT_BRUSH;
+		    pen.SetColour(clrPad);
+            pen.SetWidth(0.2 * Scale);
+        } else {
+			brush.SetColour(clrPadFill);
+            brush.SetStyle(wxBRUSHSTYLE_SOLID);
+		    pen.SetColour(clrPad);
+		    pen.SetWidth(1);
+        }
 		gc->SetBrush(brush);
 		gc->SetPen(pen);
 
@@ -2941,6 +3122,13 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 					inpad = true;
 					drillwidth = drillheight = 0;
 				} else if (line.CmpNoCase(wxT("$EndPAD")) == 0) {
+                    /* make the pad smaller in outline mode */
+                    if (OutlineMode) {
+                        if (padwidth > 0.3) 
+                            padwidth -= 0.15;
+                        if (padheight > 0.3) 
+                            padheight -= 0.15;
+                    }
 					/* draw the pad */
 					points[0].m_x = -padwidth/2 * Scale;
 					points[0].m_y = -padheight/2 * Scale;
@@ -3059,6 +3247,12 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 						drilly = GetTokenDim(&sectoffset, true);
 					}
 				}
+                if (OutlineMode) {
+                    if (padwidth > 0.3) 
+                        padwidth -= 0.15;
+                    if (padheight > 0.3) 
+                        padheight -= 0.15;
+                }
 				/* draw the pad */
 				points[0].m_x = -padwidth/2 * Scale;
 				points[0].m_y = -padheight/2 * Scale;
@@ -3171,7 +3365,7 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 		}
 
 		/* draw the measures */
-		if (m_toolBar->GetToolState(IDT_MEASUREMENTS) && ShowMeasurements) {
+		if (m_toolBar->GetToolToggled(IDT_MEASUREMENTS) && ShowMeasurements) {
 			pen.SetColour(0, 192, 192);
 			pen.SetWidth(1);
 			gc->SetPen(pen);
@@ -3516,7 +3710,7 @@ void libmngrFrame::OnPaintViewport(wxPaintEvent& /*event*/)
 	}
 
 	int transp[2] = { wxALPHA_OPAQUE, 0x80 };   /* this is the transparency for the overlay */
-	if (!CompareMode || !m_toolBar->GetToolState(IDT_LEFTFOOTPRINT))
+	if (!CompareMode || !m_toolBar->GetToolToggled(IDT_LEFTFOOTPRINT))
 		transp[1] = wxALPHA_OPAQUE;
 
 	wxSize sz = m_panelView->GetClientSize();
@@ -3589,6 +3783,7 @@ void libmngrFrame::On3DView(wxCommandEvent& /*event*/)
 		m_toolBar->EnableTool(IDT_RIGHTFOOTPRINT, CompareMode);
 		m_toolBar->ToggleTool(IDT_LEFTFOOTPRINT, CompareMode);
 		m_toolBar->ToggleTool(IDT_RIGHTFOOTPRINT, CompareMode);
+        m_toolBar->Refresh();
 		m_radioViewLeft->Enable(CompareMode);
 		m_radioViewRight->Enable(CompareMode);
 		m_radioViewLeft->SetValue(true);
@@ -3604,7 +3799,7 @@ void libmngrFrame::On3DView(wxCommandEvent& /*event*/)
 		m_radioViewRight->SetValue(false);
 	}
 
-	ModelMode = m_toolBar->GetToolState(IDT_3DVIEW);
+	ModelMode = m_toolBar->GetToolToggled(IDT_3DVIEW);
 	if (ModelMode) {
         ScaleNormal = Scale;    /* save the current value */
         Scale = SCALE_DEFAULT;
@@ -3643,7 +3838,7 @@ void libmngrFrame::OnShowMeasurements(wxCommandEvent& /*event*/)
 
 void libmngrFrame::OnShowDetails(wxCommandEvent& /*event*/)
 {
-	bool details = m_toolBar->GetToolState(IDT_DETAILSPANEL);
+	bool details = m_toolBar->GetToolToggled(IDT_DETAILSPANEL);
 	m_menubar->Check(IDM_DETAILSPANEL, details);
 	ToggleDetailsPanel(details);
 }
@@ -4106,6 +4301,10 @@ void libmngrFrame::HandleLibrarySelect(wxChoice* choice, wxListCtrl* list, int s
 		msg = wxString::Format(wxT("Loaded %d footprints"), list->GetItemCount());
 	m_statusBar->SetStatusText(msg);
 
+    if (SelectedPartLeft >= m_listModulesLeft->GetItemCount())
+        SelectedPartLeft = -1;
+    if (SelectedPartRight >= m_listModulesRight->GetItemCount())
+        SelectedPartRight = -1;
 	if (side == RIGHTPANEL && SelectedPartLeft >= 0) {
 		LoadPart(SelectedPartLeft, m_listModulesLeft, m_choiceModuleLeft, 0);
 		UpdateDetails(0);
@@ -4191,6 +4390,120 @@ void libmngrFrame::CollectSymbols(const wxString &path, wxListCtrl* list, const 
 	file.Close();
 }
 
+bool libmngrFrame::MatchFootprint(const wxString& libname, const wxString& symname, const wxString& filter)
+{
+    if (filter.Length() == 0)
+        return true;    /* if no filter is present, every part matches */
+
+    /* although we could try matching on the footprint name first (which is quick
+       and does not require database lookup), it is not very useful: on a mismatch,
+       the footprint would still be loaded and cached in the database and only a
+       small number of footprints would immediately match on their names (so the
+       performance gain is negligible) */
+
+    /* check whether the footprint is already in the library */
+    wxString path = libname.AfterLast(wxT(DIRSEP_CHAR));
+    path = path.BeforeLast(wxT('.')) + wxT(".db");  /* change extension */
+    path = theApp->GetUserDataPath() + wxT(DIRSEP_STR) + path;
+
+    bool store_symbol = false;
+    if (!wxFileExists(path))
+        store_symbol = true;    /* database not found -> store footprint */
+    unqlite *pDb;
+    int rc = unqlite_open(&pDb, path.c_str(), UNQLITE_OPEN_CREATE);
+    if (rc != UNQLITE_OK)
+        return false;           /* failure opening/creating the database */
+    if (!store_symbol) {
+        /* database exists, see whether the entry already exists */
+        unsigned char buffer[100];
+        unqlite_int64 size = sizeof buffer;
+        rc = unqlite_kv_fetch(pDb, symname.c_str(), -1, buffer, &size);
+        if (rc == UNQLITE_NOTFOUND)
+            store_symbol = true;    /* key was not found, must store */
+    }
+    
+    if (store_symbol) {
+		wxArrayString footprint;
+		int version;
+		if (LoadFootprint(libname, symname, wxEmptyString, false, &footprint, &version)) {
+            unqlite_close(pDb); /* close the database, for caching the data */
+		    FootprintInfo fp(version);
+		    TranslatePadInfo(&footprint, &fp);
+            CacheMetadata(libname, symname, true, footprint, fp);
+            /* re-open the database */
+            rc = unqlite_open(&pDb, path.c_str(), UNQLITE_OPEN_CREATE);
+            if (rc != UNQLITE_OK)
+                return false;
+        }
+    }
+
+    /* get the metadata from the database */
+    wxString metadata;
+    unqlite_int64 size = 0;
+    rc = unqlite_kv_fetch(pDb, symname.c_str(), -1, NULL, &size);
+    if (rc == UNQLITE_OK) {
+        size_t sz = (size_t)(size + 1); /* allocate one character extra for the '\0' terminator */
+        unsigned char* buffer = (unsigned char*)malloc(sz * sizeof(char));
+        if (buffer) {
+            rc = unqlite_kv_fetch(pDb, symname.c_str(), -1, buffer, &size);
+            wxASSERT(rc == UNQLITE_OK);
+            buffer[sz - 1] = '\0';      /* zero-terminate the buffer */
+            metadata = wxString(buffer);
+            free(buffer);
+        }
+    }
+    unqlite_close(pDb);
+
+    /* extract fields from the metadata */
+	wxString keywords = symname.Lower();    /* footprint name is matched on too */
+    wxString pins = wxEmptyString;
+    wxString pitch = wxEmptyString;
+    wxString span = wxEmptyString;
+    metadata = metadata.Lower();
+    wxStringTokenizer tokenizer(metadata, wxT("\n"));
+    while (tokenizer.HasMoreTokens()) {
+        wxString token = tokenizer.GetNextToken();
+        if (token.Left(12).Cmp(wxT("description=")) == 0 || token.Left(9).Cmp(wxT("keywords=")) == 0)
+            keywords += wxT(" ") + token.AfterFirst(wxT('='));
+        else if (token.Left(5).Cmp(wxT("pads=")) == 0)
+            pins = token.AfterFirst(wxT('='));
+        else if (token.Left(6).Cmp(wxT("pitch=")) == 0)
+            pitch = token.AfterFirst(wxT('='));
+        else if (token.Left(5).Cmp(wxT("span=")) == 0)
+            span = token.AfterFirst(wxT('='));
+    }
+
+    /* break filter text into words, match each word */
+    bool allmatch = true;
+    tokenizer.SetString(filter, wxT(" ,"), wxTOKEN_STRTOK);
+    while (allmatch && tokenizer.HasMoreTokens()) {
+        bool match = false;
+        wxString token = tokenizer.GetNextToken();
+        if (token.Left(5).Cmp(wxT("pins:")) == 0 || token.Left(5).Cmp(wxT("pads:")) == 0) {
+            /* match both on total pin count and on regular pin count */
+            long count = 0;
+            token.AfterFirst(wxT(':')).ToLong(&count);
+            long nonregpins = 0, regularpins = 0;
+            pins.ToLong(&regularpins);
+            if (pins.Find(wxT('+')) > 0) 
+                pins.AfterFirst(wxT('+')).ToLong(&nonregpins);
+            match = (count == regularpins || count == regularpins + nonregpins);
+        } else if (token.Left(6).Cmp(wxT("pitch:")) == 0) {
+            token = token.AfterFirst(wxT(':'));
+            match = pitch.Left(token.Length()).Cmp(token) == 0;
+        } else if (token.Left(5).Cmp(wxT("span:")) == 0) {
+            token = token.AfterFirst(wxT(':'));
+            match = span.Left(token.Length()).Cmp(token) == 0;
+        } else {
+	        if (keywords.Find(token) >= 0)
+		        match = true;
+        }
+        allmatch = allmatch && match;
+    }
+
+    return allmatch;
+}
+
 void libmngrFrame::CollectFootprints(const wxString &path, wxListCtrl* list, const wxString& filter, wxProgressDialog* progress)
 {
 	wxFileName fname(path);
@@ -4208,48 +4521,18 @@ void libmngrFrame::CollectFootprints(const wxString &path, wxListCtrl* list, con
 		for (unsigned idx = 0; idx < modlist.Count(); idx++) {
 			wxFileName modfile(modlist[idx]);
 			wxString name = modfile.GetName();
-			bool match = true;
-			if (filter.Length() > 0) {
-				match = false;
-				wxString lname = name.Lower();
-				if (lname.Find(filter) >= 0)
-					match = true;
-				wxArrayString footprint;
-				int version;
-				if (!match && LoadFootprint(path, name, wxEmptyString, false, &footprint, &version)) {
-					wxString field = GetDescription(footprint, false);
-					field.MakeLower();
-					if (field.Find(filter) >= 0)
-						match = true;
-				}
-			}
-			if (!match)
-				continue;
-			long insertpos = GetListPosition(name, list);
-			long item = list->InsertItem(insertpos, name);
-			list->SetItem(item, 1, libname);
-			list->SetItem(item, 2, path);
+		    if (MatchFootprint(path, name, filter)) {
+			    long insertpos = GetListPosition(name, list);
+			    long item = list->InsertItem(insertpos, name);
+			    list->SetItem(item, 1, libname);
+			    list->SetItem(item, 2, path);
+            }
             if (progress)
                 progress->Update(idx);
         }
 	} else if (fname.GetExt().Cmp(wxT("kicad_mod")) == 0) {
 		wxString name = fname.GetName();
-		bool match = true;
-		if (filter.Length() > 0) {
-			match = false;
-			wxString lname = name.Lower();
-			if (lname.Find(filter) >= 0)
-				match = true;
-			wxArrayString footprint;
-			int version;
-			if (!match && LoadFootprint(path, name, wxEmptyString, false, &footprint, &version)) {
-				wxString field = GetDescription(footprint, false);
-				field.MakeLower();
-				if (field.Find(filter) >= 0)
-					match = true;
-			}
-		}
-		if (match) {
+		if (MatchFootprint(path, name, filter)) {
 			long insertpos = GetListPosition(name, list);
 			long item = list->InsertItem(insertpos, name);
 			list->SetItem(item, 1, libname);
@@ -4297,22 +4580,7 @@ void libmngrFrame::CollectFootprints(const wxString &path, wxListCtrl* list, con
 		while (idx < tail) {
 			line = file.GetLine(idx);
 			wxASSERT(line.CmpNoCase(wxT("$EndINDEX")) != 0);
-			bool match = true;
-			if (filter.Length() > 0) {
-				match = false;
-				wxString lname = line.Lower();
-				if (lname.Find(filter) >= 0)
-					match = true;
-				wxArrayString footprint;
-				int version;
-				if (!match && LoadFootprint(path, line, wxEmptyString, false, &footprint, &version)) {
-					wxString field = GetDescription(footprint, false);
-					field.MakeLower();
-					if (field.Find(filter) >= 0)
-						match = true;
-				}
-			}
-			if (match) {
+		    if (MatchFootprint(path, line, filter)) {
 				long insertpos = GetListPosition(line, list);
 				long item = list->InsertItem(insertpos, line);
 				list->SetItem(item, 1, libname);
@@ -4491,7 +4759,9 @@ void libmngrFrame::LoadPart(int index, wxListCtrl* list, wxChoice* choice, int f
 		/* get the pin pitch and pad size, plus the body size */
 		Footprint[fp].Type = version;
 		TranslatePadInfo(&PartData[fp], &Footprint[fp]);
-	}
+        /* optionally cache the metadata (pitch, courtyard, descriptions) */
+        CacheMetadata(filename, symbol, false, PartData[fp], Footprint[fp]);
+    }
 	GetBodySize(PartData[fp], &BodySize[fp], SymbolMode, Footprint[fp].Type >= VER_MM);
 	GetTextLabelSize(PartData[fp], &LabelData[fp], SymbolMode, Footprint[fp].Type >= VER_MM);
 	if (SymbolMode) {
@@ -4569,17 +4839,20 @@ void libmngrFrame::ChangeTextInfo(wxControl* ctrl)
 		field = field.Trim(false);
 		SetDescription(PartData[0], field, SymbolMode);
 
-		if (SymbolMode) {
-			field = m_txtAlias->GetValue();
-			field = field.Trim(true);
-			field = field.Trim(false);
+		field = m_txtAlias->GetValue();
+		field = field.Trim(true);
+		field = field.Trim(false);
+		if (SymbolMode)
 			SetAliases(PartData[0], field);
+        else
+			SetKeywords(PartData[0], field, SymbolMode);
 
+        if (SymbolMode) {
 			field = m_txtFootprintFilter->GetValue();
 			field = field.Trim(true);
 			field = field.Trim(false);
 			SetFootprints(PartData[0], field);
-		}
+        }
 	}
 }
 
@@ -5107,12 +5380,13 @@ void libmngrFrame::ChangePadCount(wxControl* ctrl)
 		wxASSERT(leftmod.IsEmpty() || rightmod.IsEmpty());
 		wxString footprintname = (leftmod.length() > 0) ? leftmod : rightmod;
 		wxString description = m_txtDescription->GetValue();
+        wxString tags = m_txtAlias->GetValue();
 		wxString prefix = wxEmptyString;
 		if (SymbolMode)
 			prefix = GetPrefix(PartData[0]);
 		RPNexpression rpn;
 		rpn.SetVariable(RPNvariable("PT", pins));   /* other defaults may depend on the correct pin count */
-		SetVarDefaults(&rpn, templatename, footprintname, description, prefix, true);
+		SetVarDefaults(&rpn, templatename, footprintname, description, prefix, tags, true);
 		/* then, update the variables from the fields */
 		SetVarsFromFields(&rpn, SymbolMode);
 		SetVarsFromTemplate(&rpn, templatename, SymbolMode);
@@ -5301,8 +5575,8 @@ void libmngrFrame::ChangePadInfo(wxControl* ctrl)
 			adjusted.PadSize[1].Set(adjusted.PadSize[1].GetX(), dim);
 
 		field = m_txtDrillSize->GetValue();
-		if (field.length() > 0 && field.ToDouble(&dim) && dim > 0.02)
-			adjusted.DrillSize = dim;
+		if (field.length() > 0 && field.ToDouble(&dim))
+			adjusted.DrillSize = (dim > 0.02) ? dim : 0.0;
 
 		/* force the footprint to use mm (for convenience) */
 		if (TranslateUnits(PartData[0], Footprint[0].Type >= VER_MM, true)) {
@@ -5655,6 +5929,128 @@ void libmngrFrame::ChangeLabelInfo(wxControl* ctrl)
 	}
 }
 
+bool libmngrFrame::CacheMetadata(const wxString& libname, const wxString& symname, bool force_export, const wxArrayString& module, 
+                                 const FootprintInfo& footprint)
+{
+	if (libname.CmpNoCase(LIB_REPOS) == 0)
+        return false;   /* repository can serve as its own cache */
+
+    wxString dbpath = libname.AfterLast(wxT(DIRSEP_CHAR));
+    dbpath = dbpath.BeforeLast(wxT('.')) + wxT(".db");  /* change extension */
+    dbpath = theApp->GetUserDataPath() + wxT(DIRSEP_STR) + dbpath;
+
+    /* get the date/time stamp of the library (because it is stored, and because 
+       it is used  for checking whether the metadata must be updated */
+    time_t stamp;
+    if (wxFileName::DirExists(libname)) {
+        /* test time/date of footprint file */
+		wxFileName fname(libname, symname + wxT(".kicad_mod"));
+        stamp = wxFileModificationTime(fname.GetFullPath());
+    } else {
+        /* test time/date of library file for legacy, or of single footprint for exported kicad_mod file */
+        stamp = wxFileModificationTime(libname);
+    }
+
+    /* Metadata must be cached if:
+        a) the entire database does not exist yet
+        b) the symbol does not exist yet in the database
+        c) the symbol exists in the database, but with a different timestamp
+        d) a (modified) symbol is being saved (i.e. when force_export is true) */
+    if (!wxFileExists(dbpath))
+        force_export = true;    /* this handles case a) */
+    unqlite *pDb;
+    int rc = unqlite_open(&pDb, dbpath.c_str(), UNQLITE_OPEN_CREATE);
+    if (rc != UNQLITE_OK)
+        return false;           /* failure creating the database */
+    if (!force_export) {
+        /* database exists, see whether the entry already exists */
+        unsigned char buffer[100];
+        unqlite_int64 size = sizeof buffer;
+        rc = unqlite_kv_fetch(pDb, symname.c_str(), -1, buffer, &size);
+        if (rc == UNQLITE_OK) {
+            /* footprint exists, get its time stamp */
+            time_t dbtime = 0;
+            if (memcmp(buffer, "stamp=", 6) == 0)
+                dbtime = strtoul((char*)buffer + 6, NULL, 10);
+            if (dbtime == stamp) {
+                /* footprint exists and its date/time stamp matches the stamp of the
+                   metadata -> no need to store it again */
+                unqlite_close(pDb);
+                return true;    
+            }
+        } else if (rc != UNQLITE_NOTFOUND) {
+            /* there was an I/O error -> don't try to store (because force_save was not set either) */
+            unqlite_close(pDb);
+            return true;    
+        }
+    }
+
+    /* collect all data into a string */
+    wxString data = wxString::Format(wxT("stamp=%ld\n"), (unsigned long)stamp);
+    
+    wxString string = GetDescription(module, SymbolMode);
+    if (string.Length() > 0)
+        data += wxT("description=") + string + wxT("\n");
+
+    string = GetKeywords(module, SymbolMode);
+    if (string.Length() > 0)
+        data += wxT("keywords=") + string + wxT("\n");
+
+    //??? store footprint aliases in the FootprintInfo class
+
+    if (footprint.Pitch > EPSILON)
+        data += wxString::Format(wxT("pitch=%f\n"), footprint.Pitch);
+
+	double span = 0;
+	if (footprint.SpanHor <= EPSILON)
+		span = footprint.SpanVer;
+	else if (footprint.SpanVer <= EPSILON)
+		span = footprint.SpanHor;
+	else
+		span = footprint.PitchVertical ? footprint.SpanHor : footprint.SpanVer;
+    if (span > EPSILON)
+        data += wxString::Format(wxT("span=%f\n"), span);
+
+    wxASSERT(footprint.RegPadCount <= footprint.PadCount);
+    if (footprint.PadCount == footprint.RegPadCount || footprint.RegPadCount == 0)
+        data += wxString::Format(wxT("pads=%d\n"), footprint.PadCount);
+    else
+        data += wxString::Format(wxT("pads=%d+%d\n"), footprint.RegPadCount, footprint.PadCount - footprint.RegPadCount);
+    double xmin, ymin, xmax, ymax;
+    xmin = ymin = xmax = ymax = 0;
+    for (unsigned pinnr = 0; pinnr < footprint.Pads.Count(); pinnr++) {
+        CoordSize pad = footprint.Pads[pinnr];
+        if (pinnr == 0) {
+            xmin = pad.GetLeft();
+            ymin = pad.GetTop();
+            xmax = pad.GetRight();
+            ymax = pad.GetBottom();
+        } else {
+            if (xmin > pad.GetLeft())
+                xmin = pad.GetLeft();
+            if (ymin > pad.GetTop())
+                ymin = pad.GetTop();
+            if (xmax < pad.GetRight())
+                xmax = pad.GetRight();
+            if (ymax < pad.GetBottom())
+                ymax = pad.GetBottom();
+        }
+        data += wxString::Format(wxT("pad%d=%f %f\n"), pinnr + 1, pad.GetMidX(), pad.GetMidY());
+    }
+
+    if (xmax - xmin > EPSILON && ymax - ymin > EPSILON)
+        data += wxString::Format(wxT("courtyard=%f %f\n"), xmax - xmin, ymax - ymin);
+
+    //??? export body-size too, but this should be the true body size
+
+    /* store data under symname as key */
+    const char* ptr = data.utf8_str();
+    rc = unqlite_kv_store(pDb, symname.c_str(), -1, ptr, strlen(ptr));
+    unqlite_close(pDb);
+
+    return (rc == UNQLITE_OK);
+}
+
 bool libmngrFrame::SavePart(int index, wxListCtrl* list)
 {
 	if (FromRepository[0])
@@ -5731,9 +6127,12 @@ bool libmngrFrame::SavePart(int index, wxListCtrl* list)
 		} else {
 			module = PartData[0];
 		}
+        //??? check whether all pads are SMD pads; if so, toggle type of the module to SMD
 		wxASSERT(ExistFootprint(filename, symbol));
 		RemoveFootprint(filename, symbol);
 		result = InsertFootprint(filename, symbol, module, Footprint[0].Type >= VER_MM);
+        /* cache the metadata (pitch, courtyard, descriptions) */
+        CacheMetadata(filename, symbol, true, module, Footprint[0]);
 	}
 	if (result) {
 		PartEdited = false;
@@ -5851,7 +6250,7 @@ bool libmngrFrame::CheckTemplateVar(const wxString& varname)
 
 bool libmngrFrame::SetVarDefaults(RPNexpression *rpn, const wxString& templatename,
 								  const wxString& footprintname, const wxString& description,
-								  const wxString& prefix, bool silent)
+								  const wxString& prefix, const wxString& tags, bool silent)
 {
 	/* first set the defaults on the parameter line */
 	wxASSERT(templatename.length() > 0);
@@ -5881,6 +6280,7 @@ bool libmngrFrame::SetVarDefaults(RPNexpression *rpn, const wxString& templatena
 	rpn->SetVariable(RPNvariable("NAME", footprintname.utf8_str()));
 	rpn->SetVariable(RPNvariable("DESCR", description.utf8_str()));
 	rpn->SetVariable(RPNvariable("REF", prefix.utf8_str()));
+	rpn->SetVariable(RPNvariable("TAGS", tags.utf8_str()));
 
 	/* set any pin section criterions */
 	if (SymbolMode) {
@@ -5985,13 +6385,14 @@ bool libmngrFrame::RebuildTemplate()
 	wxASSERT(leftmod.IsEmpty() || rightmod.IsEmpty());
 	wxString footprintname = (leftmod.length() > 0) ? leftmod : rightmod;
 	wxString description = m_txtDescription->GetValue();
+    wxString tags = m_txtAlias->GetValue();
 	wxString prefix = wxEmptyString;
 	if (SymbolMode)
 		prefix = GetPrefix(PartData[0]);
 	RPNexpression rpn;
 	if (SymbolMode)
 		rpn.SetVariable(RPNvariable("PT", PinDataCount[0]));	/* other defaults depend on the correct pin count */
-	SetVarDefaults(&rpn, templatename, footprintname, description, prefix, true);
+	SetVarDefaults(&rpn, templatename, footprintname, description, prefix, tags, true);
 
 	/* then, update the variables from the fields
 		 update all fields, because the body size may depend on other settings,
@@ -6100,12 +6501,14 @@ bool libmngrFrame::Update3DModel(const wxArrayString& module)
 void libmngrFrame::UpdateDetails(int fp)
 {
 	/* reset all fields and colours */
-	m_txtDescription->SetValue(wxEmptyString);
 	m_txtDescription->SetToolTip(wxEmptyString);
+	m_txtDescription->SetValue(wxEmptyString);
+	m_txtAlias->SetValue(wxEmptyString);
 	m_txtDescription->SetEditable(false);
+	m_txtAlias->SetEditable(false);
 	m_txtDescription->SetBackgroundColour(PROTECTED);
+	m_txtAlias->SetBackgroundColour(PROTECTED);
 	if (SymbolMode) {
-		m_txtAlias->SetValue(wxEmptyString);
 		m_txtFootprintFilter->SetValue(wxEmptyString);
 		m_txtPadCount->SetValue(wxEmptyString);
 		m_gridPinNames->ClearGrid();
@@ -6122,7 +6525,6 @@ void libmngrFrame::UpdateDetails(int fp)
 		wxASSERT(sizer != 0);
 		sizer->Layout();
 
-		m_txtAlias->SetEditable(false);
 		m_txtFootprintFilter->SetEditable(false);
 		m_txtPadCount->SetEditable(false);
 		m_gridPinNames->EnableEditing(false);
@@ -6133,7 +6535,6 @@ void libmngrFrame::UpdateDetails(int fp)
 		m_txtValueLabel->SetEditable(false);
 		m_chkValueLabelVisible->Enable(false);
 
-		m_txtAlias->SetBackgroundColour(PROTECTED);
 		m_txtFootprintFilter->SetBackgroundColour(PROTECTED);
 		m_txtPadCount->SetBackgroundColour(PROTECTED);
 		m_gridPinNames->SetBackgroundColour(PROTECTED);
@@ -6301,6 +6702,11 @@ void libmngrFrame::UpdateDetails(int fp)
 
 	} else {
 		/* footprint mode */
+
+		field = GetKeywords(PartData[fp], SymbolMode);
+		m_txtAlias->SetValue(field);
+		m_txtAlias->SetEditable(DefEnable);
+		m_txtAlias->SetBackgroundColour(DefEnable ? ENABLED : PROTECTED);
 
 		m_txtPadCount->SetValue(wxString::Format(wxT("%d"), Footprint[fp].PadCount));
 		bool enable = templatename.length() > 0 && DefEnable;

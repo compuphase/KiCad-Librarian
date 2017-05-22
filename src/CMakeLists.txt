@@ -103,8 +103,8 @@ INSTALL(TARGETS kicadlibrarian
     COMPONENT application)
 INSTALL(FILES ${CMAKE_SOURCE_DIR}/../doc/kicadlibrarian.pdf
               ${CMAKE_SOURCE_DIR}/../doc/LibraryFileFormats.pdf
-              ${CMAKE_SOURCE_DIR}/../doc/LICENSE
               ${CMAKE_SOURCE_DIR}/../doc/NOTICE
+              ${CMAKE_SOURCE_DIR}/../LICENSE
         DESTINATION ${CMAKE_INSTALL_PREFIX}/doc
         COMPONENT documentation)
 INSTALL(FILES ${CMAKE_SOURCE_DIR}/../font/newstroke.cxf

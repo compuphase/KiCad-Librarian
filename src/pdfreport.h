@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: pdfreport.h 5387 2015-10-22 19:31:30Z thiadmer $
+ *  $Id: pdfreport.h 5685 2017-05-23 10:35:40Z thiadmer $
  */
 #ifndef PDFREPORT_H
 #define PDFREPORT_H
@@ -48,7 +48,7 @@ public:
 
 private:
   void Text(HPDF_Page page,double x,double y,const char *text,double angle,HPDF_TextAlignment align);
-  unsigned TextWrap(HPDF_Page page,double x1,double y1,double x2,double y2,double linespacing,const char *text,int *numlines);
+  unsigned TextWrap(HPDF_Page page,double x1,double y1,double x2,double y2,double linespacing,double firstline,const char *text,int *numlines);
   void Line(HPDF_Page page,double x1,double y1,double x2,double y2);
   void Circle(HPDF_Page page,double x,double y,double radius,bool border,bool filled);
   void Arc(HPDF_Page page,double x,double y,double radius,double angle1,double angle2,bool border,bool filled);

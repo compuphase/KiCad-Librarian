@@ -9,7 +9,7 @@ AR HDR1x_SMD
 Po 0 0 0 15 00000000 00000000 ~~
 Li {NAME}
 Cd {DESCR}
-Kw ZIP
+Kw {TAGS}
 Op 0 0 0
 At SMD
 {TS @?TSR   TS ~ @?TSV   "V" "H" TSR 0 >= ? @TRvis   "V" "H" TSV 0 >= ? @TVvis}

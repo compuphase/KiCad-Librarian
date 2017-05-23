@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: pdfreport.cpp 5387 2015-10-22 19:31:30Z thiadmer $
+ *  $Id: pdfreport.cpp 5685 2017-05-23 10:35:40Z thiadmer $
  */
 
 #include <limits.h>
@@ -49,7 +49,6 @@
 #define COLUMN_1      INCH(1.2)
 #define COLUMN_2      INCH(3.0) /* for portrait */
 #define COLUMN_2_L    INCH(4.0) /* for landscape */
-#define INDEXLINES    68
 
 static int CompareFootprint(const wxString& first, const wxString& second)
 {
@@ -161,6 +160,7 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
   double column2=(PaperOrientation==HPDF_PAGE_LANDSCAPE) ? COLUMN_2_L : COLUMN_2;
   int pagecount=0;
   int pagenr=0;
+  unsigned IndexLines=(PageHeight-4*PAGEMARGIN-12-FontSize)/(FontSize*1.2)-2;
   DryRun=true;
   wxASSERT(library.length() > 0);
   do {
@@ -771,8 +771,10 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
             if (alias.CmpNoCase(key) != 0) {
               if (FootprintIndex.find(alias) == FootprintIndex.end())
                 FootprintIndex[alias] = wxT("see ") + key + wxString::Format(wxT(" (%d)"), pagenr);
+              else if (FootprintIndex[alias].Left(4).Cmp(wxT("see ")) == 0 || FootprintIndex[alias].Find(wxT(", see ")) > 0)
+                FootprintIndex[alias] += wxT(", ") + key + wxString::Format(wxT(" (%d)"), pagenr);
               else
-                FootprintIndex[alias] += wxT(", see ") + key + wxString::Format(wxT(" (%d)"), pagenr);
+                FootprintIndex[alias] += wxT("; see ") + key + wxString::Format(wxT(" (%d)"), pagenr);
             }
           }
         }
@@ -781,7 +783,20 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
       progress.Update(++progresspos);
       ypos+=height+ROWSEPARATION;
     }
-    pagecount=pagenr+(FootprintIndex.size()+INDEXLINES-1)/INDEXLINES; /* add the pages for the index */
+    if (DryRun) {
+      pagecount=pagenr;
+      /* add the pages for the index */
+      long lines=0;
+      for (wxStringToStringHashMap::iterator iter=FootprintIndex.begin(); iter!=FootprintIndex.end(); iter++) {
+        int numlines=0;
+        wxString line=iter->first + wxT(" : ") + iter->second;
+        TextWrap(page,PAGEMARGIN,0,(PageWidth-PAGEMARGIN)/2,PageHeight,1.2*FontSize,-1.5*FontSize,line.utf8_str(),&numlines);
+        lines+=numlines;
+      }
+      long columns=(lines+IndexLines-1)/IndexLines;
+      pagecount+=(columns+1)/2;
+    }
+
     DryRun=!DryRun;
   } while (!DryRun);
 
@@ -812,20 +827,31 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
     HPDF_Font HeaderFont=HPDF_GetFont(pdf,"Helvetica-BoldOblique","WinAnsiEncoding");
     wxASSERT(HeaderFont!=NULL);
     HPDF_Page_SetFontAndSize(page,HeaderFont,10);
-    if (base == 0)
+    if (base==0)
       Text(page,xpos,ypos,"Index",0,HPDF_TALIGN_LEFT);
     else
       Text(page,xpos,ypos,"Index (continued)",0,HPDF_TALIGN_LEFT);
-    ypos += 12;
+    ypos+=12;
+    double ypos_base=ypos;
     HPDF_Page_SetFontAndSize(page,font,FontSize);
-    size_t top=base+INDEXLINES;
-    if (top>SortedIndex.Count())
-      top=SortedIndex.Count();
-    for (size_t idx=base; idx<top; idx++) {
-      Text(page,xpos,ypos,SortedIndex[idx].utf8_str(),0,HPDF_TALIGN_LEFT);
-      ypos += 1.2*FontSize;
+    /* left column */
+    size_t idx=base;
+    while (idx<SortedIndex.Count() && ypos<PageHeight-2*PAGEMARGIN) {
+      int numlines=0;
+      TextWrap(page,xpos,ypos,(PageWidth-PAGEMARGIN)/2,PageHeight-2*PAGEMARGIN,1.2*FontSize,-1.5*FontSize,SortedIndex[idx].utf8_str(),&numlines);
+      ypos += 1.2*FontSize*numlines;
+      idx++;
     }
-    base=top;
+    /* right column */
+    ypos=ypos_base;
+    xpos=(PageWidth+PAGEMARGIN)/2;
+    while (idx<SortedIndex.Count() && ypos<PageHeight-2*PAGEMARGIN) {
+      int numlines=0;
+      TextWrap(page,xpos,ypos,PageWidth-PAGEMARGIN,PageHeight-2*PAGEMARGIN,1.2*FontSize,-1.5*FontSize,SortedIndex[idx].utf8_str(),&numlines);
+      ypos += 1.2*FontSize*numlines;
+      idx++;
+    }
+    base=idx;
   }
 
   HPDF_SaveToFile(pdf,reportfile.mb_str(wxConvFile));
@@ -1094,7 +1120,7 @@ void PdfReport::Text(HPDF_Page page, double x, double y, const char *text,
  *  have been set earlier.
  */
 unsigned PdfReport::TextWrap(HPDF_Page page, double x1, double y1, double x2, double y2,
-                             double linespacing, const char *text, int *numlines)
+                             double linespacing, double firstline, const char *text, int *numlines)
 {
   unsigned count;
   HPDF_REAL height,width;
@@ -1112,6 +1138,8 @@ unsigned PdfReport::TextWrap(HPDF_Page page, double x1, double y1, double x2, do
     y1=y2;
     y2=t;
   }
+  if (firstline>0.001)
+      x1+=firstline;
   width=x2-x1;
   height=HPDF_Page_GetHeight(page);
   if (numlines!=NULL)
@@ -1178,6 +1206,11 @@ unsigned PdfReport::TextWrap(HPDF_Page page, double x1, double y1, double x2, do
     if (*start==' ') {
       start+=1;
       count++;
+    }
+    if (firstline<-0.001 || firstline>0.001) {
+      x1-=firstline;
+      width=x2-x1;
+      firstline=0;
     }
     if (numlines!=NULL)
       *numlines+=1;

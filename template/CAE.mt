@@ -8,6 +8,7 @@ AR CAE
 Po 0 0 0 15 51D5CF28 00000000 ~~
 Li {NAME}
 Cd {DESCR}
+Kw {TAGS}
 Op 0 0 0
 {TS @?TSR   TS ~ @?TSV   "V" "H" TSR 0 >= ? @TRvis   "V" "H" TSV 0 >= ? @TVvis}
 {TSR abs @TSR   TSV abs @TSV   TW 100 / TSR * @TRpen   TW 100 / TSV * @TVpen}

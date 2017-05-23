@@ -2,7 +2,7 @@
 #brief ZIF socket for FPC cables, right-angle
 #note ZIF socket with horizontal entry
 #pins 4 6 ...
-#flags mechanic(2) rebuild
+#flags aux-pad(mechanic,2) rebuild
 #param 8 @PT  1.0 @PP  2.75 @SH 11.6 @SV  1.3 @PW 0.6 @PL  1.8 @PLA 2 @PWA \
 #      5.8 @BW 12.6 @BL  0.2 @BP  0.65 @TS 15 @TW  0.2 @STP
 #model ZIF-FPC
@@ -11,7 +11,7 @@ AR ZIF-FPC
 Po 0 0 0 15 00000000 00000000 ~~
 Li {NAME}
 Cd {DESCR}
-Kw ZIF FPC
+Kw {TAGS}
 Op 0 0 0
 At SMD
 #determine text size and visibility from the text parameter(s)

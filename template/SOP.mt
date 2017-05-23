@@ -10,7 +10,7 @@ AR SOP
 Po 0 0 0 15 00000000 00000000 ~~
 Li {NAME}
 Cd {DESCR}
-Kw SOIC SSOP TSSOP
+Kw {TAGS}
 Op 0 0 0
 At SMD
 #determine text size and visibility from the text parameter(s)

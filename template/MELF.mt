@@ -9,7 +9,7 @@ AR MELF
 Po 0 0 0 15 00000000 00000000 ~~
 Li {NAME}
 Cd {DESCR}
-Kw CHIP MELF
+Kw {TAGS}
 Op 0 0 0
 At SMD
 #body is around the pads, so body size is calculated automatically

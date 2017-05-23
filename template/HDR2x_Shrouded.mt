@@ -11,7 +11,7 @@ AR HDR2x_Shrouded
 Po 0 0 0 15 00000000 00000000 ~~
 Li {NAME}
 Cd {DESCR}
-Kw HDR DIL
+Kw {TAGS}
 Op 0 0 0
 At STD
 {BW 2 / @X2   X2 ~ @X1   BL 2 / @Y2   Y2 ~ @Y1}

@@ -2,7 +2,7 @@
  *  Librarian for KiCad, a free EDA CAD application.
  *  Support for CXF fonts.
  *
- *  Copyright (C) 2013-2015 CompuPhase
+ *  Copyright (C) 2013-2017 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: cxffont.h 5387 2015-10-22 19:31:30Z thiadmer $
+ *  $Id: cxffont.h 5685 2017-05-23 10:35:40Z thiadmer $
  */
 #ifndef __cxffont_h
 #define __cxffont_h
@@ -77,7 +77,7 @@ public:
   CXFFont() : m_LetterSpacing(0), m_WordSpacing(0), m_LineSpacingFactor(0),
     m_CapsHeight(0), m_XHeight(0), m_Ascender(0), m_Descender(0),
     m_ScaleX(1), m_ScaleY(1), m_Rotation(0), m_Overbar(false),
-    m_AlignHor(CXF_ALIGNLEFT), m_AlignVer(CXF_ALIGNBASE)
+    m_AlignHor(CXF_ALIGNLEFT), m_AlignVer(CXF_ALIGNBASE), m_Slant(0)
     { m_Glyphs.clear(); }
   ~CXFFont() { m_Glyphs.clear(); }
 
@@ -98,6 +98,7 @@ public:
   void SetRotation(int rotation) { m_Rotation = rotation; while (m_Rotation < 0) m_Rotation += 360; while (m_Rotation > 360) m_Rotation -= 360; }
   void SetOverbar(bool overbar) { m_Overbar = overbar; }
   void SetAlign(int hor, int ver) { m_AlignHor = hor; m_AlignVer = ver; }
+  void SetItalic(bool italic) { m_Slant = italic ? 0.4f : 0; }
 
 private:
   /* font characteristics */
@@ -114,6 +115,7 @@ private:
   int m_Rotation; /* limited to 0, 90, 180, 270 */
   bool m_Overbar;
   int m_AlignHor, m_AlignVer;
+  float m_Slant;
 
   std::vector<CXFGlyph> m_Glyphs;
 

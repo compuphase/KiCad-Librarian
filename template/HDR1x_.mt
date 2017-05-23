@@ -3,13 +3,13 @@
 #note Suitable for pin headers or resistor/capacitor arrays
 #pins 2 3 ...
 #param 5 @?PT   2.54 @PP   1.6 @PW   1.6 @PL   1.0 @DS   0.2 @BP   0.65 @TS   15 @TW
-#model HDR1x_
+#model HDR1x_ HDR1x_FrictionLock
 $MODULE {NAME}
 AR HDR1x_
 Po 0 0 0 15 00000000 00000000 ~~
 Li {NAME}
 Cd {DESCR}
-Kw HDR SIL
+Kw {TAGS}
 Op 0 0 0
 At STD
 {PP @BW   PT PP * @BL}

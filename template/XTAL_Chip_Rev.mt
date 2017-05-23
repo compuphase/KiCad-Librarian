@@ -12,7 +12,7 @@ AR XTAL_Chip_Rev
 Po 0 0 0 15 00000000 00000000 ~~
 Li {NAME}
 Cd {DESCR}
-Kw XTAL chip Common-mode choke
+Kw {TAGS}
 Op 0 0 0
 At SMD
 # in this template, pitch is vertical and span is horizontal, regardless of which

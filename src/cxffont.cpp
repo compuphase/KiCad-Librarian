@@ -2,7 +2,7 @@
  *  Librarian for KiCad, a free EDA CAD application.
  *  Support for CXF fonts.
  *
- *  Copyright (C) 2013-2015 CompuPhase
+ *  Copyright (C) 2013-2017 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: cxffont.cpp 5387 2015-10-22 19:31:30Z thiadmer $
+ *  $Id: cxffont.cpp 5685 2017-05-23 10:35:40Z thiadmer $
  */
 #include <cstdio>
 #include <cstring>
@@ -270,9 +270,9 @@ void CXFFont::DrawText(const wchar_t* text, std::vector<CXFPolyLine>* strokes) c
           for (size_t pidx = 0; (pt = stroke->GetPoint(pidx)) != 0; pidx++) {
             if (vertmode) {
               newpt.m_x = ypos - (pt->m_y * scaley);
-              newpt.m_y = xpos + pt->m_x * scalex;
+              newpt.m_y = xpos + (pt->m_x + pt->m_y * m_Slant) * scalex;
             } else {
-              newpt.m_x = xpos + pt->m_x * scalex;
+              newpt.m_x = xpos + (pt->m_x + pt->m_y * m_Slant) * scalex;
               newpt.m_y = ypos + pt->m_y * scaley;
             }
             newstroke.AddPoint(newpt);

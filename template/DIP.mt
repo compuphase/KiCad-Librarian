@@ -10,7 +10,7 @@ AR DIP
 Po 0 0 0 15 00000000 00000000 ~~
 Li {NAME}
 Cd {DESCR}
-Kw DIP
+Kw {TAGS}
 Op 0 0 0
 At STD
 #determine text size and visibility from the text parameter(s)

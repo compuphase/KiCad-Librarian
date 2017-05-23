@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: libraryfunctions.h 5405 2015-11-20 09:40:55Z thiadmer $
+ *  $Id: libraryfunctions.h 5685 2017-05-23 10:35:40Z thiadmer $
  */
 #ifndef LIBRARYFUNCTIONS_H
 #define LIBRARYFUNCTIONS_H
@@ -77,6 +77,7 @@ public:
 	double GetWidth() const { return m_width; }
 	double GetHeight() const { return m_height; }
 
+	void SetMid(double x, double y, double width, double height) { Set(x - width / 2, y - height / 2, width, height); }
     double GetMidX() const { return m_x + m_width / 2; }
     double GetMidY() const { return m_y + m_height / 2; }
 
@@ -88,6 +89,21 @@ public:
 	void SetTop(double y) { m_height += m_y - y; m_y = y; if (m_height < 0) m_height = 0; }
 	void SetRight(double x) { m_width = x - m_x; if (m_width < 0) m_width = 0; }
 	void SetBottom(double y) { m_height = y - m_y; if (m_height < 0) m_height = 0; }
+
+    bool OverlapOrTouch(const CoordSize& cs) const {
+        return GetLeft() < cs.GetRight() + EPSILON && GetRight() > cs.GetLeft() - EPSILON 
+            && GetTop() < cs.GetBottom() + EPSILON && GetBottom() < cs.GetTop() - EPSILON;
+    }
+    void Union(const CoordSize& cs) {
+        if (cs.GetLeft() < m_x) 
+            m_x = cs.GetLeft();
+        if (cs.GetTop() < m_y) 
+            m_y = cs.GetTop();
+        if (cs.GetRight() > m_x + m_width)
+            m_width = cs.GetRight() - m_x;
+        if (cs.GetBottom() > m_y + m_height)
+            m_height = cs.GetBottom() - m_y;
+    }
 private:
 	double m_x, m_y;
 	double m_width, m_height;

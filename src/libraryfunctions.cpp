@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: libraryfunctions.cpp 5582 2016-10-03 10:32:01Z thiadmer $
+ *  $Id: libraryfunctions.cpp 5685 2017-05-23 10:35:40Z thiadmer $
  */
 
 #include <wx/dir.h>
@@ -2875,8 +2875,8 @@ bool FootprintFromTemplate(wxArrayString* module, const wxArrayString& templat,
 		rpn.Set("PT");
 		int pads = (rpn.Parse() == RPN_OK) ? (int)(rpn.Value().Double() + 0.1) : 0;	/* + 0.1 to avoid rounding errors */
         rpn.Set("PTA");
-		int pads_mechanic = (rpn.Parse() == RPN_OK) ? (int)(rpn.Value().Double() + 0.1) : 0;	/* + 0.1 to avoid rounding errors */
-		for (int pad = 1; pad <= pads + pads_mechanic; pad++) {
+		int pads_aux = (rpn.Parse() == RPN_OK) ? (int)(rpn.Value().Double() + 0.1) : 0;	/* + 0.1 to avoid rounding errors */
+		for (int pad = 1; pad <= pads + pads_aux; pad++) {
 			endlabel = wxEmptyString;
 			tidx = padstart;
 			rpn.SetVariable(RPNvariable("PN", pad));
@@ -2948,7 +2948,7 @@ bool FootprintFromTemplate(wxArrayString* module, const wxArrayString& templat,
 					module->Add(line);
 				/* check for the end of a pad (templates in the s-expresssion format
 				   must have the terminating ')' on a line of its own, and a parenthesis
-					 on its own should never occur elsewhere within a pad definition) */
+				   on its own should never occur elsewhere within a pad definition) */
 				line.Trim(false);
 				if (line.CmpNoCase(wxT("$EndPAD")) == 0 || line.Cmp(wxT(")")) == 0) {
 					tailstart = tidx + 1;
@@ -2960,6 +2960,13 @@ bool FootprintFromTemplate(wxArrayString* module, const wxArrayString& templat,
 				wxMessageBox(wxString::Format(wxT("RPN expression error: no match for label \"%s\""), endlabel.c_str()));
 				errorcount++;
 			}
+            /* after running the first aux-pad, check the PTA variable again,
+               but note that the first aux-pad may be the last numbered pad (so 
+               the first aux-pad can be pads or pads + 1) */
+            if (pad >= pads) {
+                rpn.Set("PTA");
+		        pads_aux = (rpn.Parse() == RPN_OK) ? (int)(rpn.Value().Double() + 0.1) : 0;	/* + 0.1 to avoid rounding errors */
+            }
 		}
 	}
 
@@ -4457,6 +4464,7 @@ bool TranslatePadInfo(wxArrayString* module, FootprintInfo* info)
 		unsigned startidx;	/* index in the module where the pad definitions starts (or 0 for an invalid pad) */
 		double x, y;
 		double width, height;
+        double orgwidth, orgheight; /* pad width/height may change if multiple overlapping pads are combined */
 		long angle;
 		char shape;
 		double drillwidth, drillheight;		/* for round holes, only drillwidth is set */
@@ -4494,21 +4502,58 @@ bool TranslatePadInfo(wxArrayString* module, FootprintInfo* info)
 						if (pinnr > padvalid)
 							padvalid = pinnr;
                         else if (pinnr == PIN_ANOMYM)
-                            padmech++;
+                            padmech++;  /* this is redundant for overlapping anonymous pads that form an exposed pad, but it does not hurt either */
 					} else if (pinnr != PIN_UNKNOWN) {
 						wxASSERT((pinnr > 0 && pinnr <= padvalid) || pinnr == PIN_ANOMYM);
-                        if (pinnr == PIN_ANOMYM)
-                            pinnr = padvalid + ++padmech;
+                        if (pinnr == PIN_ANOMYM) {
+                            /* check whether this pad overlaps with the previous pad of the 
+                               same size, which is also an anonymous pad -> if so, these pads
+                               will be merged, so the count of "mechanical" pads must not be
+                               increased and the count of total pads (based on the dry run) 
+                               must be decreased */
+                            int new_padmech = padmech + 1;  /* preset to non-merged pad */
+                            if (padmech > 0) {
+                                CoordSize pad, slice;
+                                pinnr = padvalid + padmech;
+                                if (Equal(padlist[pinnr].orgwidth, padwidth) && Equal(padlist[pinnr].orgheight, padheight)) {
+                                    pad.SetMid(padlist[pinnr].x, padlist[pinnr].y, padlist[pinnr].width, padlist[pinnr].height);
+                                    slice.SetMid(padx, pady, padwidth, padheight);
+                                    if (pad.OverlapOrTouch(slice)) {
+                                        padcount--;     /* this pad will be merged, total number of pads is 1 less than estimated in the dry run */
+                                        new_padmech = padmech;  /* reset mechanical pad count */
+                                    }
+                                }
+                            }                            
+                            pinnr = padvalid + new_padmech;
+                        }
 						wxASSERT(pinnr > 0 && pinnr < padcount);
-						padlist[pinnr].startidx = startidx;
-						padlist[pinnr].x = padx;
-						padlist[pinnr].y = pady;
-						padlist[pinnr].width = padwidth;
-						padlist[pinnr].height = padheight;
-						padlist[pinnr].angle = padangle;
-						padlist[pinnr].shape = padshape;
-						padlist[pinnr].drillwidth = drillwidth;
-						padlist[pinnr].drillheight = drillheight;
+                        if (padlist[pinnr].startidx > 0) {
+                            /* pad with this number already exists, see whether to merge with it */
+                            if (Equal(padlist[pinnr].orgwidth, padwidth) && Equal(padlist[pinnr].orgheight, padheight)) {
+                                CoordSize pad, slice;
+                                pad.SetMid(padlist[pinnr].x, padlist[pinnr].y, padlist[pinnr].width, padlist[pinnr].height);
+                                slice.SetMid(padx, pady, padwidth, padheight);
+                                if (pad.OverlapOrTouch(slice)) {
+                                    pad.Union(slice);
+						            padlist[pinnr].x = pad.GetMidX();
+						            padlist[pinnr].y = pad.GetMidY();
+						            padlist[pinnr].width = pad.GetWidth();
+						            padlist[pinnr].height = pad.GetHeight();
+                                }
+                            }
+                        } else {
+						    padlist[pinnr].startidx = startidx;
+						    padlist[pinnr].x = padx;
+						    padlist[pinnr].y = pady;
+						    padlist[pinnr].width = padwidth;
+						    padlist[pinnr].height = padheight;
+						    padlist[pinnr].angle = padangle;
+						    padlist[pinnr].shape = padshape;
+						    padlist[pinnr].drillwidth = drillwidth;
+						    padlist[pinnr].drillheight = drillheight;
+						    padlist[pinnr].orgwidth = padwidth;
+						    padlist[pinnr].orgheight = padheight;
+                        }
 					}
 					padx = pady = padwidth = padheight = 0;
 					padangle = 0;

@@ -17,7 +17,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: libmngr_frame.cpp 5593 2016-11-01 14:15:26Z  $
+ *  $Id: libmngr_frame.cpp 5685 2017-05-23 10:35:40Z thiadmer $
  */
 #include "librarymanager.h"
 #include "libmngr_frame.h"
@@ -1337,7 +1337,7 @@ void libmngrFrame::OnAbout(wxCommandEvent& /*event*/)
 	info.SetIcon(icon);
 	info.SetWebSite(wxT("http://www.compuphase.com/"));
 	info.AddArtist(wxT("The logo of KiCad Librarian is designed by http://icons8.com/"));
-	info.AddDeveloper(wxT("KiCad Librarian uses Haru PDF for the reports, Curl to access a remote repository and the wxWidgets GUI library"));
+	info.AddDeveloper(wxT("KiCad Librarian uses Haru PDF for the reports, Curl to access a remote repository, UnQlite for a cache for filtering and the wxWidgets GUI library"));
 	wxAboutBox(info);
 }
 
@@ -2253,8 +2253,7 @@ wxString libmngrFrame::ExportFootprintBitmap(const wxString& modname, bool blues
 /** Draws a string using the plotter font, using the current pen. The brush is
  *  always reset to an empty brush.
  */
-void libmngrFrame::DrawStrokeText(wxGraphicsContext *gc, float x, float y,
-																	const wxString& text)
+void libmngrFrame::DrawStrokeText(wxGraphicsContext *gc, float x, float y, const wxString& text)
 {
 	/* create a stroke array for the text (applying scale and rotation) */
 	std::vector<CXFPolyLine> strokes;
@@ -2376,6 +2375,7 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
 						    if (name.Length() > 0 && name[0] == '~')
 							    name = name.Mid(1);
 						    VFont.SetScale(size / CXF_CAPSHEIGHT, size / CXF_CAPSHEIGHT);
+                            VFont.SetItalic(false);
 						    VFont.SetOverbar(false);
 						    VFont.SetRotation(angle);
 						    VFont.SetAlign(horalign, veralign);
@@ -2389,7 +2389,7 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
 			    } else if (indraw) {
 				    double x, y, w, h, penwidth, length, size_nr, size_name, angle, endangle;
 				    long count, orientation, bold, halign, valign;
-				    bool visible;
+				    bool visible, italic;
 				    wxPoint2DDouble *points;
 				    wxGraphicsPath path;
 				    wxString name, pin, field;
@@ -2538,7 +2538,8 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
 					        if (GetTokenLong(&line) > 1)
 						        break;  /* ignore De Morgan converted shape */
 					        name = GetToken(&line);
-					        GetToken(&line);	//??? ignore Italic/Normal, because the CXF font currently does not support slanted text
+					        field = GetToken(&line);
+                            italic = field.CmpNoCase(wxT("italic")) == 0;
 					        bold = GetTokenLong(&line);
 					        field = GetToken(&line);
 					        if (field == wxT('L'))
@@ -2558,6 +2559,7 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
 					        pen.SetColour(visible ? clrText : clrHiddenText);
 					        gc->SetPen(pen);
 					        VFont.SetScale(h / CXF_CAPSHEIGHT, h / CXF_CAPSHEIGHT);
+                            VFont.SetItalic(italic);
 					        VFont.SetOverbar(false);
 					        VFont.SetRotation((int)angle);
 					        VFont.SetAlign(halign, valign);
@@ -2653,6 +2655,7 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
 						        pen.SetWidth(size_nr * 0.125);
 						        gc->SetPen(pen);
 						        VFont.SetScale(size_nr / CXF_CAPSHEIGHT, size_nr / CXF_CAPSHEIGHT);
+                                VFont.SetItalic(false);
 						        VFont.SetOverbar(false);
 						        VFont.SetRotation((int)angle);
 						        VFont.SetAlign(CXF_ALIGNCENTRE, CXF_ALIGNBOTTOM);
@@ -2669,6 +2672,7 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
 						        pen.SetWidth(size_name * 0.15);
 						        gc->SetPen(pen);
 						        VFont.SetScale(size_name / CXF_CAPSHEIGHT, size_name / CXF_CAPSHEIGHT);
+                                VFont.SetItalic(false);
 						        if (name.length() > 0 && name[0] == wxT('~')) {
 							        name = name.Mid(1);
 							        VFont.SetOverbar(true);
@@ -2726,7 +2730,7 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 	wxPoint2DDouble points[5];
 	wxPen pen;
 
-	/* check whether there is at leats one footprint visible */
+	/* check whether there is at least one footprint visible */
 	if (PartData[0].Count() == 0 && PartData[1].Count() == 0) {
 		clrText.Set(128, 128, 128);
 		wxFont font(24, wxFONTFAMILY_MODERN, wxFONTSTYLE_NORMAL, wxFONTWEIGHT_BOLD);
@@ -2888,14 +2892,18 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 					wxString visflag = GetToken(&line);
 					bool visible = (visflag == wxT('V'));
 					GetToken(&line);		/* ignore layer */
+                    bool italic = false;
 					if (line[0] == '"' || (line.length() > 1 && line[1] == '"')) {
 						/* the italic flag is absent or it is glued to the text */
-						if (line[0] != '"')
+						if (line[0] != '"') {
+                            italic = (token[0] == 'I');
 							line = line.Mid(1);
+                        }
 						wxASSERT(line[0] == '"');
 						token = GetToken(&line);
 					} else {
-						GetToken(&line);	//??? ignore italic flag (because CXF font does currently not support slanting)
+						token = GetToken(&line);
+                        italic = (token.Length() > 0) && (token[0] == 'I');
 						token = GetToken(&line);
 					}
 					penwidth *= Scale;
@@ -2906,6 +2914,7 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 					tpen.SetColour(visible ? clrText : clrHiddenText);
 					gc->SetPen(tpen);
 					VFont.SetScale(cx / CXF_CAPSHEIGHT * Scale, cy / CXF_CAPSHEIGHT * Scale);
+                    VFont.SetItalic(italic);
 					VFont.SetOverbar(false);
 					VFont.SetRotation((int)rot);
 					VFont.SetAlign(CXF_ALIGNCENTRE, CXF_ALIGNCENTRE);
@@ -3114,6 +3123,8 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 		double padx = 0, pady = 0, padwidth = 0, padheight = 0, padrot = 0;
 		double paddeltax = 0, paddeltay = 0;
 		double drillx = 0, drilly = 0, drillwidth = 0, drillheight = 0;
+        double pasteratio = 0.0;
+        wxPoint2DDouble pastepoints[5];
 		wxString padpin, padshape;
 		for (int idx = 0; idx < (int)PartData[fp].Count(); idx++) {
 			wxString line = PartData[fp][idx];
@@ -3121,6 +3132,7 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 				if (line.CmpNoCase(wxT("$PAD")) == 0) {
 					inpad = true;
 					drillwidth = drillheight = 0;
+                    pasteratio = 0.0;
 				} else if (line.CmpNoCase(wxT("$EndPAD")) == 0) {
                     /* make the pad smaller in outline mode */
                     if (OutlineMode) {
@@ -3154,6 +3166,24 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 						}
 					}
 					points[4] = points[0];
+                    /* make scaled pad for paste */
+                    memcpy(pastepoints, points, sizeof pastepoints);
+                    if (pasteratio < -EPSILON && pasteratio > -0.5 && !OutlineMode) {
+                        double d;
+                        d = points[1].m_x - points[0].m_x;
+                        pastepoints[0].m_x = points[0].m_x - d * pasteratio;
+                        pastepoints[1].m_x = points[1].m_x + d * pasteratio;
+                        d = points[2].m_x - points[3].m_x;
+                        pastepoints[2].m_x = points[2].m_x + d * pasteratio;
+                        pastepoints[3].m_x = points[3].m_x - d * pasteratio;
+                        d = points[3].m_y - points[0].m_y;
+                        pastepoints[0].m_y = points[0].m_y - d * pasteratio;
+                        pastepoints[3].m_y = points[3].m_y + d * pasteratio;
+                        d = points[2].m_y - points[1].m_y;
+                        pastepoints[1].m_y = points[1].m_y - d * pasteratio;
+                        pastepoints[2].m_y = points[2].m_y + d * pasteratio;
+                        pastepoints[4] = pastepoints[0];
+                    }
 					/* apply rotation */
 					if (padrot > EPSILON) {
 						double angle = (padrot * M_PI / 180.0);
@@ -3162,6 +3192,11 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 							wxDouble ny = points[idx].m_x * sin(angle) + points[idx].m_y * cos(angle);
 							points[idx].m_x = nx;
 							points[idx].m_y = ny;
+                            /* same for paste aperture */
+							nx = pastepoints[idx].m_x * cos(angle) - pastepoints[idx].m_y * sin(angle);
+							ny = pastepoints[idx].m_x * sin(angle) + pastepoints[idx].m_y * cos(angle);
+							pastepoints[idx].m_x = nx;
+							pastepoints[idx].m_y = ny;
 						}
 					}
 					/* move pad relative to footprint origin */
@@ -3169,6 +3204,8 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 						points[idx].m_x += padx * Scale + midx;
 						points[idx].m_y += pady * Scale + midy;
 						UpdateBoundingBox(&bbox, padx, pady);
+						pastepoints[idx].m_x += padx * Scale + midx;
+						pastepoints[idx].m_y += pady * Scale + midy;
 					}
 					gc->SetBrush(brush);
 					/* avoid negative width/height for ellipses or obrounds */
@@ -3180,6 +3217,24 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 												 ((cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight()) / 2);
 					else
 						gc->DrawLines(5, points);
+                    /* draw solder paste ratio, if set */
+                    if (pasteratio < -EPSILON && pasteratio > -0.5 && !OutlineMode) {
+                        wxPen pastepen(wxColour(160,160,80), 1, wxPENSTYLE_DOT);
+                        gc->SetPen(pastepen);
+                        wxBrush pastebrush(wxColour(160,160,80), wxBRUSHSTYLE_FDIAGONAL_HATCH);
+					    gc->SetBrush(pastebrush);
+					    /* avoid negative width/height for ellipses or obrounds */
+					    cs.Set(pastepoints[0].m_x, pastepoints[0].m_y, pastepoints[2].m_x - pastepoints[0].m_x, pastepoints[2].m_y - pastepoints[0].m_y);
+					    if (padshape.CmpNoCase(wxT("C")) == 0)
+						    gc->DrawEllipse(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight());
+					    else if (padshape.CmpNoCase(wxT("O")) == 0)
+						    gc->DrawRoundedRectangle(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight(),
+												     ((cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight()) / 2);
+					    else
+						    gc->DrawLines(5, pastepoints);
+                        gc->SetPen(pen);
+                        gc->SetBrush(brush);
+                    }
 					/* optionally the hole in the pad */
 					if (drillwidth > EPSILON) {
 						if (padshape == wxT('C') && padwidth - drillwidth < 0.05)
@@ -3192,9 +3247,9 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 								drillwidth = drillheight;
 								drillheight = t;
 							}
-							CoordSize cs((padx + drillx - drillwidth/2) * Scale + midx,
-													 (pady + drilly - drillheight/2) * Scale + midy,
-													 drillwidth * Scale, drillheight * Scale);
+							cs.Set((padx + drillx - drillwidth/2) * Scale + midx,
+								   (pady + drilly - drillheight/2) * Scale + midy,
+								   drillwidth * Scale, drillheight * Scale);
 							gc->DrawRoundedRectangle(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight(),
 													 ((cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight()) / 2);
 						} else {
@@ -3247,6 +3302,11 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 						drilly = GetTokenDim(&sectoffset, true);
 					}
 				}
+				section = GetSection(line, wxT("solder_paste_margin_ratio"));
+				if (section.length() > 0)
+					pasteratio = GetTokenDouble(&section);
+                else
+                    pasteratio = 0.0;
                 if (OutlineMode) {
                     if (padwidth > 0.3) 
                         padwidth -= 0.15;
@@ -3282,6 +3342,24 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 					}
 				}
 				points[4] = points[0];
+                /* make scaled pad for paste */
+                memcpy(pastepoints, points, sizeof pastepoints);
+                if (pasteratio < -EPSILON && pasteratio > -0.5 && !OutlineMode) {
+                    double d;
+                    d = points[1].m_x - points[0].m_x;
+                    pastepoints[0].m_x = points[0].m_x - d * pasteratio;
+                    pastepoints[1].m_x = points[1].m_x + d * pasteratio;
+                    d = points[2].m_x - points[3].m_x;
+                    pastepoints[2].m_x = points[2].m_x + d * pasteratio;
+                    pastepoints[3].m_x = points[3].m_x - d * pasteratio;
+                    d = points[3].m_y - points[0].m_y;
+                    pastepoints[0].m_y = points[0].m_y - d * pasteratio;
+                    pastepoints[3].m_y = points[3].m_y + d * pasteratio;
+                    d = points[2].m_y - points[1].m_y;
+                    pastepoints[1].m_y = points[1].m_y - d * pasteratio;
+                    pastepoints[2].m_y = points[2].m_y + d * pasteratio;
+                    pastepoints[4] = pastepoints[0];
+                }
 				/* apply rotation */
 				if (padrot != 0) {
 					double angle = (padrot * M_PI / 180.0);
@@ -3290,6 +3368,11 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 						wxDouble ny = points[idx].m_x * sin(angle) + points[idx].m_y * cos(angle);
 						points[idx].m_x = nx;
 						points[idx].m_y = ny;
+                        /* same for paste aperture */
+						nx = pastepoints[idx].m_x * cos(angle) - pastepoints[idx].m_y * sin(angle);
+						ny = pastepoints[idx].m_x * sin(angle) + pastepoints[idx].m_y * cos(angle);
+						pastepoints[idx].m_x = nx;
+						pastepoints[idx].m_y = ny;
 					}
 				}
 				/* move pad relative to footprint origin */
@@ -3297,6 +3380,8 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 					points[idx].m_x += padx * Scale + midx;
 					points[idx].m_y += pady * Scale + midy;
 					UpdateBoundingBox(&bbox, padx, pady);
+					pastepoints[idx].m_x += padx * Scale + midx;
+					pastepoints[idx].m_y += pady * Scale + midy;
 				}
 				gc->SetBrush(brush);
 				CoordSize cs(points[0].m_x, points[0].m_y, points[2].m_x - points[0].m_x, points[2].m_y - points[0].m_y);
@@ -3307,6 +3392,24 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 											 ((cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight()) / 2);
 				else
 					gc->DrawLines(5, points);
+                /* draw solder paste ratio, if set */
+                if (pasteratio < -EPSILON && pasteratio > -0.5 && !OutlineMode) {
+                    wxPen pastepen(wxColour(160,160,80), 1, wxPENSTYLE_DOT);
+                    gc->SetPen(pastepen);
+                    wxBrush pastebrush(wxColour(160,160,80), wxBRUSHSTYLE_FDIAGONAL_HATCH);
+					gc->SetBrush(pastebrush);
+					/* avoid negative width/height for ellipses or obrounds */
+					cs.Set(pastepoints[0].m_x, pastepoints[0].m_y, pastepoints[2].m_x - pastepoints[0].m_x, pastepoints[2].m_y - pastepoints[0].m_y);
+					if (padshape.CmpNoCase(wxT("C")) == 0)
+						gc->DrawEllipse(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight());
+					else if (padshape.CmpNoCase(wxT("O")) == 0)
+						gc->DrawRoundedRectangle(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight(),
+												    ((cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight()) / 2);
+					else
+						gc->DrawLines(5, pastepoints);
+                    gc->SetPen(pen);
+                    gc->SetBrush(brush);
+                }
 				/* optionally the hole in the pad */
 				if (drillwidth > EPSILON) {
 					if (padshape.Cmp(wxT("circle")) == 0 && padwidth - drillwidth < 0.05)
@@ -3319,9 +3422,9 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 							drillwidth = drillheight;
 							drillheight = t;
 						}
-						CoordSize cs((padx + drillx - drillwidth/2) * Scale + midx,
-												 (pady + drilly - drillheight/2) * Scale + midy,
-												 drillwidth * Scale, drillheight * Scale);
+						cs.Set((padx + drillx - drillwidth/2) * Scale + midx,
+							   (pady + drilly - drillheight/2) * Scale + midy,
+							   drillwidth * Scale, drillheight * Scale);
 						gc->DrawRoundedRectangle(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight(),
 												 ((cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight()) / 2);
 					} else {
@@ -3361,6 +3464,8 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
 					drillwidth = GetTokenDim(&line, unit_mm);
 					drillheight = GetTokenDim(&line, unit_mm);
 				}
+			} else if (token.CmpNoCase(wxT(".SolderPasteRatio")) == 0) {
+                pasteratio = GetTokenDouble(&line);
 			}
 		}
 
@@ -3616,8 +3721,8 @@ void libmngrFrame::DrawModels(float xangle, float yangle)
     		pSizer->Add(glCanvas, 1, wxGROW|wxALL, 0);
         #else
 			/* for unknown reasons, without a re-parent, the mouse interaction
-			   on glCanvas (on a panel) will not work on GTK */
-			glCanvas->Reparent(m_panelView->GetParent());	//???
+			   on glCanvas (on a panel) will not work on GTK */ //??? check whether this still is the case
+			glCanvas->Reparent(m_panelView->GetParent());
     		glCanvas->SetSize(sz);
 			// For the model to appear, slightly enlarge the main window, or hide and then re-show the side panel with the parameters.
 		#endif
@@ -6359,14 +6464,21 @@ bool libmngrFrame::SetVarsFromFields(RPNexpression *rpn, bool SymbolMode)
 void libmngrFrame::SetVarsFromTemplate(RPNexpression *rpn, const wxString& templatename, bool SymbolMode)
 {
 	wxString field = GetTemplateHeaderField(templatename, wxT("flags"), SymbolMode);
-	int pos = field.Find(wxT("mechanic"));
+    int pos = field.Find(wxT("aux-pad"));
 	if (pos >= 0) {
-		wxString param = field.Mid(pos);
-		param = param.AfterFirst(wxT('('));
-		param = param.BeforeFirst(wxT(')'));
-		long mechanicpads = 0;
-		param.ToLong(&mechanicpads);
-		rpn->SetVariable(RPNvariable("PTA", mechanicpads));
+		wxString params = field.Mid(pos);
+		params = params.AfterFirst(wxT('('));
+		params = params.BeforeFirst(wxT(')'));
+        wxString type = params.BeforeFirst(wxT(','));   /* should be "mechanic", "flag" or "flag-nc" */
+	    wxString pm = params.AfterFirst(wxT(','));
+		long padcount = 0;
+        if (pm.Cmp(wxT("*")) == 0)
+            padcount = 1;
+        else
+		    pm.ToLong(&padcount);
+        if (type.CmpNoCase(wxT("flag")) == 0)
+            padcount--; /* for a flag (connected exposed pad), one pad is included in the "normal" pad count */
+		rpn->SetVariable(RPNvariable("PTA", padcount));
 	}
 }
 

@@ -2,7 +2,7 @@
  *  Librarian for KiCad, a free EDA CAD application.
  *  The RPN expression parser.
  *
- *  Copyright (C) 2013-2015 CompuPhase
+ *  Copyright (C) 2013-2017 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: rpn.cpp 5387 2015-10-22 19:31:30Z thiadmer $
+ *  $Id: rpn.cpp 5685 2017-05-23 10:35:40Z thiadmer $
  */
 #include "rpn.h"
 #include <cctype>
@@ -263,6 +263,17 @@ RPN_ERROR RPNexpression::Parse()
         } else if (strcmp(word, "cos") == 0) {
           RPNvalue p1 = pop();
           push(cos(p1 * M_PI / 180.0));
+        } else if (strcmp(word, "divmod") == 0) {
+          RPNvalue p2 = pop();  /* denominator */
+          RPNvalue p1 = pop();  /* numerator */
+          if ((long)floor(p2 + 0.5) == 0) {
+            m_error = RPN_DIV_ZERO;
+            push(0.0);
+            push(0.0);
+          } else {
+            push((double)((long)floor(p1 + 0.5) % (long)floor(p2 + 0.5)));
+            push((double)((long)floor(p1 + 0.5) / (long)floor(p2 + 0.5)));
+          }
         } else if (strcmp(word, "even") == 0) {
           RPNvalue p1 = pop();
           long v = (long)floor(p1 + 0.5);
@@ -336,8 +347,8 @@ RPN_ERROR RPNexpression::Parse()
         push(p1.Double() * p2.Double());
         break;
       case '/':
-        p2 = pop();
-        p1 = pop();
+        p2 = pop(); /* denominator */
+        p1 = pop(); /* numerator */
         if (p2.Double() == 0.0) {
           m_error = RPN_DIV_ZERO;
           push(RPNvalue(0.0));

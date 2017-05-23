@@ -64,7 +64,6 @@ SET(LIBMAN_SRCS librarymanager.cpp          librarymanager.h
                 pdfreport.cpp               pdfreport.h
                 rpn.cpp                     rpn.h
 		unqlite.c                   unqlite.h
-                vrmlsupport.cpp             vrmlsupport.h
                 )
 IF(KiCadLibrarian_USE_CURL)
     SET(LIBMAN_SRCS ${LIBMAN_SRCS}

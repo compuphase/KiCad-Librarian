@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: libraryfunctions.h 5685 2017-05-23 10:35:40Z thiadmer $
+ *  $Id: libraryfunctions.h 5686 2017-05-24 13:56:46Z thiadmer $
  */
 #ifndef LIBRARYFUNCTIONS_H
 #define LIBRARYFUNCTIONS_H
@@ -92,7 +92,7 @@ public:
 
     bool OverlapOrTouch(const CoordSize& cs) const {
         return GetLeft() < cs.GetRight() + EPSILON && GetRight() > cs.GetLeft() - EPSILON 
-            && GetTop() < cs.GetBottom() + EPSILON && GetBottom() < cs.GetTop() - EPSILON;
+            && GetTop() < cs.GetBottom() + EPSILON && GetBottom() > cs.GetTop() - EPSILON;
     }
     void Union(const CoordSize& cs) {
         if (cs.GetLeft() < m_x) 

@@ -4,7 +4,7 @@
 #pins 25 29 ...
 #flags aux-pad(flag,*) rebuild
 #param 33 @PT  0.8 @PP  8.5 @SH 8.5 @SV  1.3 @PW 0.45 @PL  5 @PLA 5 @PWA \
-5#      6.8 @BW 6.8 @BL  0.2 @BP  0.65 @TS 15 @TW  0.2 @STP  20 @PSRA  1.5 @EPDOT
+5#      6.8 @BW 6.8 @BL  0.2 @BP  0.65 @TS 15 @TW  0.2 @STP  25 @PSRA  1.5 @EPDOT
 #model QFP
 $MODULE {NAME}
 AR QFPX

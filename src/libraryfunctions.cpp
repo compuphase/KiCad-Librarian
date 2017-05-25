@@ -5183,9 +5183,11 @@ bool TranslatePadInfo(wxArrayString* module, FootprintInfo* info)
     /* copy pad outline (coordinates) into the footprint information, for ease of export */
     for (int pinnr = 1; pinnr < padcount; pinnr++) {
         if (padlist[pinnr].startidx > 0) {
-            CoordSize cs(padlist[pinnr].x - padlist[pinnr].width / 2,
-                         padlist[pinnr].y - padlist[pinnr].height / 2,
-                         padlist[pinnr].width, padlist[pinnr].height);
+            CoordSize cs;
+            if (padlist[pinnr].angle==900 || padlist[pinnr].angle==2700)
+                cs.SetMid(padlist[pinnr].x, padlist[pinnr].y, padlist[pinnr].height, padlist[pinnr].width);
+            else
+                cs.SetMid(padlist[pinnr].x, padlist[pinnr].y, padlist[pinnr].width, padlist[pinnr].height);
             info->Pads.Add(cs);
         }
     }

@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: libraryfunctions.cpp 5686 2017-05-24 13:56:46Z thiadmer $
+ *  $Id: libraryfunctions.cpp 5692 2017-06-11 19:23:07Z thiadmer $
  */
 
 #include <wx/dir.h>
@@ -788,8 +788,8 @@ void TranslateToSexpr(wxArrayString* output, const wxArrayString& module)
             wxString newline = wxString::Format(wxT("(solder_paste_margin %.4f)"), dim);
             output->Add(newline);
         } else if (keyword.CmpNoCase(wxT(".SolderPasteRatio")) == 0) {
-            long ratio = GetTokenLong(&line);
-            wxString newline = wxString::Format(wxT("(solder_paste_ratio %ld)"), ratio);
+            double ratio = GetTokenDouble(&line);
+            wxString newline = wxString::Format(wxT("(solder_paste_margin_ratio %.2f)"), ratio);
             output->Add(newline);
         } else if (keyword.CmpNoCase(wxT(".LocalClearance")) == 0) {
             double dim = GetTokenDim(&line, true);
@@ -812,8 +812,9 @@ void TranslateToSexpr(wxArrayString* output, const wxArrayString& module)
             double px = 0, py = 0, pw = 0, ph = 0, tx = 0, ty = 0;
             double drillx = 0, drilly = 0, drillwidth = 0, drillheight = 0;
             double die_length = 0, solder_mask_margin = 0, clearance = 0;
-            double solder_paste_margin = 0, thermal_width = 0, thermal_gap = 0;
-            long solder_paste_ratio = -1, zone_connect = -1;
+            double solder_paste_margin = 0, solder_paste_ratio = 0;
+            double thermal_width = 0, thermal_gap = 0;
+            long zone_connect = -1;
             long angle = 0;
             long layermask = 0;
             while (idx < module.Count()) {
@@ -883,7 +884,7 @@ void TranslateToSexpr(wxArrayString* output, const wxArrayString& module)
                 } else if (keyword.CmpNoCase(wxT(".SolderPaste")) == 0) {
                     solder_paste_margin = GetTokenDim(&line, true);
                 } else if (keyword.CmpNoCase(wxT(".SolderPasteRatio")) == 0) {
-                    solder_paste_ratio = GetTokenLong(&line);
+                    solder_paste_ratio = GetTokenDouble(&line);
                 } else if (keyword.CmpNoCase(wxT(".ZoneConnection")) == 0) {
                     zone_connect = GetTokenLong(&line);
                 } else if (keyword.CmpNoCase(wxT(".ThermalWidth")) == 0) {
@@ -932,10 +933,10 @@ void TranslateToSexpr(wxArrayString* output, const wxArrayString& module)
                 newline += wxString::Format(wxT(" (solder_mask_margin %.4f)"), solder_mask_margin);
             if (clearance > EPSILON)
                 newline += wxString::Format(wxT(" (clearance %.4f)"), clearance);
-            if (solder_paste_margin > EPSILON)
+            if (solder_paste_margin < -EPSILON || solder_paste_margin > EPSILON)
                 newline += wxString::Format(wxT(" (solder_paste_margin %.4f)"), solder_paste_margin);
-            if (solder_paste_ratio >= 0)
-                newline += wxString::Format(wxT(" (solder_paste_ratio %ld)"), solder_paste_ratio);
+            if (solder_paste_ratio < -EPSILON || solder_paste_ratio > EPSILON)
+                newline += wxString::Format(wxT(" (solder_paste_margin_ratio %.2f)"), solder_paste_ratio);
             if (zone_connect >= 0)
                 newline += wxString::Format(wxT(" (zone_connect %ld)"), zone_connect);
             if (thermal_width > EPSILON)
@@ -1224,9 +1225,9 @@ void TranslateToLegacy(wxArrayString* output, const wxArrayString& module)
             double dim = GetTokenDim(&line, true);
             wxString newline = wxString::Format(wxT(".SolderPaste %.4f"), dim);
             output->Add(newline);
-        } else if (keyword.CmpNoCase(wxT("solder_paste_ratio")) == 0) {
-            long dim = GetTokenLong(&line);
-            wxString newline = wxString::Format(wxT(".SolderPasteRatio %ld"), dim);
+        } else if (keyword.CmpNoCase(wxT("solder_paste_margin_ratio")) == 0) {
+            double dim = GetTokenDouble(&line);
+            wxString newline = wxString::Format(wxT(".SolderPasteRatio %.2f"), dim);
             output->Add(newline);
         } else if (keyword.CmpNoCase(wxT("clearance")) == 0) {
             double dim = GetTokenDim(&line, true);
@@ -1354,10 +1355,10 @@ void TranslateToLegacy(wxArrayString* output, const wxArrayString& module)
                 newline = wxString::Format(wxT(".SolderPaste %.4f"), dim);
                 output->Add(newline);
             }
-            section = GetSection(line, wxT("solder_paste_ratio"));
+            section = GetSection(line, wxT("solder_paste_margin_ratio"));
             if (section.Length() > 0) {
-                long val = GetTokenLong(&section);
-                newline = wxString::Format(wxT(".SolderPasteRatio %ld"), val);
+                double val = GetTokenDouble(&section);
+                newline = wxString::Format(wxT(".SolderPasteRatio %.2f"), val);
                 output->Add(newline);
             }
             section = GetSection(line, wxT("zone_connect"));

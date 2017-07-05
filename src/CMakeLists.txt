@@ -118,8 +118,11 @@ SET(DEB_DESKTOP_DIR     "/usr/share/applications")
 SET(DEB_MIME_DIR        "/usr/share/mime/packages")
 SET(DEB_PIXMAPS_DIR     "/usr/share/pixmaps")
 
+configure_file(${CMAKE_SOURCE_DIR}/../kicadlibrarian.desktop.in
+	${CMAKE_BINARY_DIR}/kicadlibrarian.desktop
+	NEWLINE_STYLE UNIX)
 INSTALL(CODE "execute_process(COMMAND xdg-desktop-menu install --novendor
-	${CMAKE_SOURCE_DIR}/../kicadlibrarian.desktop OUTPUT_QUIET ERROR_QUIET)")
+	${CMAKE_BINARY_DIR}/kicadlibrarian.desktop OUTPUT_QUIET ERROR_QUIET)")
 INSTALL(CODE "execute_process(COMMAND xdg-icon-resource install --novendor --size 32
 	${CMAKE_SOURCE_DIR}/../kicadlibrarian32.png OUTPUT_QUIET ERROR_QUIET)")
 INSTALL(CODE "execute_process(COMMAND xdg-mime install --novendor

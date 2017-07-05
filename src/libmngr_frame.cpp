@@ -907,7 +907,9 @@ void libmngrFrame::OnFootprintReport(wxCommandEvent& /*event*/)
     report.SetPage(format, (landscape != 0));
     report.FootprintOptions(opt_description != 0, opt_padinfo != 0, opt_labels != 0);
     report.SetFont(fontsize);
-    report.FootprintReport(this, library, modules, reportfile);
+    if(!report.FootprintReport(this, library, modules, reportfile)) {
+        return;
+    }
     m_statusBar->SetStatusText(wxT("Finished report"));
 
     #if wxMAJOR_VERSION < 3

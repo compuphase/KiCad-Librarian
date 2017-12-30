@@ -22,7 +22,7 @@ At SMD
 {TSR abs @TSR   TSV abs @TSV   TW 100 / TSR * @TRpen   TW 100 / TSV * @TVpen}
 T0 0 {PP PL + -0.5 * TSR - BP -} {TSR} {TSR} 0 {TRpen} N {TRvis} 21 N "REF**"
 T1 0 {PP PL + 0.5 * TSV +} {TSV} {TSV} 0 {TVpen} N {TVvis} 21 N "VAL**"
-{BW 2 / ~ BP 2 * - @T2X   PT -0.25 * 0.5 + PP * PL - BP - @T2Y}
+{BW 2 / ~ BP 2 * - @T2X   PT 4 / round -2 / PP * PL - @T2Y}
 {? BW 2 <}{T2Y BP 4 * + @T2Y}
 T2 {T2X} {T2Y} {BP 2 *} {BP 2 *} 0 {BP 2 /} N V 21 N "○"
 {BW 2 / @X2   X2 ~ @X1   BL 2 / @Y2   Y2 ~ @Y1}

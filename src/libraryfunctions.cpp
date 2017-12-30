@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: libraryfunctions.cpp 5692 2017-06-11 19:23:07Z thiadmer $
+ *  $Id: libraryfunctions.cpp 5784 2017-12-26 14:12:22Z thiadmer $
  */
 
 #include <wx/dir.h>
@@ -3760,6 +3760,27 @@ wxString GetPrefix(const wxArrayString& symbol)
         }
     }
     return wxEmptyString;
+}
+
+/* For symbols, determine the number of "units" in a symbol (a quad opamp has four opamp units) */
+int GetUnitCount(const wxArrayString& symbol)
+{
+    int max = 0;
+    for (unsigned idx = 0; idx < symbol.Count(); idx++) {
+        wxString line = symbol[idx];
+        wxString keyword = GetToken(&line);
+        if (keyword.Cmp(wxT("DEF")) == 0) {
+            GetToken(&line);    /* ignore symbol name */
+            GetToken(&line);    /* ignore prefix */
+            GetToken(&line);    /* ignore reserved field */
+            GetToken(&line);    /* ignore pin name offset */
+            GetToken(&line);    /* ignore pin number visibility flag */
+            GetToken(&line);    /* ignore pin name visibility flag */
+            int parts = (int)GetTokenLong(&line);
+            return (parts > 0) ? parts : 1;
+        }
+    }
+    return 1;
 }
 
 /* For symbols */

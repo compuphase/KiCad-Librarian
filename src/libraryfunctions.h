@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: libraryfunctions.h 5686 2017-05-24 13:56:46Z thiadmer $
+ *  $Id: libraryfunctions.h 5784 2017-12-26 14:12:22Z thiadmer $
  */
 #ifndef LIBRARYFUNCTIONS_H
 #define LIBRARYFUNCTIONS_H
@@ -325,6 +325,7 @@ bool GetTextLabelSize(const wxArrayString& module, LabelInfo* info, bool symbolm
 void SetTextLabelSize(wxArrayString& module, const LabelInfo& info, bool symbolmode, bool unit_mm);
 
 wxString GetPrefix(const wxArrayString& symbol);
+int GetUnitCount(const wxArrayString& symbol);
 wxString GetAliases(const wxArrayString& symbol);
 bool SetAliases(wxArrayString& module, const wxString& aliases);
 wxString GetFootprints(const wxArrayString& symbol);

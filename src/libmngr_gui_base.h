@@ -28,6 +28,7 @@
 #include <wx/aui/auibar.h>
 #include <wx/stattext.h>
 #include <wx/radiobut.h>
+#include <wx/spinctrl.h>
 #include <wx/textctrl.h>
 #include <wx/grid.h>
 #include <wx/checkbox.h>
@@ -38,7 +39,6 @@
 #include <wx/listbox.h>
 #include <wx/dialog.h>
 #include <wx/radiobox.h>
-#include <wx/spinctrl.h>
 #include <wx/statline.h>
 #include <wx/clrpicker.h>
 #include <wx/statbmp.h>
@@ -121,6 +121,8 @@ class AppFrame : public wxFrame
 		wxStaticText* m_lblViewSide;
 		wxRadioButton* m_radioViewLeft;
 		wxRadioButton* m_radioViewRight;
+		wxStaticText* m_lblUnitSelect;
+		wxSpinCtrl* m_spinUnitSelect;
 		wxStaticText* m_lblDescription;
 		wxTextCtrl* m_txtDescription;
 		wxStaticText* m_lblAlias;
@@ -208,6 +210,7 @@ class AppFrame : public wxFrame
 		virtual void OnSizeViewport( wxSizeEvent& event ) { event.Skip(); }
 		virtual void OnShowLeftDetails( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnShowRightDetails( wxCommandEvent& event ) { event.Skip(); }
+		virtual void OnUnitSelect( wxSpinEvent& event ) { event.Skip(); }
 		virtual void OnKillFocusTextInfo( wxFocusEvent& event ) { event.Skip(); }
 		virtual void OnTextFieldChange( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnEnterTextInfo( wxCommandEvent& event ) { event.Skip(); }
@@ -237,7 +240,7 @@ class AppFrame : public wxFrame
 	
 	public:
 		
-		AppFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("KiCad Librarian"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 500,450 ), long style = wxDEFAULT_FRAME_STYLE|wxRESIZE_BORDER|wxTAB_TRAVERSAL );
+		AppFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("KiCad Librarian"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 700,450 ), long style = wxDEFAULT_FRAME_STYLE|wxRESIZE_BORDER|wxTAB_TRAVERSAL );
 		
 		~AppFrame();
 		

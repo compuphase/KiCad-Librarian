@@ -271,6 +271,15 @@ AppFrame::AppFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	
 	bSizerViewSide->Add( m_radioViewRight, 0, wxALL, 5 );
 	
+	m_lblUnitSelect = new wxStaticText( m_panelSettings, wxID_ANY, wxT("Unit"), wxDefaultPosition, wxDefaultSize, 0 );
+	m_lblUnitSelect->Wrap( -1 );
+	bSizerViewSide->Add( m_lblUnitSelect, 0, wxALL, 5 );
+	
+	m_spinUnitSelect = new wxSpinCtrl( m_panelSettings, wxID_ANY, wxEmptyString, wxDefaultPosition, wxDefaultSize, wxSP_ARROW_KEYS, 1, 2, 0 );
+	m_spinUnitSelect->SetMinSize( wxSize( 50,-1 ) );
+	
+	bSizerViewSide->Add( m_spinUnitSelect, 0, wxBOTTOM|wxRIGHT|wxLEFT, 5 );
+	
 	
 	fgSidePanel->Add( bSizerViewSide, 1, 0, 5 );
 	
@@ -626,6 +635,7 @@ AppFrame::AppFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_panelView->Connect( wxEVT_SIZE, wxSizeEventHandler( AppFrame::OnSizeViewport ), NULL, this );
 	m_radioViewLeft->Connect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( AppFrame::OnShowLeftDetails ), NULL, this );
 	m_radioViewRight->Connect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( AppFrame::OnShowRightDetails ), NULL, this );
+	m_spinUnitSelect->Connect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( AppFrame::OnUnitSelect ), NULL, this );
 	m_txtDescription->Connect( wxEVT_KILL_FOCUS, wxFocusEventHandler( AppFrame::OnKillFocusTextInfo ), NULL, this );
 	m_txtDescription->Connect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( AppFrame::OnTextFieldChange ), NULL, this );
 	m_txtDescription->Connect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( AppFrame::OnEnterTextInfo ), NULL, this );
@@ -737,6 +747,7 @@ AppFrame::~AppFrame()
 	m_panelView->Disconnect( wxEVT_SIZE, wxSizeEventHandler( AppFrame::OnSizeViewport ), NULL, this );
 	m_radioViewLeft->Disconnect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( AppFrame::OnShowLeftDetails ), NULL, this );
 	m_radioViewRight->Disconnect( wxEVT_COMMAND_RADIOBUTTON_SELECTED, wxCommandEventHandler( AppFrame::OnShowRightDetails ), NULL, this );
+	m_spinUnitSelect->Disconnect( wxEVT_COMMAND_SPINCTRL_UPDATED, wxSpinEventHandler( AppFrame::OnUnitSelect ), NULL, this );
 	m_txtDescription->Disconnect( wxEVT_KILL_FOCUS, wxFocusEventHandler( AppFrame::OnKillFocusTextInfo ), NULL, this );
 	m_txtDescription->Disconnect( wxEVT_COMMAND_TEXT_UPDATED, wxCommandEventHandler( AppFrame::OnTextFieldChange ), NULL, this );
 	m_txtDescription->Disconnect( wxEVT_COMMAND_TEXT_ENTER, wxCommandEventHandler( AppFrame::OnEnterTextInfo ), NULL, this );
@@ -803,7 +814,7 @@ AppFrame::~AppFrame()
 
 DlgPaths::DlgPaths( wxWindow* parent, wxWindowID id, const wxString& title, const wxPoint& pos, const wxSize& size, long style ) : wxDialog( parent, id, title, pos, size, style )
 {
-	this->SetSizeHints( wxSize( -1,-1 ), wxDefaultSize );
+	this->SetSizeHints( wxSize( 400,300 ), wxDefaultSize );
 	
 	wxBoxSizer* bSizerMain;
 	bSizerMain = new wxBoxSizer( wxVERTICAL );

@@ -17,7 +17,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: libmngr_frame.cpp 5686 2017-05-24 13:56:46Z thiadmer $
+ *  $Id: libmngr_frame.cpp 5784 2017-12-26 14:12:22Z thiadmer $
  */
 #include "librarymanager.h"
 #include "libmngr_frame.h"
@@ -40,6 +40,7 @@
 #endif
 #include <wx/aboutdlg.h>
 #include <wx/accel.h>
+#include <wx/busyinfo.h>
 #include <wx/choicdlg.h>
 #include <wx/clipbrd.h>
 #include <wx/cursor.h>
@@ -254,15 +255,17 @@ AppFrame(parent)
 void libmngrFrame::OnTimer(wxTimerEvent& /*event*/)
 {
     wxFileConfig *config = new wxFileConfig(APP_NAME, VENDOR_NAME, theApp->GetINIPath());
-    int ok_count = 0;
+    int ok_count = 0, valid_count = 0;
     long pos;
     if (config->Read(wxT("settings/splitter"), &pos)) {
+        valid_count++;
         if (pos == m_splitter->GetSashPosition())
             ok_count++;
         else
             m_splitter->SetSashPosition(pos);
     }
     if (config->Read(wxT("settings/splitterpanel"), &pos)) {
+        valid_count++;
         wxSize size = m_splitterViewPanel->GetSize();
         if (pos <= 0 || pos == size.GetWidth() - m_splitterViewPanel->GetSashPosition())
             ok_count++;
@@ -271,17 +274,32 @@ void libmngrFrame::OnTimer(wxTimerEvent& /*event*/)
     }
     delete config;
 
+    static wxBusyInfo* busy = NULL;
     static int idle_count = 0;
     if (ok_count == 2) {
-        /* all sashes already at the good position, clear the timer */
-        if (++idle_count >= 4)  /* position has stayed good for 2 seconds */
+        /* all sashes already at the good position, wait a while and check whether to clear the timer */
+        if (busy == NULL)
+            busy = new wxBusyInfo("Initializeing lay-out. Please wait...");
+        if (++idle_count >= 3) {    /* position has stayed good for 1.5 seconds */
             m_Timer->Stop();
-    } else {
+            delete busy;
+            /* some code sequence to force the frame to come up to top */
+            Iconize(true);  /* minimize first */
+            Iconize(false); /* then restore */
+            SetFocus();     /* give focus (probably redundant) */
+            Raise();        /* bring window to front (probably doesn't do anything on modern versions of Windows */
+            Show(true);     /* show the window (probably redundant) */
+        }
+    } else if (valid_count == 2) {
         /* force a resize, to lay out the subfields */
         wxSize sz = GetSize();
         SetSize(sz.GetWidth() + 1, sz.GetHeight());
         SetSize(sz.GetWidth(), sz.GetHeight());
         idle_count = 0;
+    } else {
+        /* no valid size/sash positions in the INI file -> just use the defaults */
+        m_Timer->Stop();
+        delete busy;
     }
 }
 
@@ -598,6 +616,10 @@ void libmngrFrame::OnNewFootprint(wxCommandEvent& /*event*/)
     wxString filename;
     if (!GetSelectedLibrary(&filename, &side))
         return;
+    if (filename.Right(10).CmpNoCase(wxT(".kicad_mod")) == 0 || filename.Right(4).Cmp(wxT(".emp")) == 0) {
+        wxMessageBox(wxT("The selected destination file is an export file instead of a library.\nFootprints cannot be added to export files."));
+        return;
+    }
     m_radioViewLeft->SetValue(side <= 0);
     m_radioViewRight->SetValue(side > 0);
 
@@ -981,6 +1003,11 @@ void libmngrFrame::ToggleMode(bool symbolmode)
     fgSidePanel->Show(m_lblPinNames, SymbolMode);
     fgSidePanel->Show(m_gridPinNames, SymbolMode);
 
+    bsizer = dynamic_cast<wxBoxSizer*>(m_lblUnitSelect->GetContainingSizer());
+    wxASSERT(bsizer != 0);
+    bsizer->Show(m_lblUnitSelect, SymbolMode);
+    bsizer->Show(m_spinUnitSelect, SymbolMode);
+
     fgSidePanel->Show(m_lblPadShape, !SymbolMode);
     fgSidePanel->Show(m_choicePadShape, !SymbolMode);
     fgSidePanel->Show(m_lblPadSize, !SymbolMode);
@@ -1171,7 +1198,7 @@ void libmngrFrame::OnCompareMode(wxCommandEvent& /*event*/)
         PartData[1].Clear();
         /* check whether there is a selection in the left listctrl, only enable
            the buttons if so */
-        long idx = m_listModulesRight->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
+        long idx = m_listModulesLeft->GetNextItem(-1, wxLIST_NEXT_ALL, wxLIST_STATE_SELECTED);
         if (idx >= 0)
             EnableButtons(LEFTPANEL);
         m_radioViewLeft->SetValue(true);
@@ -1987,8 +2014,6 @@ void libmngrFrame::OnLeftModSelect(wxListEvent& event)
     if (!CompareMode) {
         EnableButtons(SelectedPartLeft >= 0 ? LEFTPANEL : 0);
         RemoveSelection(m_listModulesRight, &SelectedPartRight);
-        m_radioViewLeft->SetValue(true);
-        m_radioViewRight->SetValue(false);
         OffsetX = OffsetY = 0;
         if (ModelMode) {
             Scale = SCALE_DEFAULT;
@@ -1997,6 +2022,8 @@ void libmngrFrame::OnLeftModSelect(wxListEvent& event)
     }
     SyncScroll(RIGHTPANEL);
     LoadPart(SelectedPartLeft, m_listModulesLeft, m_choiceModuleLeft, 0);
+    m_radioViewLeft->SetValue(true);
+    m_radioViewRight->SetValue(false);
     UpdateDetails(0);
     Update3DModel(PartData[0]);
     m_panelView->Refresh();
@@ -2010,8 +2037,6 @@ void libmngrFrame::OnRightModSelect(wxListEvent& event)
     if (!CompareMode) {
         EnableButtons(SelectedPartRight >= 0 ? RIGHTPANEL : 0);
         RemoveSelection(m_listModulesLeft, &SelectedPartLeft);
-        m_radioViewLeft->SetValue(false);
-        m_radioViewRight->SetValue(true);
         OffsetX = OffsetY = 0;
         if (ModelMode) {
             Scale = SCALE_DEFAULT;
@@ -2020,6 +2045,8 @@ void libmngrFrame::OnRightModSelect(wxListEvent& event)
     }
     SyncScroll(LEFTPANEL);
     LoadPart(SelectedPartRight, m_listModulesRight, m_choiceModuleRight, CompareMode ? 1 : 0);
+    m_radioViewLeft->SetValue(false);
+    m_radioViewRight->SetValue(true);
     UpdateDetails(CompareMode ? 1 : 0);
     Update3DModel(PartData[0]);
     m_panelView->Refresh();
@@ -2389,7 +2416,7 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
                     indraw = false;
                 } else if (indraw) {
                     double x, y, w, h, penwidth, length, size_nr, size_name, angle, endangle;
-                    long count, orientation, bold, halign, valign;
+                    long count, orientation, bold, halign, valign, part;
                     bool visible, italic;
                     wxPoint2DDouble *points;
                     wxGraphicsPath path;
@@ -2402,8 +2429,9 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
                         w = GetTokenLong(&line) * scale;
                         angle = GetTokenLong(&line) * M_PI / 1800.0;
                         endangle = GetTokenLong(&line) * M_PI / 1800.0;
-                        if (GetTokenLong(&line) > 1)
-                            break;          /* ignore parts other than part 1 */
+                        part = GetTokenLong(&line);
+                        if (part != 0 && part != SymbolUnitNumber[fp])
+                            break;          /* ignore parts other than the selected one */
                         if (GetTokenLong(&line) > 1)
                             break;          /* ignore De Morgan converted shape */
                         if ((penwidth = GetTokenLong(&line) * scale) < DEFAULTPEN)
@@ -2442,8 +2470,9 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
                         x = midx + GetTokenLong(&line) * scale;
                         y = midy - GetTokenLong(&line) * scale;
                         w = GetTokenLong(&line) * scale;
-                        if (GetTokenLong(&line) > 1)
-                            break;  /* ignore parts other than part 1 */
+                        part = GetTokenLong(&line);
+                        if (part != 0 && part != SymbolUnitNumber[fp])
+                            break;          /* ignore parts other than the selected one */
                         if (GetTokenLong(&line) > 1)
                             break;  /* ignore De Morgan converted shape */
                         if ((penwidth = GetTokenLong(&line) * scale) < DEFAULTPEN)
@@ -2463,8 +2492,9 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
                         break;
                     case 'P':
                         count = (int)GetTokenLong(&line);
-                        if (GetTokenLong(&line) > 1)
-                            break;  /* ignore parts other than part 1 */
+                        part = GetTokenLong(&line);
+                        if (part != 0 && part != SymbolUnitNumber[fp])
+                            break;          /* ignore parts other than the selected one */
                         if (GetTokenLong(&line) > 1)
                             break;  /* ignore De Morgan converted shape */
                         if ((penwidth = GetTokenLong(&line) * scale) < DEFAULTPEN)
@@ -2500,8 +2530,9 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
                         y = GetTokenLong(&line) * scale;
                         w = GetTokenLong(&line) * scale - x;
                         h =  GetTokenLong(&line) * scale - y;
-                        if (GetTokenLong(&line) > 1)
-                            break;  /* ignore parts other than part 1 */
+                        part = GetTokenLong(&line);
+                        if (part != 0 && part != SymbolUnitNumber[fp])
+                            break;          /* ignore parts other than the selected one */
                         if (GetTokenLong(&line) > 1)
                             break;  /* ignore De Morgan converted shape */
                         if ((penwidth = GetTokenLong(&line) * scale) < DEFAULTPEN)
@@ -2534,8 +2565,9 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
                             y = midy - GetTokenLong(&line) * scale;
                             h = GetTokenLong(&line) * scale;    /* text size */
                             visible = GetTokenLong(&line) == 0;
-                            if (GetTokenLong(&line) > 1)
-                                break;  /* ignore parts other than part 1 */
+                            part = GetTokenLong(&line);
+                            if (part != 0 && part != SymbolUnitNumber[fp])
+                                break;          /* ignore parts other than the selected one */
                             if (GetTokenLong(&line) > 1)
                                 break;  /* ignore De Morgan converted shape */
                             name = GetToken(&line);
@@ -2584,8 +2616,9 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
                             orientation = field[0];
                             size_nr = GetTokenLong(&line) * scale;
                             size_name = GetTokenLong(&line) * scale;
-                            if (GetTokenLong(&line) > 1)
-                                break;  /* ignore parts other than part 1 */
+                            part = GetTokenLong(&line);
+                            if (part != 0 && part != SymbolUnitNumber[fp])
+                                break;          /* ignore parts other than the selected one */
                             if (GetTokenLong(&line) > 1)
                                 break;  /* ignore De Morgan converted shape */
                             GetToken(&line);    /* ignore type */
@@ -3974,6 +4007,15 @@ void libmngrFrame::OnShowRightDetails(wxCommandEvent& /*event*/)
     UpdateDetails(1);
 }
 
+void libmngrFrame::OnUnitSelect(wxSpinEvent& /*event*/)
+{
+    int fp = 0;
+    if (CompareMode && m_toolBar->GetToolToggled(IDT_RIGHTFOOTPRINT))
+        fp = 1;
+    SymbolUnitNumber[fp] = m_spinUnitSelect->GetValue();
+    m_panelView->Refresh();
+}
+
 void libmngrFrame::ToggleDetailsPanel(bool onoff)
 {
     if (onoff && !m_splitterViewPanel->IsSplit()) {
@@ -4876,6 +4918,7 @@ void libmngrFrame::LoadPart(int index, wxListCtrl* list, wxChoice* choice, int f
         GetTemplateSections(templatename, CustomPinSections[fp], sizearray(CustomPinSections[fp]));
         ReAssignPins(PinData[fp], PinDataCount[fp], BodySize[fp], CustomPinSections[fp], sizearray(CustomPinSections[fp]));
     }
+    SymbolUnitNumber[fp] = 1;
     FieldEdited = false;
     PartEdited = false;
     PinNamesEdited = false;
@@ -6622,6 +6665,8 @@ void libmngrFrame::UpdateDetails(int fp)
     m_txtDescription->SetBackgroundColour(PROTECTED);
     m_txtAlias->SetBackgroundColour(PROTECTED);
     if (SymbolMode) {
+        m_spinUnitSelect->SetRange(1,1);
+        m_spinUnitSelect->SetValue(1);
         m_txtFootprintFilter->SetValue(wxEmptyString);
         m_txtPadCount->SetValue(wxEmptyString);
         m_gridPinNames->ClearGrid();
@@ -6638,6 +6683,8 @@ void libmngrFrame::UpdateDetails(int fp)
         wxASSERT(sizer != 0);
         sizer->Layout();
 
+        m_lblUnitSelect->Enable(false);
+        m_spinUnitSelect->Enable(false);
         m_txtFootprintFilter->SetEditable(false);
         m_txtPadCount->SetEditable(false);
         m_gridPinNames->EnableEditing(false);
@@ -6757,6 +6804,14 @@ void libmngrFrame::UpdateDetails(int fp)
         }
         m_txtPadCount->SetEditable(enable);
         m_txtPadCount->SetBackgroundColour(enable ? ENABLED : PROTECTED);
+
+        int unitcount = GetUnitCount(PartData[fp]);
+        enable = unitcount > 1 && DefEnable;
+        m_spinUnitSelect->SetRange(1, unitcount);
+        m_spinUnitSelect->SetValue(SymbolUnitNumber[fp]);
+        m_spinUnitSelect->Enable(enable);
+        m_spinUnitSelect->SetBackgroundColour(enable ? ENABLED : PROTECTED);
+        m_lblUnitSelect->Enable(enable);
 
         if (m_gridPinNames->GetNumberRows() > 0)
             m_gridPinNames->DeleteRows(0, m_gridPinNames->GetNumberRows());

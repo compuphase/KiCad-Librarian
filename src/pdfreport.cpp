@@ -800,13 +800,15 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
     DryRun=!DryRun;
   } while (!DryRun);
 
-  /* sort the index */
-  wxSortedArrayString SortedIndex(CompareFootprint);
+  wxArrayString SortedIndex;
   for (wxStringToStringHashMap::iterator iter = FootprintIndex.begin(); iter != FootprintIndex.end(); iter++) {
     wxString line = iter->first + wxT(" : ") + iter->second;
     SortedIndex.Add(line);
   }
   FootprintIndex.clear();
+
+  /* sort the index */
+  SortedIndex.Sort(CompareFootprint);
 
   /* print the index */
   progress.Update(++progresspos,wxT("Generating the index"));

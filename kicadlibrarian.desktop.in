@@ -2,7 +2,7 @@
 Version=1.0
 Name=KiCad Librarian
 Comment=A library manager for KiCad
-Exec=/opt/kicadlibrarian/bin/kicadlibrarian
+Exec=${CMAKE_INSTALL_PREFIX}/bin/kicadlibrarian
 Icon=kicadlibrarian32
 Terminal=false
 Type=Application

@@ -2,7 +2,7 @@
  *  Librarian for KiCad, a free EDA CAD application.
  *  Utility functions for parsing and writing libraries.
  *
- *  Copyright (C) 2013-2017 CompuPhase
+ *  Copyright (C) 2013-2018 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: libraryfunctions.h 5784 2017-12-26 14:12:22Z thiadmer $
+ *  $Id: libraryfunctions.h 5907 2018-12-14 22:05:40Z thiadmer $
  */
 #ifndef LIBRARYFUNCTIONS_H
 #define LIBRARYFUNCTIONS_H
@@ -26,6 +26,7 @@
 
 #define TOLERANCE	0.03		/* in mm, tolerance for matching pad and drill sizes */
 #define MIN_PITCH	0.2			/* in mm, deltas smaller than this are not seen as pitch */
+#define TOL_ROWALIGN 0.075      /* in mm, pads displaced by more than this are not considered to be aligned in a row */
 #define EPSILON		0.000001	/* default margin for comparing floating point values */
 
 #define LIB_NONE	wxT("(None)")
@@ -170,6 +171,7 @@ public:
 	CoordPair PadSize[2];
 	bool PadRightAngle[2];	/* true if rotated by 90 or 270 degrees */
 	char PadShape;
+    int PadRRatio;          /* rounded corner size, in percentage of width/height */
 	double DrillSize;
 
     ArrayCoordSize Pads;  /* array with pad positions (outlines) */

@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: cxffont.cpp 5685 2017-05-23 10:35:40Z thiadmer $
+ *  $Id: cxffont.cpp 5686 2017-05-24 13:56:46Z thiadmer $
  */
 #include <cstdio>
 #include <cstring>
@@ -132,7 +132,7 @@ bool CXFFont::Read(const char *path)
           width = x2;
       }
       if (stroke.GetCount() > 0)
-        glyph.AddStroke(stroke);	/* add the final stroke */
+        glyph.AddStroke(stroke);  /* add the final stroke */
       glyph.SetWidth(width);
       m_Glyphs.push_back(glyph);
     }
@@ -239,10 +239,10 @@ void CXFFont::DrawText(const wchar_t* text, std::vector<CXFPolyLine>* strokes) c
     ypos = 0;
     break;
   case CXF_ALIGNTOP:
-    ypos = m_Ascender * m_ScaleY * 1.15;	/* assume 15% internal leading above the ascender */
+    ypos = m_Ascender * m_ScaleY * 1.15;  /* assume 15% internal leading above the ascender */
     break;
   case CXF_ALIGNBOTTOM:
-    ypos = m_Descender * m_ScaleY * 1.1;	/* assume 10% internal leading below the descender */
+    ypos = m_Descender * m_ScaleY * 1.1;  /* assume 10% internal leading below the descender */
     break;
   case CXF_ALIGNCENTRE:
     ypos = (m_Ascender + m_Descender) * m_ScaleY;

@@ -2,7 +2,7 @@
  *  Librarian for KiCad, a free EDA CAD application.
  *  The RPN expression parser.
  *
- *  Copyright (C) 2013-2017 CompuPhase
+ *  Copyright (C) 2013-2018 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: rpn.cpp 5685 2017-05-23 10:35:40Z thiadmer $
+ *  $Id: rpn.cpp 5907 2018-12-14 22:05:40Z thiadmer $
  */
 #include "rpn.h"
 #include <cctype>
@@ -233,8 +233,8 @@ RPN_ERROR RPNexpression::Parse()
         RPNvariable v(word + 1, p1);
         SetVariable(v);
       }
-    } else if (isalpha(word[0])) {
-      if (isupper(word[0])) {
+    } else if (isalpha(word[0]) || word[0] == '$' && isalpha(word[1])) {
+      if (isupper(word[0]) || word[0] == '$' && isupper(word[1])) {
         /* variable reference */
         int i = varindex(word);
         if (i >= 0) {
@@ -257,9 +257,9 @@ RPN_ERROR RPNexpression::Parse()
           push(ceil(p1 - EPSILON));
         } else if (strcmp(word, "chr") == 0) {
           RPNvalue p1 = pop();
-		  char str[2] = "?";
-		  str[0] = (char)(int)p1.Double();
-		  push(RPNvalue(str));
+          char str[2] = "?";
+          str[0] = (char)(int)p1.Double();
+          push(RPNvalue(str));
         } else if (strcmp(word, "cos") == 0) {
           RPNvalue p1 = pop();
           push(cos(p1 * M_PI / 180.0));
@@ -282,13 +282,13 @@ RPN_ERROR RPNexpression::Parse()
           RPNvalue p1 = pop();
           push(floor(p1 + EPSILON));
         } else if (strcmp(word, "gacol") == 0) {
-          static const char letters[] = "ABCDEFGHJKLMNPRTUVWY";	/*  no I, O, Q, S, X, Z */
+          static const char letters[] = "ABCDEFGHJKLMNPRTUVWY"; /*  no I, O, Q, S, X, Z */
           RPNvalue p1 = pop();
-		  char str[2] = "?";
-		  int idx = (int)p1.Double();
-		  if (idx >= 0 && idx < sizearray(letters))
-			str[0] = letters[idx];
-		  push(RPNvalue(str));
+          char str[2] = "?";
+          int idx = (int)p1.Double();
+          if (idx >= 0 && idx < sizearray(letters))
+            str[0] = letters[idx];
+          push(RPNvalue(str));
         } else if (strcmp(word, "max") == 0) {
           RPNvalue p2 = pop();
           RPNvalue p1 = pop();
@@ -404,31 +404,31 @@ RPN_ERROR RPNexpression::Parse()
           push(p1);   /* restore the 2nd expression */
         }
         break;
-	  case '(':
-	    stackmark = m_top;
-		break;
-	  case ')':
-		if (stackmark < 0) {
-		  m_error = RPN_SYNTAX;
-		} else {
-		  if (word[1] == '=' && stackmark > 0) {
-		    p1 = stack[stackmark - 1];
-			int i;
-			for (i = stackmark; i < m_top; i++) {
-			  p2 = stack[i];
-			  if (p1.Double() >= p2.Double() - EPSILON && p1.Double() <= p2.Double() + EPSILON)
-			    break;
-			}
-			p1 = (i < m_top);	/* set to 1 if any of the values in the list match, 0 otherwise */
-			m_top = stackmark - 1;	/* pop off the list and the parameter */
-			push(p1);
-		  } else {
-			m_error = RPN_INV_OPER;
-			m_top = stackmark;	/* pop off the list */
-		  }
-		}
-		stackmark = -1;
-	    break;
+      case '(':
+        stackmark = m_top;
+        break;
+      case ')':
+        if (stackmark < 0) {
+          m_error = RPN_SYNTAX;
+        } else {
+          if (word[1] == '=' && stackmark > 0) {
+            p1 = stack[stackmark - 1];
+            int i;
+            for (i = stackmark; i < m_top; i++) {
+              p2 = stack[i];
+              if (p1.Double() >= p2.Double() - EPSILON && p1.Double() <= p2.Double() + EPSILON)
+                break;
+            }
+            p1 = (i < m_top);   /* set to 1 if any of the values in the list match, 0 otherwise */
+            m_top = stackmark - 1;  /* pop off the list and the parameter */
+            push(p1);
+          } else {
+            m_error = RPN_INV_OPER;
+            m_top = stackmark;  /* pop off the list */
+          }
+        }
+        stackmark = -1;
+        break;
       default:
         if (m_error == RPN_OK)
           m_error = RPN_INV_OPER;

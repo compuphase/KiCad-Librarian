@@ -2,7 +2,7 @@
  *  Librarian for KiCad, a free EDA CAD application.
  *  Utility functions for parsing and writing libraries.
  *
- *  Copyright (C) 2013-2017 CompuPhase
+ *  Copyright (C) 2013-2018 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: libraryfunctions.cpp 5784 2017-12-26 14:12:22Z thiadmer $
+ *  $Id: libraryfunctions.cpp 5907 2018-12-14 22:05:40Z thiadmer $
  */
 
 #include <wx/dir.h>
@@ -134,7 +134,7 @@ long GetTokenLong(wxString* string)
     return val;
 }
 
-/** GetTokenDouble() returns a floating-point value in mm.
+/** GetTokenDouble() returns a floating-point value.
  */
 double GetTokenDouble(wxString* string)
 {
@@ -246,8 +246,12 @@ bool SetSection(wxString& string, const wxString& token, const wxString& params)
 {
     wxASSERT(token[0] != wxT('('));
     int pos = string.Find(wxT("(") + token + wxT(" "));
-    if (pos < 0)
-        return false;
+    if (pos < 0) {
+        /* section does not exist yet, add an empty section just before the end */
+        pos = (int)string.length() - 1;
+        wxASSERT(pos > 0 && string[pos] == wxT(')'));
+        string = string.insert(pos, wxT(" (") + token + wxT(" )"));
+    }
     wxASSERT(pos < (int)string.length());
     wxASSERT(string[pos] == wxT('('));
     pos += (int)token.length() + 1; /* +1 for the '(' */
@@ -332,7 +336,7 @@ static long GetPadNumber(const wxString& field, int* width, int* height)
     /* most footprints have numeric pin numbers, but BGA and PGA use a letter
        followed by digits; in this case, the matrix size must be determined
        as well */
-    if (isalpha(field[0]) && isdigit(field[1])) {
+    if (field.Length() >= 2 && isalpha(field[0]) && isdigit(field[1])) {
         long row = toupper(field[0]) - 'A' + 1;
         if (row > 9)
             row--;  /* because 'I' is not used for grid arrays */
@@ -809,6 +813,7 @@ void TranslateToSexpr(wxArrayString* output, const wxArrayString& module)
             output->Add(newline);
         } else if (keyword.CmpNoCase(wxT("$PAD")) == 0) {
             wxString name, type, shape;
+            double rratio = 0;
             double px = 0, py = 0, pw = 0, ph = 0, tx = 0, ty = 0;
             double drillx = 0, drilly = 0, drillwidth = 0, drillheight = 0;
             double die_length = 0, solder_mask_margin = 0, clearance = 0;
@@ -835,6 +840,8 @@ void TranslateToSexpr(wxArrayString* output, const wxArrayString& module)
                     tx = GetTokenDim(&line, true);
                     ty = GetTokenDim(&line, true);
                     angle = GetTokenLong(&line);
+                    if (line.length() > 0)
+                        rratio = GetTokenDouble(&line);
                     /* convert naming conventions */
                     switch (toupper(shape[0])) {
                     case 'C':
@@ -842,6 +849,8 @@ void TranslateToSexpr(wxArrayString* output, const wxArrayString& module)
                         break;
                     case 'R':
                         shape = wxT("rect");
+                        if (rratio > EPSILON)
+                            shape = wxT("roundrect");
                         break;
                     case 'O':
                         shape = wxT("oval");
@@ -907,6 +916,8 @@ void TranslateToSexpr(wxArrayString* output, const wxArrayString& module)
                 else
                     newline += wxString::Format(wxT(" (drill oval %.4f %.4f (offset %.4f %.4f))"), drillwidth, drillheight, drillx, drilly);
             }
+            if (shape.Cmp(wxT("roundrect")) == 0)
+                newline += wxString::Format(wxT(" (roundrect_rratio %.2f)"), rratio);
             newline += wxT(" (layers");
             if ((layermask & 0x0000ffff) == 0x0000ffff) {
                 newline += wxT(" *.Cu");
@@ -1264,13 +1275,24 @@ void TranslateToLegacy(wxArrayString* output, const wxArrayString& module)
             if (section.Length() > 0) {
                 double width = GetTokenDim(&section, true);
                 double height = GetTokenDim(&section, true);
+                double rratio = 0.0;
                 char lshape = 'C';
-                if (shape.CmpNoCase(wxT("rect")) == 0)
+                if (shape.CmpNoCase(wxT("rect")) == 0) {
                     lshape = 'R';
-                else if (shape.CmpNoCase(wxT("oval")) == 0)
+                } else if (shape.CmpNoCase(wxT("oval")) == 0) {
                     lshape = 'O';
-                else if (shape.CmpNoCase(wxT("trapezoid")) == 0)
+                } else if (shape.CmpNoCase(wxT("trapezoid")) == 0) {
                     lshape = 'T';
+                } else if (shape.CmpNoCase(wxT("roundrect")) == 0) {
+                    /* legacy format does not define "rounded rectangle", so it is
+                       set to "rectangle" with a (non-standard) rounding ratio */
+                    section = GetSection(line, wxT("roundrect_rratio"));
+                    if (section.length() > 0)
+                        rratio = GetTokenDouble(&section);
+                    lshape = 'R';
+                } else if (shape.CmpNoCase(wxT("custom")) == 0) {
+                    lshape = 'R';
+                }
                 double dx = 0, dy = 0;
                 section = GetSection(line, wxT("rect_delta"));
                 if (section.Length() > 0) {
@@ -1278,8 +1300,10 @@ void TranslateToLegacy(wxArrayString* output, const wxArrayString& module)
                     dy = GetTokenDim(&section, true);
                 }
                 wxString newline = wxString::Format(wxT("Sh \"%s\" %c %.4f %.4f %.4f %.4f %ld"),
-                                                                                        name.c_str(), lshape, width, height, dx, dy,
-                                                                                        (long)(angle * 10));
+                                                    name.c_str(), lshape, width, height, dx, dy,
+                                                    (long)(angle * 10));
+                if (rratio > EPSILON)
+                    newline += wxString::Format(wxT(" %.2f"), rratio);
                 output->Add(newline);
             }
             long mask = 0;
@@ -1294,7 +1318,7 @@ void TranslateToLegacy(wxArrayString* output, const wxArrayString& module)
                     else if (field.CmpNoCase(wxT("*.Silk")) == 0)
                         mask |= 0x00300000;
                     else
-                        mask |= LayerNumber(field);
+                        mask |= (1 << LayerNumber(field));
                 }
             }
             if (type.CmpNoCase(wxT("thru_hole")) == 0)
@@ -1443,6 +1467,9 @@ int AdjustPad(wxArrayString& module, FootprintInfo* current, const FootprintInfo
     case 'T':
         padshape_adj = wxT("trapezoid");
         break;
+    case 'D':
+        padshape_adj = wxT("roundrect");
+        break;
     }
 
     CoordPair padsize;
@@ -1487,11 +1514,16 @@ int AdjustPad(wxArrayString& module, FootprintInfo* current, const FootprintInfo
                         padshape = adjusted.PadShape;
                         if (padshape == 'S')
                             padshape = (pinnr == 1) ? 'R' : 'C';
+                        else if (padshape == 'D')
+                            padshape = 'R'; /* rounded rect is not supported in legacy format */
                         padsize.Set(adjusted.PadSize[0].GetX(), adjusted.PadSize[0].GetY());
-                        module[i] = wxString::Format(wxT("%s \"%s\" %c %.4f %.4f %.4f %.4f %ld"),
-                                                     keyword.c_str(), name.c_str(), padshape,
-                                                     MM(padsize.GetX()), MM(padsize.GetY()),
-                                                     MM(xdelta), MM(ydelta), rot);
+                        wxString line = wxString::Format(wxT("%s \"%s\" %c %.4f %.4f %.4f %.4f %ld"),
+                                                         keyword.c_str(), name.c_str(), padshape,
+                                                         MM(padsize.GetX()), MM(padsize.GetY()),
+                                                         MM(xdelta), MM(ydelta), rot);
+                        if (adjusted.PadShape == 'D')
+                            line += wxString::Format(wxT(" %.2f"), adjusted.PadRRatio / 100.0);
+                        module[i] = line;
                     } else if (keyword.CmpNoCase(wxT("Dr")) == 0) {
                         GetToken(&line);    /* ignore drill size */
                         double xpos = GetTokenDim(&line, true);
@@ -1556,6 +1588,11 @@ int AdjustPad(wxArrayString& module, FootprintInfo* current, const FootprintInfo
             double width = GetTokenDim(&line, true);
             double height = GetTokenDim(&line, true);
             padsize.Set(width, height);
+            GetToken(&line);    /* ignore delta-x */
+            GetToken(&line);    /* ignore delta-y */
+            GetToken(&line);    /* ignore rotation */
+            if (padshape == 'R' && line.Length() > 0 && GetTokenDouble(&line) > EPSILON)
+                padshape = 'D';
         } else if (keyword.CmpNoCase(wxT("Dr")) == 0 && inpad) {
             drillsize = GetTokenDim(&line, true);
         } else if (keyword.CmpNoCase(wxT("At")) == 0 && !inpad) {
@@ -1576,6 +1613,10 @@ int AdjustPad(wxArrayString& module, FootprintInfo* current, const FootprintInfo
                 padshape = 'O';
             else if (padshape_s.Cmp(wxT("trapezoid")) == 0)
                 padshape = 'T';
+            else if (padshape_s.Cmp(wxT("roundrect")) == 0)
+                padshape = 'D';
+            else if (padshape_s.Cmp(wxT("custom")) == 0)
+                padshape = 'R';
             wxString section = GetSection(line, wxT("size"));
             if (section.length() > 0) {
                 double width = GetTokenDim(&section, true);
@@ -1599,9 +1640,18 @@ int AdjustPad(wxArrayString& module, FootprintInfo* current, const FootprintInfo
                 SetSection(line, wxT("size"), section);
                 if (adjusted.DrillSize > EPSILON) {
                     section = wxString::Format(wxT("%.4f"), MM(adjusted.DrillSize));
-                    SetSection(line, wxT("drill"), section);    //??? this fails if there is no drill section yet (a new section must be inserted)
+                    SetSection(line, wxT("drill"), section);
                 } else {
                     DeleteSection(line, wxT("drill"));
+                }
+                if (adjusted.PadShape == 'D') {
+                    int percent = adjusted.PadRRatio;
+                    if (percent > 50)
+                        percent = 50;
+                    section = wxString::Format(wxT("%.2f"), percent / 100.0);
+                    SetSection(line, wxT("roundrect_rratio"), section);
+                } else {
+                    DeleteSection(line, wxT("roundrect_rratio"));
                 }
                 if (adjusted.PadShape == 'S' && pinnr == 1)
                     line.Replace(padshape_s, wxT("rect"), false);
@@ -2764,6 +2814,28 @@ static const wxChar* rpn_errors[] = { wxT("(none)"), wxT("empty stack"),
     wxT("multiple results"), wxT("underflow"), wxT("overflow"),
     wxT("invalid variable"), wxT("invalid function"), wxT("invalid operator") };
 
+wxString TranslatePadShape(const wxString& name, int pad, bool legacy)
+{
+    wxString newname = name;
+
+    if (name.Cmp(wxT("sqcircle")) == 0)
+        newname = (pad == 1) ? wxT("rect") : wxT("circle");
+
+    if (legacy) {
+        if (newname.Cmp(wxT("circle")) == 0)
+            newname = wxT("C");
+        else if (newname.Cmp(wxT("rect")) == 0 || newname.Cmp(wxT("roundrect")) == 0  || newname.Cmp(wxT("custom")) == 0)
+            newname = wxT("R");
+        else if (newname.Cmp(wxT("oval")) == 0)
+            newname = wxT("O");
+        else if (newname.Cmp(wxT("trapezoid")) == 0)
+            newname = wxT("T");
+        wxASSERT(newname.Length() == 1);
+    }
+
+    return newname;
+}
+
 /* For footprints */
 bool FootprintFromTemplate(wxArrayString* module, const wxArrayString& templat,
                             RPNexpression& rpn, bool bodyonly)
@@ -2793,12 +2865,14 @@ bool FootprintFromTemplate(wxArrayString* module, const wxArrayString& templat,
     unsigned tidx = 0;
     unsigned padstart = 0;
     unsigned bodyline = 0;
+    bool legacy = false;
     while (tidx < templat.Count()) {
         wxString line = templat[tidx];
         line.Trim();
         /* check for the start of a pad (pads are handled separately) */
         if (line.CmpNoCase(wxT("$PAD")) == 0 || line.Left(4).Cmp(wxT("(pad")) == 0) {
             padstart = tidx;
+            legacy = (line.CmpNoCase(wxT("$PAD")) == 0);
             break;
         }
         /* handle skipping conditional blocks */
@@ -2881,6 +2955,18 @@ bool FootprintFromTemplate(wxArrayString* module, const wxArrayString& templat,
             endlabel = wxEmptyString;
             tidx = padstart;
             rpn.SetVariable(RPNvariable("PN", pad));
+            /* check/set pad shape */
+            rpn.Set("$PSH");
+            if (rpn.Parse() == RPN_OK) {
+                wxString shape = rpn.Value().Text();
+                rpn.SetVariable(RPNvariable("PSH", TranslatePadShape(shape, pad, legacy)));
+                double rratio = -1;
+                if (shape.Cmp(wxT("roundrect")) == 0) {
+                    rpn.Set("$PRR");
+                    rratio = (rpn.Parse() == RPN_OK) ? rpn.Value().Double() : 0.25;
+                }
+                rpn.SetVariable(RPNvariable("PRR", rratio));
+            }
             while (tidx < templat.Count()) {
                 wxString line = templat[tidx];
                 line.Trim();
@@ -4489,6 +4575,7 @@ bool TranslatePadInfo(wxArrayString* module, FootprintInfo* info)
         double orgwidth, orgheight; /* pad width/height may change if multiple overlapping pads are combined */
         long angle;
         char shape;
+        double rratio;      /* rounding ratio for rounded rectangle */
         double drillwidth, drillheight;     /* for round holes, only drillwidth is set */
         bool rotate;        /* set to true if the pad must be rotated by 90 degrees relative to the anchor pad */
     } *padlist = NULL;
@@ -4511,6 +4598,7 @@ bool TranslatePadInfo(wxArrayString* module, FootprintInfo* info)
         double drillwidth = 0, drillheight = 0;
         char padshape = '\0';
         long padangle = 0;
+        double rratio = 0;
         unsigned startidx = 0;
         long pinnr = PIN_UNKNOWN;
         for (unsigned idx = 0; idx < module->Count(); idx++) {
@@ -4572,6 +4660,7 @@ bool TranslatePadInfo(wxArrayString* module, FootprintInfo* info)
                             padlist[pinnr].height = padheight;
                             padlist[pinnr].angle = padangle;
                             padlist[pinnr].shape = padshape;
+                            padlist[pinnr].rratio = rratio;
                             padlist[pinnr].drillwidth = drillwidth;
                             padlist[pinnr].drillheight = drillheight;
                             padlist[pinnr].orgwidth = padwidth;
@@ -4582,6 +4671,7 @@ bool TranslatePadInfo(wxArrayString* module, FootprintInfo* info)
                     padangle = 0;
                     drillwidth = drillheight = 0;
                     padshape = '\0';
+                    rratio = 0;
                     startidx = 0;
                     pinnr = PIN_UNKNOWN;
                 }
@@ -4630,6 +4720,9 @@ bool TranslatePadInfo(wxArrayString* module, FootprintInfo* info)
                             padlist[pinnr].drillheight = 0;
                         }
                     }
+                    section = GetSection(line, wxT("roundrect_rratio"));
+                    if (section.length() > 0)
+                        padlist[pinnr].rratio = GetTokenDouble(&section);
                     if (shape.Cmp(wxT("circle")) == 0)
                         padlist[pinnr].shape = 'C';
                     else if (shape.Cmp(wxT("rect")) == 0)
@@ -4638,6 +4731,8 @@ bool TranslatePadInfo(wxArrayString* module, FootprintInfo* info)
                         padlist[pinnr].shape = 'O';
                     else if (shape.Cmp(wxT("trapezoid")) == 0)
                         padlist[pinnr].shape = 'T';
+                    else if (shape.Cmp(wxT("roundrect")) == 0)
+                        padlist[pinnr].shape = 'D';
                 }
                 pinnr = PIN_UNKNOWN;
                 continue;
@@ -4664,6 +4759,11 @@ bool TranslatePadInfo(wxArrayString* module, FootprintInfo* info)
                 GetToken(&line);    /* ignore x-delta */
                 GetToken(&line);    /* ignore y-delta */
                 padangle = GetTokenLong(&line);
+                if (line.Length() > 0) {
+                    rratio = GetTokenDouble(&line);
+                    if (padshape == 'R')
+                        padshape = 'D';/* rectangle -> rounded rectangle (rounding ratio is present) */
+                }
             } else if (token.CmpNoCase(wxT("Dr")) == 0) {
                 drillwidth = GetTokenDim(&line, unit_mm);
                 GetToken(&line);            /* ignore drill offset */
@@ -4739,7 +4839,7 @@ bool TranslatePadInfo(wxArrayString* module, FootprintInfo* info)
                 dy = -dy;
             /* check horizontal pitch */
             if (horlevel < 2 && dx >= MIN_PITCH) {  /* deltas smaller than this are not seen as pitch */
-                int newlevel = (dy < MIN_PITCH) ? 2 : 1;
+                int newlevel = (dy < TOL_ROWALIGN) ? 2 : 1;
                 if (newlevel > horlevel) {
                     pitchhor = dx;
                     horlevel = newlevel;
@@ -4748,7 +4848,7 @@ bool TranslatePadInfo(wxArrayString* module, FootprintInfo* info)
             }
             /* check vertical pitch */
             if (verlevel < 2 && dy >= MIN_PITCH) {
-                int newlevel = (dx < MIN_PITCH) ? 2 : 1;
+                int newlevel = (dx < TOL_ROWALIGN) ? 2 : 1;
                 if (newlevel > verlevel) {
                     pitchver = dy;
                     verlevel = newlevel;
@@ -4935,16 +5035,92 @@ bool TranslatePadInfo(wxArrayString* module, FootprintInfo* info)
         if (!Equal(pitchhor, pitchver)) {
             wxASSERT(info->Pitch > EPSILON);
             if (info->PitchVertical) {
+                wxASSERT(horpin_base >= 2);  /* must be >= 2 because the opposing pin (of the span) is typically the predecessor and the pin numbering starts at 1 */
+                int opposite = horpin_base - 1;
+                if (horlevel == 1) {
+                    /* horizontal "pitch" is detected as weak, see if we find a better match */
+                    int ver_span_pin = -1;
+                    for (int pin = horpin_base - 1; horlevel == 1 && pin > 0; pin--) {
+                        if (padlist[pin].startidx > 0 && Equal(padlist[pin].y, padlist[horpin_base].y, TOLERANCE)) {
+                            horlevel = 2;
+                            ver_span_pin = opposite;
+                            opposite = pin;
+                        }
+                    }
+                    for (int pin = horpin_base + 1; horlevel == 1 && pin <= padvalid; pin++) {
+                        if (padlist[pin].startidx > 0 && Equal(padlist[pin].y, padlist[opposite].y, TOLERANCE)) {
+                            horlevel = 2;
+                            ver_span_pin = horpin_base;
+                            horpin_base = pin;
+                        }
+                    }
+                    if (horlevel == 2)
+                        pitchhor = fabs(padlist[opposite].x - padlist[horpin_base].x);
+                    /* if one of the anchor pads for the horizontal span moved,
+                       that may indicate there is a vertical span on the original
+                       anchor */
+                    if (ver_span_pin > 0) {
+                        for (int pin = 1; pin <= padvalid; pin++) {
+                            if (pin != ver_span_pin && padlist[pin].startidx > 0
+                                && Equal(padlist[pin].x, padlist[ver_span_pin].x, TOLERANCE)
+                                && Equal(padlist[pin].width, padlist[ver_span_pin].width, TOLERANCE)
+                                && Equal(padlist[pin].height, padlist[ver_span_pin].height, TOLERANCE)) {
+                                info->SpanVer = fabs(padlist[pin].y - padlist[ver_span_pin].y);
+                                wxASSERT(padlist[pin].startidx > 0 && padlist[ver_span_pin].startidx > 0);
+                                info->SpanVerPins[0] = CoordPair(padlist[pin].x, padlist[pin].y);
+                                info->SpanVerPins[1] = CoordPair(padlist[ver_span_pin].x, padlist[ver_span_pin].y);
+                                break;
+                            }
+                        }
+                    }
+                } /* horlevel == 1 (weak span) */
                 info->SpanHor = pitchhor;
-                wxASSERT(horpin_base > 1);
-                wxASSERT(padlist[horpin_base - 1].startidx > 0 && padlist[horpin_base].startidx > 0);
-                info->SpanHorPins[0] = CoordPair(padlist[horpin_base - 1].x, padlist[horpin_base - 1].y);
+                wxASSERT(padlist[opposite].startidx > 0 && padlist[horpin_base].startidx > 0);
+                info->SpanHorPins[0] = CoordPair(padlist[opposite].x, padlist[opposite].y);
                 info->SpanHorPins[1] = CoordPair(padlist[horpin_base].x, padlist[horpin_base].y);
             } else {
+                wxASSERT(verpin_base >= 2);
+                int opposite = verpin_base - 1;
+                if (verlevel == 1) {
+                    /* vertical "pitch" is detected as weak, see if we find a better match */
+                    int hor_span_pin = -1;
+                    for (int pin = verpin_base - 1; verlevel == 1 && pin > 0; pin--) {
+                        if (padlist[pin].startidx > 0 && Equal(padlist[pin].x, padlist[verpin_base].x, TOLERANCE)) {
+                            verlevel = 2;
+                            hor_span_pin = opposite;
+                            opposite = pin;
+                        }
+                    }
+                    for (int pin = verpin_base + 1; verlevel == 1 && pin <= padvalid; pin++) {
+                        if (padlist[pin].startidx > 0 && Equal(padlist[pin].x, padlist[opposite].x, TOLERANCE)) {
+                            verlevel = 2;
+                            hor_span_pin = verpin_base;
+                            verpin_base = pin;
+                        }
+                    }
+                    if (verlevel == 2)
+                        pitchver = fabs(padlist[opposite].y - padlist[verpin_base].y);
+                    /* if one of the anchor pads for the vertical span moved,
+                       that may indicate there is a horizontal span on the original
+                       anchor */
+                    if (hor_span_pin > 0) {
+                        for (int pin = 1; pin <= padvalid; pin++) {
+                            if (pin != hor_span_pin && padlist[pin].startidx > 0
+                                && Equal(padlist[pin].y, padlist[hor_span_pin].y, TOLERANCE)
+                                && Equal(padlist[pin].width, padlist[hor_span_pin].width, TOLERANCE)
+                                && Equal(padlist[pin].height, padlist[hor_span_pin].height, TOLERANCE)) {
+                                info->SpanHor = fabs(padlist[pin].x - padlist[hor_span_pin].x);
+                                wxASSERT(padlist[pin].startidx > 0 && padlist[hor_span_pin].startidx > 0);
+                                info->SpanHorPins[0] = CoordPair(padlist[pin].x, padlist[pin].y);
+                                info->SpanHorPins[1] = CoordPair(padlist[hor_span_pin].x, padlist[hor_span_pin].y);
+                                break;
+                            }
+                        }
+                    }
+                } /* verlevel == 1 (weak span) */
                 info->SpanVer = pitchver;
-                wxASSERT(verpin_base > 0);
-                wxASSERT(padlist[verpin_base - 1].startidx > 0 && padlist[verpin_base].startidx > 0);
-                info->SpanVerPins[0] = CoordPair(padlist[verpin_base - 1].x, padlist[verpin_base - 1].y);
+                wxASSERT(padlist[opposite].startidx > 0 && padlist[verpin_base].startidx > 0);
+                info->SpanVerPins[0] = CoordPair(padlist[opposite].x, padlist[opposite].y);
                 info->SpanVerPins[1] = CoordPair(padlist[verpin_base].x, padlist[verpin_base].y);
             }
         } else {

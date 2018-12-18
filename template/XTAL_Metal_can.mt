@@ -3,7 +3,9 @@
 #note 2-pin, metal can, SMD.
 #prefix XTAL
 #pins 2
-#param 2 @PT 9.5 @PP 5.5 @PW 2.0 @PL 11.6 @BW 4.4 @BL 0.2 @STP 0.2 @BP 0.65 @TS 15 @TW
+#param 2 @PT   "rect" @PSH \
+#      9.5 @PP  5.5 @PW   2.0 @PL   0.2 @STP   0.2 @BP   0.65 @TS   15 @TW \
+#      11.6 @BW  4.4 @BL
 #model XTAL_Metal_can
 $MODULE {NAME}
 AR XTAL_Metal_Can
@@ -26,7 +28,8 @@ DS {X1} {Y2} {X1} {Y2 SEGM -} {BP} 21
 DS {X2} {Y1} {X2} {Y1 SEGM +} {BP} 21
 DS {X2} {Y2} {X2} {Y2 SEGM -} {BP} 21
 $PAD
-Sh "{PN}" R {PW} {PL} 0 0 0
+{?PRR 0 <}Sh "{PN}" {PSH} {PW} {PL} 0 0 0
+{?PRR 0 >=}Sh "{PN}" {PSH} {PW} {PL} 0 0 0 {PRR}
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""

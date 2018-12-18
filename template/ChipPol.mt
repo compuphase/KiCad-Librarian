@@ -4,7 +4,8 @@
 #prefix X
 #pins 2
 #flags rebuild
-#param 2 @PT 1.9 @PP 0.7 @PW 1.3 @PL 0.2 @STP 0.2 @BP 0.65 @TS 15 @TW
+#param 2 @PT    "rect" @PSH \
+#      1.9 @PP   0.7 @PW   1.3 @PL   0.2 @STP   0.2 @BP   0.65 @TS   15 @TW
 #model ChipPol Chip
 $MODULE {NAME}
 AR ChipPol
@@ -21,14 +22,15 @@ At SMD
 T0 0 {BL 2 / TSR + ~} {TSR} {TSR} 0 {TRpen} N {TRvis} 21 N "REF**"
 T1 0 {BL 2 / TSV +} {TSV} {TSV} 0 {TVpen} N {TVvis} 21 N "VAL**"
 {BL 0.3 * 1 min @SYMSIZE}
-T2 {PP PW + 2 / ~ SYMSIZE - BP +} {PL 2 / ~ BP -} {BP 2 *} {BP 2 *} 0 {BP 2 /} N V 21 N "○"
+T2 {PP PW + 2 / ~ SYMSIZE -} {PL 2 / ~ BP -} {BP 2 *} {BP 2 *} 0 {BP 2 /} N V 21 N "○"
 {BW 2 / @X2   X2 ~ @X1   BL 2 / @Y2   Y2 ~ @Y1}
 DS {X1} {Y1} {X2} {Y1} {BP} 21
 DS {X2} {Y1} {X2} {Y2} {BP} 21
 DS {X2} {Y2} {X1} {Y2} {BP} 21
 DS {X1} {Y2} {X1} {Y1} {BP} 21
 $PAD
-Sh "{PN}" R {PW} {PL} 0 0 0
+{?PRR 0 <}Sh "{PN}" {PSH} {PW} {PL} 0 0 0
+{?PRR 0 >=}Sh "{PN}" {PSH} {PW} {PL} 0 0 0 {PRR}
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""

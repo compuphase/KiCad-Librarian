@@ -2,7 +2,7 @@
  *  Librarian for KiCad, a free EDA CAD application.
  *  Report generation functions, based on libHaru.
  *
- *  Copyright (C) 2013-2017 CompuPhase
+ *  Copyright (C) 2013-2018 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: pdfreport.cpp 5685 2017-05-23 10:35:40Z thiadmer $
+ *  $Id: pdfreport.cpp 5907 2018-12-14 22:05:40Z thiadmer $
  */
 
 #include <limits.h>
@@ -29,7 +29,7 @@
 #include <wx/hashmap.h>
 #include <wx/msgdlg.h>
 #include <wx/progdlg.h>
-#include <wx/tokenzr.h> 
+#include <wx/tokenzr.h>
 #include "svnrev.h"
 
 
@@ -278,7 +278,7 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
       double extent_x1=0,extent_y1=0,extent_x2=0,extent_y2=0;
       #define UPDATE_EXTENTS(x,y) { if ((x)<extent_x1) extent_x1=(x); else if ((x)>extent_x2) extent_x2=(x); if ((y)<extent_y1) extent_y1=(y); else if ((y)>extent_y2) extent_y2=(y); }
       double xoffs,yoffs;
-      double module_angle = 0;	/* all angles should be corrected with the footprint angle */
+      double module_angle = 0;  /* all angles should be corrected with the footprint angle */
       if (DryRun) {
         xoffs=yoffs=0;
       } else {
@@ -300,8 +300,8 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
         wxString line=module[r];
         wxString token=GetToken(&line);
         if (token.CmpNoCase(wxT("Po")) == 0) {
-          GetToken(&line);	/* ignore X position */
-          GetToken(&line);	/* ignore Y position */
+          GetToken(&line);  /* ignore X position */
+          GetToken(&line);  /* ignore Y position */
           if (line.length()>0)
             module_angle=GetTokenLong(&line)/10.0;
         } else if (token.CmpNoCase(wxT("DS"))==0) {
@@ -354,7 +354,7 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
           HPDF_Page_SetRGBStroke(page,(HPDF_REAL)0.7,(HPDF_REAL)0.7,(HPDF_REAL)0.0);
           Arc(page,xpos+MM(x),ybase+MM(y),MM(radius),startangle,endangle,true,false);
         } else if (token.CmpNoCase(wxT("DP")) == 0) {
-          GetToken(&line);	/* ignore first four unknown values */
+          GetToken(&line);  /* ignore first four unknown values */
           GetToken(&line);
           GetToken(&line);
           GetToken(&line);
@@ -362,7 +362,7 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
           wxASSERT(count>0);
           double penwidth=GetTokenDim(&line,unit_mm);
           if (penwidth<0.1)
-            penwidth=0.1;	/* minimum pen width, as we are only drawing the outline */
+            penwidth=0.1;   /* minimum pen width, as we are only drawing the outline */
           /* ignore layer */
           /* Haru PDF has a limitation in drawing polygons, so we draw just the outline */
           HPDF_Page_SetLineWidth(page,MM(penwidth));
@@ -414,8 +414,8 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
             StrokeText(page,xpos+MM(x),ybase+MM(y),token.wc_str(wxConvLibc),MM(cx),MM(cy),rot);
           }
         } else if (token.Cmp(wxT("(at")) == 0) {
-          GetToken(&line);	/* ignore X */
-          GetToken(&line);	/* ignore Y */
+          GetToken(&line);  /* ignore X */
+          GetToken(&line);  /* ignore Y */
           if (line.length() > 0)
             module_angle=GetTokenDouble(&line);
         } else if (token.Cmp(wxT("(fp_line"))==0) {
@@ -567,8 +567,8 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
         bool inpad = false;
         double padx = 0, pady = 0, padwidth = 0, padheight = 0, padrot = 0;
         double drillx = 0, drilly = 0, drillwidth = 0, drillheight = 0;
-		double paddelta = 0;
-		int paddeltadir = 0;
+        double paddelta = 0;
+        int paddeltadir = 0;
         wxString padpin, padshape;
         for (unsigned r=0; r<module.Count(); r++) {
           wxString line=module[r];
@@ -593,14 +593,14 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
                 UPDATE_EXTENTS(padx+padwidth/2,pady+padheight/2);
                 HPDF_Page_SetRGBFill(page,(HPDF_REAL)0.7,(HPDF_REAL)0,(HPDF_REAL)0);
                 CoordSize cs(xpos+MM(padx-padwidth/2),ybase+MM(pady-padheight/2),MM(padwidth),MM(padheight));
-				if (padshape.CmpNoCase(wxT("C")) == 0) 
+                if (padshape.CmpNoCase(wxT("C")) == 0)
                   Circle(page,xpos+MM(padx),ybase+MM(pady),MM(padwidth/2),false,true);
-				else if (padshape.CmpNoCase(wxT("O")) == 0)
+                else if (padshape.CmpNoCase(wxT("O")) == 0)
                   RoundedRect(page,cs.GetX(),cs.GetY(),cs.GetX()+cs.GetWidth(),cs.GetY()+cs.GetHeight(),
                               cs.GetWidth()<cs.GetHeight() ? cs.GetWidth() : cs.GetHeight() / 2,false,true);
-				else if (padshape.CmpNoCase(wxT("T")) == 0)
+                else if (padshape.CmpNoCase(wxT("T")) == 0)
                   Trapezium(page,cs.GetX(),cs.GetY(),cs.GetX()+cs.GetWidth(),cs.GetY()+cs.GetHeight(),MM(paddelta),paddeltadir,false,true);
-				else
+                else
                   Rect(page,cs.GetX(),cs.GetY(),cs.GetX()+cs.GetWidth(),cs.GetY()+cs.GetHeight(),false,true);
                 /* optionally the hole in the pad */
                 if (drillwidth>EPSILON) {
@@ -638,18 +638,18 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
               padwidth=GetTokenDim(&section,true);
               padheight=GetTokenDim(&section,true);
             }
-			section = GetSection(line, wxT("rect_delta"));
-			if (section.length() > 0) {
-			  double paddeltax = GetTokenDim(&section, true);
-			  double paddeltay = GetTokenDim(&section, true);
-			  if (!Equal(paddeltax, 0.0)) {
-				paddelta = paddeltax;
-				paddeltadir = 1;
-			  } else {
-				paddelta = paddeltay;
-				paddeltadir = 0;
-			  }
-			}
+            section = GetSection(line, wxT("rect_delta"));
+            if (section.length() > 0) {
+              double paddeltax = GetTokenDim(&section, true);
+              double paddeltay = GetTokenDim(&section, true);
+              if (!Equal(paddeltax, 0.0)) {
+                paddelta = paddeltax;
+                paddeltadir = 1;
+              } else {
+                paddelta = paddeltay;
+                paddeltadir = 0;
+              }
+            }
             drillx=drilly=0;    /* preset drill parameters (as these are optional) */
             drillwidth=drillheight=0;
             section=GetSection(line,wxT("drill"));
@@ -689,7 +689,7 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
               RoundedRect(page,cs.GetX(),cs.GetY(),cs.GetX()+cs.GetWidth(),cs.GetY()+cs.GetHeight(),
                               cs.GetWidth()<cs.GetHeight() ? cs.GetWidth() : cs.GetHeight() / 2,false,true);
             else if (padshape.Cmp(wxT("trapezoid")) == 0)
-              Trapezium(page,cs.GetX(),cs.GetY(),cs.GetX()+cs.GetWidth(),cs.GetY()+cs.GetHeight(),MM(paddelta),paddeltadir,false,true);			
+              Trapezium(page,cs.GetX(),cs.GetY(),cs.GetX()+cs.GetWidth(),cs.GetY()+cs.GetHeight(),MM(paddelta),paddeltadir,false,true);
             else
               Rect(page,cs.GetX(),cs.GetY(),cs.GetX()+cs.GetWidth(),cs.GetY()+cs.GetHeight(),false,true);
             /* optionally the hole in the pad */
@@ -720,16 +720,16 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
             padshape=GetToken(&line);
             padwidth=GetTokenDim(&line,unit_mm);
             padheight=GetTokenDim(&line,unit_mm);
-			double paddeltax = GetTokenDim(&line, unit_mm);
-			double paddeltay = GetTokenDim(&line, unit_mm);
+            double paddeltax = GetTokenDim(&line, unit_mm);
+            double paddeltay = GetTokenDim(&line, unit_mm);
             padrot=NormalizeAngle(GetTokenLong(&line)/10.0-module_angle);
-			if (!Equal(paddeltax, 0.0)) {
-			  paddelta = paddeltax;
-			  paddeltadir = 1;
-			} else {
-			  paddelta = paddeltay;
-			  paddeltadir = 0;
-			}
+            if (!Equal(paddeltax, 0.0)) {
+              paddelta = paddeltax;
+              paddeltadir = 1;
+            } else {
+              paddelta = paddeltay;
+              paddeltadir = 0;
+            }
           } else if (token.CmpNoCase(wxT("Dr"))==0) {
             drillwidth=GetTokenDim(&line, unit_mm);
             drillx=GetTokenDim(&line,unit_mm);   /* this is relative to the pad position */
@@ -785,73 +785,77 @@ bool PdfReport::FootprintReport(wxWindow* parent, const wxString& library, const
     }
     if (DryRun) {
       pagecount=pagenr;
-      /* add the pages for the index */
-      long lines=0;
-      for (wxStringToStringHashMap::iterator iter=FootprintIndex.begin(); iter!=FootprintIndex.end(); iter++) {
-        int numlines=0;
-        wxString line=iter->first + wxT(" : ") + iter->second;
-        TextWrap(page,PAGEMARGIN,0,(PageWidth-PAGEMARGIN)/2,PageHeight,1.2*FontSize,-1.5*FontSize,line.utf8_str(),&numlines);
-        lines+=numlines;
+      /* optionally add the pages for the index */
+      if (PrintIndex) {
+          long lines=0;
+          for (wxStringToStringHashMap::iterator iter=FootprintIndex.begin(); iter!=FootprintIndex.end(); iter++) {
+            int numlines=0;
+            wxString line=iter->first + wxT(" : ") + iter->second;
+            TextWrap(page,PAGEMARGIN,0,(PageWidth-PAGEMARGIN)/2,PageHeight,1.2*FontSize,-1.5*FontSize,line.utf8_str(),&numlines);
+            lines+=numlines;
+          }
+          long columns=(lines+IndexLines-1)/IndexLines;
+          pagecount+=(columns+1)/2;
       }
-      long columns=(lines+IndexLines-1)/IndexLines;
-      pagecount+=(columns+1)/2;
     }
 
     DryRun=!DryRun;
   } while (!DryRun);
 
-  /* sort the index */
-  wxSortedArrayString SortedIndex(CompareFootprint);
-  for (wxStringToStringHashMap::iterator iter = FootprintIndex.begin(); iter != FootprintIndex.end(); iter++) {
-    wxString line = iter->first + wxT(" : ") + iter->second;
-    SortedIndex.Add(line);
-  }
-  FootprintIndex.clear();
+  if (PrintIndex) {
+      /* sort the index */
+      wxSortedArrayString SortedIndex(CompareFootprint);
+      for (wxStringToStringHashMap::iterator iter = FootprintIndex.begin(); iter != FootprintIndex.end(); iter++) {
+        wxString line = iter->first + wxT(" : ") + iter->second;
+        SortedIndex.Add(line);
+      }
+      FootprintIndex.clear();
 
-  /* print the index */
-  progress.Update(++progresspos,wxT("Generating the index"));
-  DryRun=false;
-  size_t base=0;
-  while (base<SortedIndex.Count()) {
-    page=HPDF_AddPage(pdf);
-    wxASSERT(page!=NULL);
-    HPDF_Page_SetSize(page,PaperId,PaperOrientation);
-    HPDF_Page_SetWidth(page,PageWidth);
-    HPDF_Page_SetHeight(page,PageHeight);
-    /* page header & footer */
-    HPDF_Page_SetRGBFill(page,0,0,0);
-    PageHeader(pdf,page,library.utf8_str());
-    PageFooter(pdf,page,rawtime,true,++pagenr,pagecount);
-    double xpos=PAGEMARGIN;
-    double ypos=2*PAGEMARGIN+FontSize;
-    HPDF_Font HeaderFont=HPDF_GetFont(pdf,"Helvetica-BoldOblique","WinAnsiEncoding");
-    wxASSERT(HeaderFont!=NULL);
-    HPDF_Page_SetFontAndSize(page,HeaderFont,10);
-    if (base==0)
-      Text(page,xpos,ypos,"Index",0,HPDF_TALIGN_LEFT);
-    else
-      Text(page,xpos,ypos,"Index (continued)",0,HPDF_TALIGN_LEFT);
-    ypos+=12;
-    double ypos_base=ypos;
-    HPDF_Page_SetFontAndSize(page,font,FontSize);
-    /* left column */
-    size_t idx=base;
-    while (idx<SortedIndex.Count() && ypos<PageHeight-2*PAGEMARGIN) {
-      int numlines=0;
-      TextWrap(page,xpos,ypos,(PageWidth-PAGEMARGIN)/2,PageHeight-2*PAGEMARGIN,1.2*FontSize,-1.5*FontSize,SortedIndex[idx].utf8_str(),&numlines);
-      ypos += 1.2*FontSize*numlines;
-      idx++;
-    }
-    /* right column */
-    ypos=ypos_base;
-    xpos=(PageWidth+PAGEMARGIN)/2;
-    while (idx<SortedIndex.Count() && ypos<PageHeight-2*PAGEMARGIN) {
-      int numlines=0;
-      TextWrap(page,xpos,ypos,PageWidth-PAGEMARGIN,PageHeight-2*PAGEMARGIN,1.2*FontSize,-1.5*FontSize,SortedIndex[idx].utf8_str(),&numlines);
-      ypos += 1.2*FontSize*numlines;
-      idx++;
-    }
-    base=idx;
+      /* print the index */
+      progress.Update(++progresspos,wxT("Generating the index"));
+      DryRun=false;
+      size_t base=0;
+      while (base<SortedIndex.Count()) {
+        page=HPDF_AddPage(pdf);
+        wxASSERT(page!=NULL);
+        HPDF_Page_SetSize(page,PaperId,PaperOrientation);
+        HPDF_Page_SetWidth(page,PageWidth);
+        HPDF_Page_SetHeight(page,PageHeight);
+        /* page header & footer */
+        HPDF_Page_SetRGBFill(page,0,0,0);
+        PageHeader(pdf,page,library.utf8_str());
+        PageFooter(pdf,page,rawtime,true,++pagenr,pagecount);
+        double xpos=PAGEMARGIN;
+        double ypos=2*PAGEMARGIN+FontSize;
+        HPDF_Font HeaderFont=HPDF_GetFont(pdf,"Helvetica-BoldOblique","WinAnsiEncoding");
+        wxASSERT(HeaderFont!=NULL);
+        HPDF_Page_SetFontAndSize(page,HeaderFont,10);
+        if (base==0)
+          Text(page,xpos,ypos,"Index",0,HPDF_TALIGN_LEFT);
+        else
+          Text(page,xpos,ypos,"Index (continued)",0,HPDF_TALIGN_LEFT);
+        ypos+=12;
+        double ypos_base=ypos;
+        HPDF_Page_SetFontAndSize(page,font,FontSize);
+        /* left column */
+        size_t idx=base;
+        while (idx<SortedIndex.Count() && ypos<PageHeight-2*PAGEMARGIN) {
+          int numlines=0;
+          TextWrap(page,xpos,ypos,(PageWidth-PAGEMARGIN)/2,PageHeight-2*PAGEMARGIN,1.2*FontSize,-1.5*FontSize,SortedIndex[idx].utf8_str(),&numlines);
+          ypos += 1.2*FontSize*numlines;
+          idx++;
+        }
+        /* right column */
+        ypos=ypos_base;
+        xpos=(PageWidth+PAGEMARGIN)/2;
+        while (idx<SortedIndex.Count() && ypos<PageHeight-2*PAGEMARGIN) {
+          int numlines=0;
+          TextWrap(page,xpos,ypos,PageWidth-PAGEMARGIN,PageHeight-2*PAGEMARGIN,1.2*FontSize,-1.5*FontSize,SortedIndex[idx].utf8_str(),&numlines);
+          ypos += 1.2*FontSize*numlines;
+          idx++;
+        }
+        base=idx;
+      }
   }
 
   HPDF_SaveToFile(pdf,reportfile.mb_str(wxConvFile));
@@ -1358,19 +1362,19 @@ void PdfReport::Trapezium(HPDF_Page page,double x1,double y1,double x2,double y2
       y2=t;
     }
 
-	if (orientation == 0) {
-		HPDF_Page_MoveTo(page, x1 + delta / 2, y1);
-		HPDF_Page_LineTo(page, x2 - delta / 2, y1);
-		HPDF_Page_LineTo(page, x2 + delta / 2, y2);
-		HPDF_Page_LineTo(page, x1 - delta / 2, y2);
-		HPDF_Page_LineTo(page, x1 + delta / 2, y1);
-	} else {
-		HPDF_Page_MoveTo(page, x1, y1 + delta / 2);
-		HPDF_Page_LineTo(page, x1, y2 - delta / 2);
-		HPDF_Page_LineTo(page, x2, y2 + delta / 2);
-		HPDF_Page_LineTo(page, x2, y1 - delta / 2);
-		HPDF_Page_LineTo(page, x1, y1 + delta / 2);
-	}
+    if (orientation == 0) {
+        HPDF_Page_MoveTo(page, x1 + delta / 2, y1);
+        HPDF_Page_LineTo(page, x2 - delta / 2, y1);
+        HPDF_Page_LineTo(page, x2 + delta / 2, y2);
+        HPDF_Page_LineTo(page, x1 - delta / 2, y2);
+        HPDF_Page_LineTo(page, x1 + delta / 2, y1);
+    } else {
+        HPDF_Page_MoveTo(page, x1, y1 + delta / 2);
+        HPDF_Page_LineTo(page, x1, y2 - delta / 2);
+        HPDF_Page_LineTo(page, x2, y2 + delta / 2);
+        HPDF_Page_LineTo(page, x2, y1 - delta / 2);
+        HPDF_Page_LineTo(page, x1, y1 + delta / 2);
+    }
 
     if (border && filled)
       HPDF_Page_FillStroke(page);
@@ -1437,7 +1441,7 @@ void PdfReport::PageFooter(HPDF_Doc pdf,HPDF_Page page,time_t timestamp,bool pri
     if (printunits)
       Text(page,width/2,height-PAGEMARGIN,"Dimensions in mm (mil)",0,HPDF_TALIGN_CENTER);
 
-	char str[100];
+    char str[100];
     struct tm *timeinfo;
     timeinfo=localtime(&timestamp);
     strftime(str,sizeof(str),"%Y-%m-%d %H:%M:%S",timeinfo);

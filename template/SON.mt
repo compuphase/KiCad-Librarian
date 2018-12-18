@@ -2,7 +2,8 @@
 #brief Small Outline, No pins
 #note Suitable for DFN, SON and WSON parts. Without exposed pad.
 #pins 6 8 ...
-#param 8 @?PT  0.65 @PP  2.75 @SH  0.7 @PW  0.35 @PL  0.2 @STP  0.2 @BP  0.65 @TS  15 @TW \
+#param 8 @?PT   "oval" @PSH \
+#      0.65 @PP  0.7 @PW   0.35 @PL   2.75 @SH   0.2 @STP   0.2 @BP   0.65 @TS  15 @TW \
 #      2.85 @BW  PT 2 / floor 1 - PP * 1.15 + @BL
 #model SON
 $MODULE {NAME}
@@ -29,7 +30,8 @@ DS {X2} {Y2} {X2} {Y2 SEGM -} {BP} 21
 {PL 0.4 * @RAD   RAD SH PW - 2 / - STP + @XC   RAD BL 2 / - STP + @YC}
 {? XC -0.1 < }DC {XC} {YC} {XC RAD +} {YC} {BP} 21
 $PAD
-Sh "{PN}" O {PW} {PL} 0 0 0
+{?PRR 0 <}Sh "{PN}" {PSH} {PW} {PL} 0 0 0
+{?PRR 0 >=}Sh "{PN}" {PSH} {PW} {PL} 0 0 0 {PRR}
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""

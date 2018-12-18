@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: libmngr_dlgremotelink.cpp 5387 2015-10-22 19:31:30Z thiadmer $
+ *  $Id: libmngr_dlgremotelink.cpp 5686 2017-05-24 13:56:46Z thiadmer $
  */
 #include "librarymanager.h"
 #include "libmngr_dlgremotelink.h"
@@ -62,14 +62,14 @@ void libmngrDlgRemoteLink::ReadFields()
   m_txtUserName->SetValue(field);
 
   field = config->Read(wxT("repository/pwd"));
-  field = Scramble(field);	/* this un-scrambles the string */
+  field = Scramble(field);  /* this un-scrambles the string */
   m_txtPassword->SetValue(field);
 
   field = config->Read(wxT("repository/hostuser"));
   m_txtAuthUser->SetValue(field);
 
   field = config->Read(wxT("repository/hostpwd"));
-  field = Scramble(field);	/* this un-scrambles the string */
+  field = Scramble(field);  /* this un-scrambles the string */
   m_txtAuthPWD->SetValue(field);
 
   long flags;
@@ -87,11 +87,11 @@ void libmngrDlgRemoteLink::WriteFields()
 
   field = m_txtURL->GetValue();
   if (field.Find(wxT(".php")) < 0) {
-	/* no page specified at the end, concatenate default repository name */
-	size_t len = field.length();
-	if (len > 0 && field[len - 1] != '/')
-	  field += wxT("/");
-	field += wxT("repository.php");
+    /* no page specified at the end, concatenate default repository name */
+    size_t len = field.length();
+    if (len > 0 && field[len - 1] != '/')
+      field += wxT("/");
+    field += wxT("repository.php");
   }
   config->Write(wxT("repository/url"), field);
 
@@ -111,9 +111,9 @@ void libmngrDlgRemoteLink::WriteFields()
 
   long flags = 0;
   if (m_checkVerifyPeer->GetValue())
-	flags |= 0x01;
+    flags |= 0x01;
   if (m_checkVerifyHost->GetValue())
-	flags |= 0x02;
+    flags |= 0x02;
   config->Write(wxT("repository/hostverify"), flags);
 
   delete config;
@@ -141,7 +141,7 @@ DlgRemoteSignUp( parent )
   m_txtAuthUser->SetValue(field);
 
   field = config->Read(wxT("repository/hostpwd"));
-  field = Scramble(field);	/* this un-scrambles the string */
+  field = Scramble(field);  /* this un-scrambles the string */
   m_txtAuthPWD->SetValue(field);
 
   long flags;
@@ -162,16 +162,16 @@ void libmngrDlgRemoteSignUp::OnOK( wxCommandEvent& event )
   long hostverify = 0;
 
   if (url.Find(wxT(".php")) < 0) {
-	/* no page specified at the end, concatenate default repository name */
-	size_t len = url.length();
-	if (len > 0 && url[len - 1] != '/')
-	  url += wxT("/");
-	url += wxT("repository.php");
+    /* no page specified at the end, concatenate default repository name */
+    size_t len = url.length();
+    if (len > 0 && url[len - 1] != '/')
+      url += wxT("/");
+    url += wxT("repository.php");
   }
   if (m_checkVerifyPeer->GetValue())
-	hostverify |= 0x01;
+    hostverify |= 0x01;
   if (m_checkVerifyHost->GetValue())
-	hostverify |= 0x02;
+    hostverify |= 0x02;
 
   wxString msg = curlAddUser(url, name, email, hostuser, hostpwd, hostverify);
   if (msg.length() == 0) {

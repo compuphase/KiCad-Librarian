@@ -2,7 +2,8 @@
 #brief SOT23 and similar
 #note Supports 3, 5, 6 and 8-pin parts, but not 4-pin. Also suitable for SOT353 series and others.
 #pins 3 5 6 8
-#param 3 @?PT 0.95 @PP 2.3 @SH 1.1 @PW 1.0 @PL 0.8 @BW 2.9 @BL 0.2 @BP 0.65 @TS 15 @TW
+#param 3 @?PT   "rect" @PSH \
+#      0.95 @PP  1.1 @PW   1.0 @PL   2.3 @SH   0.8 @BW   2.9 @BL   0.2 @BP   0.65 @TS   15 @TW
 #model SOT23
 $MODULE {NAME}
 AR SOT23
@@ -23,7 +24,8 @@ DS {BW 2 /} {BL 2 /} {BW 2 / ~} {BL 2 /} {BP} 21
 DS {BW 2 / ~} {BL 2 /} {BW 2 / ~} {BL 2 / ~} {BP} 21
 DC {BW 4 / 0.15 - @RAD RAD BW 2 / - 0.15 +} {RAD BL 2 / - 0.2 +} {0.15 BW 2 / -} {0.2 BL 2 / - 0.1 +} {BP} 21
 $PAD
-Sh "{PN}" R {PW} {PL} 0 0 0
+{?PRR 0 <}Sh "{PN}" {PSH} {PW} {PL} 0 0 0
+{?PRR 0 >=}Sh "{PN}" {PSH} {PW} {PL} 0 0 0 {PRR}
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""

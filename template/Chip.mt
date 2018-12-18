@@ -3,7 +3,8 @@
 #note Non-polarized shape.
 #prefix C
 #pins 2
-#param 2 @PT 1.9 @PP 0.7 @PW 1.3 @PL 0.2 @STP 0.2 @BP 0.65 @TS 15 @TW
+#param 2 @PT   "rect" @PSH \
+#      1.9 @PP  0.7 @PW   1.3 @PL   0.2 @STP   0.2 @BP   0.65 @TS   15 @TW
 #model Chip
 $MODULE {NAME}
 AR Chip
@@ -25,7 +26,8 @@ DS {X2} {Y1} {X2} {Y2} {BP} 21
 DS {X2} {Y2} {X1} {Y2} {BP} 21
 DS {X1} {Y2} {X1} {Y1} {BP} 21
 $PAD
-Sh "{PN}" R {PW} {PL} 0 0 0
+{?PRR 0 <}Sh "{PN}" {PSH} {PW} {PL} 0 0 0
+{?PRR 0 >=}Sh "{PN}" {PSH} {PW} {PL} 0 0 0 {PRR}
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""

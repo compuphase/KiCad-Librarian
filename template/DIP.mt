@@ -2,8 +2,9 @@
 #brief Through-hole DIP
 #note Normal and wide versions.
 #pins 8 10 ...
-#param 8 @?PT  2.54 @PP  7.62 @SH  1.6 @PW 1.6  @PL  0.2 @BP  0.65 @TS  15 @TW  0.2 @STP \
-#      5.5 @BW  PT 2 / floor 1 - PP * 2.2 + @BL
+#param 8 @?PT   "sqcircle" @PSH \
+#      2.54 @PP  7.62 @SH   1.6 @PW    1.6 @PL   0.2 @STP   0.2 @BP   0.65 @TS   15 @TW \
+#      5.5 @BW   PT 2 / floor 1 - PP * 2.2 + @BL
 #model DIP
 $MODULE {NAME}
 AR DIP
@@ -29,8 +30,8 @@ DS {BW 2 / ~} {BL 2 /} {BW 2 / ~} {BL 2 / ~} {BP} 21
 {BW 4 / 0.1 - 0.5 min @RAD   0.5 @OFFS   RAD BW 2 / - OFFS + @XC   RAD BL 2 / - OFFS + @YC}
 DC {XC} {YC} {XC RAD +} {YC} {BP} 21
 $PAD
-{? PN 1 =}Sh "{PN}" R {PW} {PL} 0 0 0
-{? PN 1 >}Sh "{PN}" C {PW} {PL} 0 0 0
+{?PRR 0 <}Sh "{PN}" {PSH} {PW} {PL} 0 0 0
+{?PRR 0 >=}Sh "{PN}" {PSH} {PW} {PL} 0 0 0 {PRR}
 Dr 0.8 0 0
 At STD N 00E0FFFF
 Ne 0 ""

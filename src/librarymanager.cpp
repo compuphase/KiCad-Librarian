@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: librarymanager.cpp 5387 2015-10-22 19:31:30Z thiadmer $
+ *  $Id: librarymanager.cpp 5685 2017-05-23 10:35:40Z thiadmer $
  */
 #include "librarymanager.h"
 #include "libmngr_frame.h"

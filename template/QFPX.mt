@@ -1,10 +1,13 @@
 #version 1
 #brief Quad Flat Package w/ Pins, Exposed pad
-#note With exposed pad.
+#note With exposed pad. The exposed pad is a "numbered pin", so the number of pins must be odd.
 #pins 25 29 ...
 #flags aux-pad(flag,*) rebuild
-#param 33 @PT  0.8 @PP  8.5 @SH 8.5 @SV  1.3 @PW 0.45 @PL  5 @PLA 5 @PWA \
-5#      6.8 @BW 6.8 @BL  0.2 @BP  0.65 @TS 15 @TW  0.2 @STP  25 @PSRA  1.5 @EPDOT
+#param 33 @?PT  "oval" @PSH \
+#      0.8 @PP  1.3 @PW   0.45 @PL   0.2 @STP   0.2 @BP  0.65 @TS  15 @TW \
+#      PT 1 - 4 / floor 1 - PP * 2.9 + @SH   SH @SV \
+#      SH 1.7 - @BW   SV 1.7 - @BL   SH 3.5 - @PWA   SV 3.5 - @PLA \
+#      25 @PSRA  1.5 @EPDOT
 #model QFP
 $MODULE {NAME}
 AR QFPX
@@ -35,8 +38,9 @@ DS {X1} {Y1 OFFS +} {X1 OFFS +} {Y1} {BP} 21
 $PAD
 {PN 1 - PINS / floor @ROW} #row=0..3, or 4+ for the exposed pad
 {?:STDPAD ROW 4 <} #standard pad
-{? ROW 0 = ROW 2 = |}Sh "{PN}" O {PW} {PL} 0 0 0
-{? ROW 1 = ROW 3 = |}Sh "{PN}" O {PW} {PL} 0 0 900
+{900  0   ROW 1 = ROW 3 = |  ? @ANGLE}
+{?PRR 0 <}Sh "{PN}" {PSH} {PW} {PL} 0 0 {ANGLE}
+{?PRR 0 >=}Sh "{PN}" {PSH} {PW} {PL} 0 0 {ANGLE} {PRR}
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""

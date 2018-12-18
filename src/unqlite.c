@@ -2,7 +2,7 @@
  * Symisc UnQLite-KV: A Transactional Key/Value Store Database Engine.
  * Copyright (C) 2016, Symisc Systems http://unqlite.org/
  * Copyright (C) 2014, Yuras Shumovich <shumovichy@gmail.com>
- * Version 1.1
+ * Version 1.1.2
  * For information on licensing, redistribution of this file, and for a DISCLAIMER OF ALL WARRANTIES
  * please contact Symisc Systems via:
  *       legal@symisc.net
@@ -12,7 +12,7 @@
  *      http://unqlite.org/licensing.html
  */
 /*
- * Copyright (C) 2012, 2016 Symisc Systems, S.U.A.R.L [M.I.A.G Mrad Chems Eddine <chm@symisc.net>].
+ * Copyright (C) 2012, 2018 Symisc Systems, S.U.A.R.L [M.I.A.G Mrad Chems Eddine <chm@symisc.net>].
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -31,13 +31,13 @@
  * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
  * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 /*
- * $SymiscID: unqlite.c v1.1.7 Win10 2106-12-02 00:04:12 stable <chm@symisc.net> $ 
+ * $SymiscID: unqlite.c v1.1.8 Win10 2108-01-21 00:02:12 stable <chm@symisc.net> $
  */
 /* This file is an amalgamation of many separate C source files from unqlite version 1.1.6
  * By combining all the individual C code files into this single large file, the entire code
@@ -46,7 +46,7 @@
  * are commonly seen when unqlite is compiled as a single translation unit.
  *
  * This file is all you need to compile unqlite. To use unqlite in other programs, you need
- * this file and the "unqlite.h" header file that defines the programming interface to the 
+ * this file and the "unqlite.h" header file that defines the programming interface to the
  * unqlite engine.(If you do not have the "unqlite.h" header file at hand, you will find
  * a copy embedded within the text of this file.Search for "Header file: <unqlite.h>" to find
  * the start of the embedded unqlite.h header file.) Additional code files may be needed if
@@ -59,795 +59,8 @@
  #ifndef UNQLITE_AMALGAMATION
  #define UNQLITE_AMALGAMATION
  #endif /* UNQLITE_AMALGAMATION */
-/*
- * Embedded header file for unqlite: <unqlite.h>
- */
-/*
- * ----------------------------------------------------------
- * File: unqlite.h
- * ----------------------------------------------------------
- */
- /* This file was automatically generated.  Do not edit (Except for compile time directives)! */ 
-/* This file was automatically generated.  Do not edit (Except for compile time directives)! */ 
-#ifndef _UNQLITE_H_
-#define _UNQLITE_H_
-/*
- * Symisc UnQLite-KV: A Transactional Key/Value Database Engine.
- * Copyright (C) 2016, Symisc Systems http://unqlite.org/
- * Copyright (C) 2014, Yuras Shumovich <shumovichy@gmail.com>
- * Version 1.1
- * For information on licensing, redistribution of this file, and for a DISCLAIMER OF ALL WARRANTIES
- * please contact Symisc Systems via:
- *       legal@symisc.net
- *       licensing@symisc.net
- *       contact@symisc.net
- * or visit:
- *      http://unqlite.org/licensing.html
- */
-/*
- * Copyright (C) 2016 Symisc Systems, S.U.A.R.L [M.I.A.G Mrad Chems Eddine <chm@symisc.net>].
- * All rights reserved.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- * 1. Redistributions of source code must retain the above copyright
- *    notice, this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright
- *    notice, this list of conditions and the following disclaimer in the
- *    documentation and/or other materials provided with the distribution.
- *
- * THIS SOFTWARE IS PROVIDED BY SYMISC SYSTEMS ``AS IS'' AND ANY EXPRESS
- * OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
- * WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, OR
- * NON-INFRINGEMENT, ARE DISCLAIMED.  IN NO EVENT SHALL SYMISC SYSTEMS
- * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
- * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
- * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
- * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
- * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
- * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
- /* $SymiscID: unqlite.h v1.1 Win10 2016-12-02 00:04:12 stable <chm@symisc.net>  $ */
-#include <stdarg.h> /* needed for the definition of va_list */
-/*
- * Compile time engine version, signature, identification in the symisc source tree
- * and copyright notice.
- * Each macro have an equivalent C interface associated with it that provide the same
- * information but are associated with the library instead of the header file.
- * Refer to [unqlite_lib_version()], [unqlite_lib_signature()], [unqlite_lib_ident()] and
- * [unqlite_lib_copyright()] for more information.
- */
-/*
- * The UNQLITE_VERSION C preprocessor macroevaluates to a string literal
- * that is the unqlite version in the format "X.Y.Z" where X is the major
- * version number and Y is the minor version number and Z is the release
- * number.
- */
-#define UNQLITE_VERSION "1.1.1"
-/*
- * The UNQLITE_VERSION_NUMBER C preprocessor macro resolves to an integer
- * with the value (X*1000000 + Y*1000 + Z) where X, Y, and Z are the same
- * numbers used in [UNQLITE_VERSION].
- */
-#define UNQLITE_VERSION_NUMBER 1001001
-/*
- * The UNQLITE_SIG C preprocessor macro evaluates to a string
- * literal which is the public signature of the unqlite engine.
- * This signature could be included for example in a host-application
- * generated Server MIME header as follows:
- *   Server: YourWebServer/x.x unqlite/x.x.x \r\n
- */
-#define UNQLITE_SIG "unqlite/1.1.1"
-/*
- * UnQLite identification in the Symisc source tree:
- * Each particular check-in of a particular software released
- * by symisc systems have an unique identifier associated with it.
- * This macro hold the one associated with unqlite.
- */
-#define UNQLITE_IDENT "unqlite:c12ef78a5263baff9673264cdae36"
-/*
- * Copyright notice.
- * If you have any questions about the licensing situation, please
- * visit http://unqlite.org/licensing.html
- * or contact Symisc Systems via:
- *   legal@symisc.net
- *   licensing@symisc.net
- *   contact@symisc.net
- */
-#define UNQLITE_COPYRIGHT "Copyright (C) Symisc Systems, S.U.A.R.L [Mrad Chems Eddine <chm@symisc.net>] 2016, http://unqlite.org/"
 
-/* Forward declaration to public objects */
-typedef struct unqlite_io_methods unqlite_io_methods;
-typedef struct unqlite_kv_methods unqlite_kv_methods;
-typedef struct unqlite_kv_engine unqlite_kv_engine;
-typedef struct unqlite_vfs unqlite_vfs;
-typedef struct unqlite_vm unqlite_vm;
-typedef struct unqlite unqlite;
-/*
- * ------------------------------
- * Compile time directives
- * ------------------------------
- * For most purposes, UnQLite can be built just fine using the default compilation options.
- * However, if required, the compile-time options documented below can be used to omit UnQLite
- * features (resulting in a smaller compiled library size) or to change the default values
- * of some parameters.
- * Every effort has been made to ensure that the various combinations of compilation options
- * work harmoniously and produce a working library.
- *
- * UNQLITE_ENABLE_THREADS
- *  This option controls whether or not code is included in UnQLite to enable it to operate
- *  safely in a multithreaded environment. The default is not. All mutexing code is omitted
- *  and it is unsafe to use UnQLite in a multithreaded program. When compiled with the
- *  UNQLITE_ENABLE_THREADS directive enabled, UnQLite can be used in a multithreaded program
- *  and it is safe to share the same virtual machine and engine handle between two or more threads.
- *  The value of UNQLITE_ENABLE_THREADS can be determined at run-time using the unqlite_lib_is_threadsafe()
- *  interface.
- *  When UnQLite has been compiled with threading support then the threading mode can be altered
- * at run-time using the unqlite_lib_config() interface together with one of these verbs:
- *    UNQLITE_LIB_CONFIG_THREAD_LEVEL_SINGLE
- *    UNQLITE_LIB_CONFIG_THREAD_LEVEL_MULTI
- *  Platforms others than Windows and UNIX systems must install their own mutex subsystem via 
- *  unqlite_lib_config() with a configuration verb set to UNQLITE_LIB_CONFIG_USER_MUTEX.
- *  Otherwise the library is not threadsafe.
- *  Note that you must link UnQLite with the POSIX threads library under UNIX systems (i.e: -lpthread).
- */
-/* Symisc public definitions */
-#if !defined(SYMISC_STANDARD_DEFS)
-#define SYMISC_STANDARD_DEFS
-#if defined (_WIN32) || defined (WIN32) || defined(__MINGW32__) || defined (_MSC_VER) || defined (_WIN32_WCE)
-/* Windows Systems */
-#if !defined(__WINNT__)
-#define __WINNT__
-#endif 
-/*
- * Determine if we are dealing with WindowsCE - which has a much
- * reduced API.
- */
-#if defined(_WIN32_WCE)
-#ifndef __WIN_CE__
-#define __WIN_CE__
-#endif /* __WIN_CE__ */
-#endif /* _WIN32_WCE */
-#else
-/*
- * By default we will assume that we are compiling on a UNIX systems.
- * Otherwise the OS_OTHER directive must be defined.
- */
-#if !defined(OS_OTHER)
-#if !defined(__UNIXES__)
-#define __UNIXES__
-#endif /* __UNIXES__ */
-#else
-#endif /* OS_OTHER */
-#endif /* __WINNT__/__UNIXES__ */
-#if defined(_MSC_VER) || defined(__BORLANDC__)
-typedef signed __int64     sxi64; /* 64 bits(8 bytes) signed int64 */
-typedef unsigned __int64   sxu64; /* 64 bits(8 bytes) unsigned int64 */
-#else
-typedef signed long long int   sxi64; /* 64 bits(8 bytes) signed int64 */
-typedef unsigned long long int sxu64; /* 64 bits(8 bytes) unsigned int64 */
-#endif /* _MSC_VER */
-/* Signature of the consumer routine */
-typedef int (*ProcConsumer)(const void *, unsigned int, void *);
-/* Forward reference */
-typedef struct SyMutexMethods SyMutexMethods;
-typedef struct SyMemMethods SyMemMethods;
-typedef struct SyString SyString;
-typedef struct syiovec syiovec;
-typedef struct SyMutex SyMutex;
-typedef struct Sytm Sytm;
-/* Scatter and gather array. */
-struct syiovec
-{
-#if defined (__WINNT__)
-	/* Same fields type and offset as WSABUF structure defined one winsock2 header */
-	unsigned long nLen;
-	char *pBase;
-#else
-	void *pBase;
-	unsigned long nLen;
-#endif
-};
-struct SyString
-{
-	const char *zString;  /* Raw string (may not be null terminated) */
-	unsigned int nByte;   /* Raw string length */
-};
-/* Time structure. */
-struct Sytm
-{
-  int tm_sec;     /* seconds (0 - 60) */
-  int tm_min;     /* minutes (0 - 59) */
-  int tm_hour;    /* hours (0 - 23) */
-  int tm_mday;    /* day of month (1 - 31) */
-  int tm_mon;     /* month of year (0 - 11) */
-  int tm_year;    /* year + 1900 */
-  int tm_wday;    /* day of week (Sunday = 0) */
-  int tm_yday;    /* day of year (0 - 365) */
-  int tm_isdst;   /* is summer time in effect? */
-  char *tm_zone;  /* abbreviation of timezone name */
-  long tm_gmtoff; /* offset from UTC in seconds */
-};
-/* Convert a tm structure (struct tm *) found in <time.h> to a Sytm structure */
-#define STRUCT_TM_TO_SYTM(pTM, pSYTM) \
-	(pSYTM)->tm_hour = (pTM)->tm_hour;\
-	(pSYTM)->tm_min	 = (pTM)->tm_min;\
-	(pSYTM)->tm_sec	 = (pTM)->tm_sec;\
-	(pSYTM)->tm_mon	 = (pTM)->tm_mon;\
-	(pSYTM)->tm_mday = (pTM)->tm_mday;\
-	(pSYTM)->tm_year = (pTM)->tm_year + 1900;\
-	(pSYTM)->tm_yday = (pTM)->tm_yday;\
-	(pSYTM)->tm_wday = (pTM)->tm_wday;\
-	(pSYTM)->tm_isdst = (pTM)->tm_isdst;\
-	(pSYTM)->tm_gmtoff = 0;\
-	(pSYTM)->tm_zone = 0;
-
-/* Convert a SYSTEMTIME structure (LPSYSTEMTIME: Windows Systems only ) to a Sytm structure */
-#define SYSTEMTIME_TO_SYTM(pSYSTIME, pSYTM) \
-	 (pSYTM)->tm_hour = (pSYSTIME)->wHour;\
-	 (pSYTM)->tm_min  = (pSYSTIME)->wMinute;\
-	 (pSYTM)->tm_sec  = (pSYSTIME)->wSecond;\
-	 (pSYTM)->tm_mon  = (pSYSTIME)->wMonth - 1;\
-	 (pSYTM)->tm_mday = (pSYSTIME)->wDay;\
-	 (pSYTM)->tm_year = (pSYSTIME)->wYear;\
-	 (pSYTM)->tm_yday = 0;\
-	 (pSYTM)->tm_wday = (pSYSTIME)->wDayOfWeek;\
-	 (pSYTM)->tm_gmtoff = 0;\
-	 (pSYTM)->tm_isdst = -1;\
-	 (pSYTM)->tm_zone = 0;
-
-/* Dynamic memory allocation methods. */
-struct SyMemMethods 
-{
-	void * (*xAlloc)(unsigned int);          /* [Required:] Allocate a memory chunk */
-	void * (*xRealloc)(void *, unsigned int); /* [Required:] Re-allocate a memory chunk */
-	void   (*xFree)(void *);                 /* [Required:] Release a memory chunk */
-	unsigned int  (*xChunkSize)(void *);     /* [Optional:] Return chunk size */
-	int    (*xInit)(void *);                 /* [Optional:] Initialization callback */
-	void   (*xRelease)(void *);              /* [Optional:] Release callback */
-	void  *pUserData;                        /* [Optional:] First argument to xInit() and xRelease() */
-};
-/* Out of memory callback signature. */
-typedef int (*ProcMemError)(void *);
-/* Mutex methods. */
-struct SyMutexMethods 
-{
-	int (*xGlobalInit)(void);		/* [Optional:] Global mutex initialization */
-	void  (*xGlobalRelease)(void);	/* [Optional:] Global Release callback () */
-	SyMutex * (*xNew)(int);	        /* [Required:] Request a new mutex */
-	void  (*xRelease)(SyMutex *);	/* [Optional:] Release a mutex  */
-	void  (*xEnter)(SyMutex *);	    /* [Required:] Enter mutex */
-	int (*xTryEnter)(SyMutex *);    /* [Optional:] Try to enter a mutex */
-	void  (*xLeave)(SyMutex *);	    /* [Required:] Leave a locked mutex */
-};
-#if defined (_MSC_VER) || defined (__MINGW32__) ||  defined (__GNUC__) && defined (__declspec)
-#define SX_APIIMPORT	__declspec(dllimport)
-#define SX_APIEXPORT	__declspec(dllexport)
-#else
-#define	SX_APIIMPORT
-#define	SX_APIEXPORT
-#endif
-/* Standard return values from Symisc public interfaces */
-#define SXRET_OK       0      /* Not an error */	
-#define SXERR_MEM      (-1)   /* Out of memory */
-#define SXERR_IO       (-2)   /* IO error */
-#define SXERR_EMPTY    (-3)   /* Empty field */
-#define SXERR_LOCKED   (-4)   /* Locked operation */
-#define SXERR_ORANGE   (-5)   /* Out of range value */
-#define SXERR_NOTFOUND (-6)   /* Item not found */
-#define SXERR_LIMIT    (-7)   /* Limit reached */
-#define SXERR_MORE     (-8)   /* Need more input */
-#define SXERR_INVALID  (-9)   /* Invalid parameter */
-#define SXERR_ABORT    (-10)  /* User callback request an operation abort */
-#define SXERR_EXISTS   (-11)  /* Item exists */
-#define SXERR_SYNTAX   (-12)  /* Syntax error */
-#define SXERR_UNKNOWN  (-13)  /* Unknown error */
-#define SXERR_BUSY     (-14)  /* Busy operation */
-#define SXERR_OVERFLOW (-15)  /* Stack or buffer overflow */
-#define SXERR_WILLBLOCK (-16) /* Operation will block */
-#define SXERR_NOTIMPLEMENTED  (-17) /* Operation not implemented */
-#define SXERR_EOF      (-18) /* End of input */
-#define SXERR_PERM     (-19) /* Permission error */
-#define SXERR_NOOP     (-20) /* No-op */	
-#define SXERR_FORMAT   (-21) /* Invalid format */
-#define SXERR_NEXT     (-22) /* Not an error */
-#define SXERR_OS       (-23) /* System call return an error */
-#define SXERR_CORRUPT  (-24) /* Corrupted pointer */
-#define SXERR_CONTINUE (-25) /* Not an error: Operation in progress */
-#define SXERR_NOMATCH  (-26) /* No match */
-#define SXERR_RESET    (-27) /* Operation reset */
-#define SXERR_DONE     (-28) /* Not an error */
-#define SXERR_SHORT    (-29) /* Buffer too short */
-#define SXERR_PATH     (-30) /* Path error */
-#define SXERR_TIMEOUT  (-31) /* Timeout */
-#define SXERR_BIG      (-32) /* Too big for processing */
-#define SXERR_RETRY    (-33) /* Retry your call */
-#define SXERR_IGNORE   (-63) /* Ignore */
-#endif /* SYMISC_PUBLIC_DEFS */
-/* 
- * Marker for exported interfaces. 
- */
-#define UNQLITE_APIEXPORT SX_APIEXPORT
-/*
- * If compiling for a processor that lacks floating point
- * support, substitute integer for floating-point.
- */
-#ifdef UNQLITE_OMIT_FLOATING_POINT
-typedef sxi64 uqlite_real;
-#else
-typedef double unqlite_real;
-#endif
-typedef sxi64 unqlite_int64;
-/* Standard UnQLite return values */
-#define UNQLITE_OK      SXRET_OK      /* Successful result */
-/* Beginning of error codes */
-#define UNQLITE_NOMEM    SXERR_MEM     /* Out of memory */
-#define UNQLITE_ABORT    SXERR_ABORT   /* Another thread have released this instance */
-#define UNQLITE_IOERR    SXERR_IO      /* IO error */
-#define UNQLITE_CORRUPT  SXERR_CORRUPT /* Corrupt pointer */
-#define UNQLITE_LOCKED   SXERR_LOCKED  /* Forbidden Operation */ 
-#define UNQLITE_BUSY	 SXERR_BUSY    /* The database file is locked */
-#define UNQLITE_DONE	 SXERR_DONE    /* Operation done */
-#define UNQLITE_PERM     SXERR_PERM    /* Permission error */
-#define UNQLITE_NOTIMPLEMENTED SXERR_NOTIMPLEMENTED /* Method not implemented by the underlying Key/Value storage engine */
-#define UNQLITE_NOTFOUND SXERR_NOTFOUND /* No such record */
-#define UNQLITE_NOOP     SXERR_NOOP     /* No such method */
-#define UNQLITE_INVALID  SXERR_INVALID  /* Invalid parameter */
-#define UNQLITE_EOF      SXERR_EOF      /* End Of Input */
-#define UNQLITE_UNKNOWN  SXERR_UNKNOWN  /* Unknown configuration option */
-#define UNQLITE_LIMIT    SXERR_LIMIT    /* Database limit reached */
-#define UNQLITE_EXISTS   SXERR_EXISTS   /* Record exists */
-#define UNQLITE_EMPTY    SXERR_EMPTY    /* Empty record */
-#define UNQLITE_COMPILE_ERR (-70)       /* Compilation error */
-#define UNQLITE_VM_ERR      (-71)       /* Virtual machine error */
-#define UNQLITE_FULL        (-73)       /* Full database (unlikely) */
-#define UNQLITE_CANTOPEN    (-74)       /* Unable to open the database file */
-#define UNQLITE_READ_ONLY   (-75)       /* Read only Key/Value storage engine */
-#define UNQLITE_LOCKERR     (-76)       /* Locking protocol error */
-/* end-of-error-codes */
-/*
- * Database Handle Configuration Commands.
- *
- * The following set of constants are the available configuration verbs that can
- * be used by the host-application to configure an UnQLite database handle.
- * These constants must be passed as the second argument to [unqlite_config()].
- *
- * Each options require a variable number of arguments.
- * The [unqlite_config()] interface will return UNQLITE_OK on success, any other
- * return value indicates failure.
- * For a full discussion on the configuration verbs and their expected 
- * parameters, please refer to this page:
- *      http://unqlite.org/c_api/unqlite_config.html
- */
-#define UNQLITE_CONFIG_MAX_PAGE_CACHE      2  /* ONE ARGUMENT: int nMaxPage */
-#define UNQLITE_CONFIG_ERR_LOG             3  /* TWO ARGUMENTS: const char **pzBuf, int *pLen */
-#define UNQLITE_CONFIG_KV_ENGINE           4  /* ONE ARGUMENT: const char *zKvName */
-#define UNQLITE_CONFIG_DISABLE_AUTO_COMMIT 5  /* NO ARGUMENTS */
-#define UNQLITE_CONFIG_GET_KV_NAME         6  /* ONE ARGUMENT: const char **pzPtr */
-/*
- * Storage engine configuration commands.
- *
- * The following set of constants are the available configuration verbs that can
- * be used by the host-application to configure the underlying storage engine (i.e Hash, B+tree, R+tree).
- * These constants must be passed as the first argument to [unqlite_kv_config()].
- * Each options require a variable number of arguments.
- * The [unqlite_kv_config()] interface will return UNQLITE_OK on success, any other return
- * value indicates failure.
- * For a full discussion on the configuration verbs and their expected parameters, please
- * refer to this page:
- *      http://unqlite.org/c_api/unqlite_kv_config.html
- */
-#define UNQLITE_KV_CONFIG_HASH_FUNC  1 /* ONE ARGUMENT: unsigned int (*xHash)(const void *,unsigned int) */
-#define UNQLITE_KV_CONFIG_CMP_FUNC   2 /* ONE ARGUMENT: int (*xCmp)(const void *,const void *,unsigned int) */
-/*
- * Global Library Configuration Commands.
- *
- * The following set of constants are the available configuration verbs that can
- * be used by the host-application to configure the whole library.
- * These constants must be passed as the first argument to [unqlite_lib_config()].
- *
- * Each options require a variable number of arguments.
- * The [unqlite_lib_config()] interface will return UNQLITE_OK on success, any other return
- * value indicates failure.
- * Notes:
- * The default configuration is recommended for most applications and so the call to
- * [unqlite_lib_config()] is usually not necessary. It is provided to support rare 
- * applications with unusual needs. 
- * The [unqlite_lib_config()] interface is not threadsafe. The application must insure that
- * no other [unqlite_*()] interfaces are invoked by other threads while [unqlite_lib_config()]
- * is running. Furthermore, [unqlite_lib_config()] may only be invoked prior to library
- * initialization using [unqlite_lib_init()] or [unqlite_init()] or after shutdown
- * by [unqlite_lib_shutdown()]. If [unqlite_lib_config()] is called after [unqlite_lib_init()]
- * or [unqlite_init()] and before [unqlite_lib_shutdown()] then it will return UNQLITE_LOCKED.
- * For a full discussion on the configuration verbs and their expected parameters, please
- * refer to this page:
- *      http://unqlite.org/c_api/unqlite_lib.html
- */
-#define UNQLITE_LIB_CONFIG_USER_MALLOC            1 /* ONE ARGUMENT: const SyMemMethods *pMemMethods */ 
-#define UNQLITE_LIB_CONFIG_MEM_ERR_CALLBACK       2 /* TWO ARGUMENTS: int (*xMemError)(void *), void *pUserData */
-#define UNQLITE_LIB_CONFIG_USER_MUTEX             3 /* ONE ARGUMENT: const SyMutexMethods *pMutexMethods */ 
-#define UNQLITE_LIB_CONFIG_THREAD_LEVEL_SINGLE    4 /* NO ARGUMENTS */ 
-#define UNQLITE_LIB_CONFIG_THREAD_LEVEL_MULTI     5 /* NO ARGUMENTS */ 
-#define UNQLITE_LIB_CONFIG_VFS                    6 /* ONE ARGUMENT: const unqlite_vfs *pVfs */
-#define UNQLITE_LIB_CONFIG_STORAGE_ENGINE         7 /* ONE ARGUMENT: unqlite_kv_methods *pStorage */
-#define UNQLITE_LIB_CONFIG_PAGE_SIZE              8 /* ONE ARGUMENT: int iPageSize */
-/*
- * These bit values are intended for use in the 3rd parameter to the [unqlite_open()] interface
- * and in the 4th parameter to the xOpen method of the [unqlite_vfs] object.
- */
-#define UNQLITE_OPEN_READONLY         0x00000001  /* Read only mode. Ok for [unqlite_open] */
-#define UNQLITE_OPEN_READWRITE        0x00000002  /* Ok for [unqlite_open] */
-#define UNQLITE_OPEN_CREATE           0x00000004  /* Ok for [unqlite_open] */
-#define UNQLITE_OPEN_EXCLUSIVE        0x00000008  /* VFS only */
-#define UNQLITE_OPEN_TEMP_DB          0x00000010  /* VFS only */
-#define UNQLITE_OPEN_NOMUTEX          0x00000020  /* Ok for [unqlite_open] */
-#define UNQLITE_OPEN_OMIT_JOURNALING  0x00000040  /* Omit journaling for this database. Ok for [unqlite_open] */
-#define UNQLITE_OPEN_IN_MEMORY        0x00000080  /* An in memory database. Ok for [unqlite_open]*/
-#define UNQLITE_OPEN_MMAP             0x00000100  /* Obtain a memory view of the whole file. Ok for [unqlite_open] */
-/*
- * Synchronization Type Flags
- *
- * When UnQLite invokes the xSync() method of an [unqlite_io_methods] object it uses
- * a combination of these integer values as the second argument.
- *
- * When the UNQLITE_SYNC_DATAONLY flag is used, it means that the sync operation only
- * needs to flush data to mass storage.  Inode information need not be flushed.
- * If the lower four bits of the flag equal UNQLITE_SYNC_NORMAL, that means to use normal
- * fsync() semantics. If the lower four bits equal UNQLITE_SYNC_FULL, that means to use
- * Mac OS X style fullsync instead of fsync().
- */
-#define UNQLITE_SYNC_NORMAL        0x00002
-#define UNQLITE_SYNC_FULL          0x00003
-#define UNQLITE_SYNC_DATAONLY      0x00010
-/*
- * File Locking Levels
- *
- * UnQLite uses one of these integer values as the second
- * argument to calls it makes to the xLock() and xUnlock() methods
- * of an [unqlite_io_methods] object.
- */
-#define UNQLITE_LOCK_NONE          0
-#define UNQLITE_LOCK_SHARED        1
-#define UNQLITE_LOCK_RESERVED      2
-#define UNQLITE_LOCK_PENDING       3
-#define UNQLITE_LOCK_EXCLUSIVE     4
-/*
- * CAPIREF: OS Interface: Open File Handle
- *
- * An [unqlite_file] object represents an open file in the [unqlite_vfs] OS interface
- * layer.
- * Individual OS interface implementations will want to subclass this object by appending
- * additional fields for their own use. The pMethods entry is a pointer to an
- * [unqlite_io_methods] object that defines methods for performing
- * I/O operations on the open file.
-*/
-typedef struct unqlite_file unqlite_file;
-struct unqlite_file {
-  const unqlite_io_methods *pMethods;  /* Methods for an open file. MUST BE FIRST */
-};
-/*
- * CAPIREF: OS Interface: File Methods Object
- *
- * Every file opened by the [unqlite_vfs] xOpen method populates an
- * [unqlite_file] object (or, more commonly, a subclass of the
- * [unqlite_file] object) with a pointer to an instance of this object.
- * This object defines the methods used to perform various operations
- * against the open file represented by the [unqlite_file] object.
- *
- * If the xOpen method sets the unqlite_file.pMethods element 
- * to a non-NULL pointer, then the unqlite_io_methods.xClose method
- * may be invoked even if the xOpen reported that it failed.  The
- * only way to prevent a call to xClose following a failed xOpen
- * is for the xOpen to set the unqlite_file.pMethods element to NULL.
- *
- * The flags argument to xSync may be one of [UNQLITE_SYNC_NORMAL] or
- * [UNQLITE_SYNC_FULL]. The first choice is the normal fsync().
- * The second choice is a Mac OS X style fullsync. The [UNQLITE_SYNC_DATAONLY]
- * flag may be ORed in to indicate that only the data of the file
- * and not its inode needs to be synced.
- *
- * The integer values to xLock() and xUnlock() are one of
- *
- * UNQLITE_LOCK_NONE
- * UNQLITE_LOCK_SHARED
- * UNQLITE_LOCK_RESERVED
- * UNQLITE_LOCK_PENDING
- * UNQLITE_LOCK_EXCLUSIVE
- * 
- * xLock() increases the lock. xUnlock() decreases the lock.
- * The xCheckReservedLock() method checks whether any database connection,
- * either in this process or in some other process, is holding a RESERVED,
- * PENDING, or EXCLUSIVE lock on the file. It returns true if such a lock exists
- * and false otherwise.
- * 
- * The xSectorSize() method returns the sector size of the device that underlies
- * the file. The sector size is the minimum write that can be performed without
- * disturbing other bytes in the file.
- *
- */
-struct unqlite_io_methods {
-  int iVersion;                 /* Structure version number (currently 1) */
-  int (*xClose)(unqlite_file*);
-  int (*xRead)(unqlite_file*, void*, unqlite_int64 iAmt, unqlite_int64 iOfst);
-  int (*xWrite)(unqlite_file*, const void*, unqlite_int64 iAmt, unqlite_int64 iOfst);
-  int (*xTruncate)(unqlite_file*, unqlite_int64 size);
-  int (*xSync)(unqlite_file*, int flags);
-  int (*xFileSize)(unqlite_file*, unqlite_int64 *pSize);
-  int (*xLock)(unqlite_file*, int);
-  int (*xUnlock)(unqlite_file*, int);
-  int (*xCheckReservedLock)(unqlite_file*, int *pResOut);
-  int (*xSectorSize)(unqlite_file*);
-};
-/*
- * CAPIREF: OS Interface Object
- *
- * An instance of the unqlite_vfs object defines the interface between
- * the UnQLite core and the underlying operating system.  The "vfs"
- * in the name of the object stands for "Virtual File System".
- *
- * Only a single vfs can be registered within the UnQLite core.
- * Vfs registration is done using the [unqlite_lib_config()] interface
- * with a configuration verb set to UNQLITE_LIB_CONFIG_VFS.
- * Note that Windows and UNIX (Linux, FreeBSD, Solaris, Mac OS X, etc.) users
- * does not have to worry about registering and installing a vfs since UnQLite
- * come with a built-in vfs for these platforms that implements most the methods
- * defined below.
- *
- * Clients running on exotic systems (ie: Other than Windows and UNIX systems)
- * must register their own vfs in order to be able to use the UnQLite library.
- *
- * The value of the iVersion field is initially 1 but may be larger in
- * future versions of UnQLite. 
- *
- * The szOsFile field is the size of the subclassed [unqlite_file] structure
- * used by this VFS. mxPathname is the maximum length of a pathname in this VFS.
- * 
- * At least szOsFile bytes of memory are allocated by UnQLite to hold the [unqlite_file]
- * structure passed as the third argument to xOpen. The xOpen method does not have to
- * allocate the structure; it should just fill it in. Note that the xOpen method must
- * set the unqlite_file.pMethods to either a valid [unqlite_io_methods] object or to NULL.
- * xOpen must do this even if the open fails. UnQLite expects that the unqlite_file.pMethods
- * element will be valid after xOpen returns regardless of the success or failure of the
- * xOpen call.
- *
- */
-struct unqlite_vfs {
-  const char *zName;       /* Name of this virtual file system [i.e: Windows, UNIX, etc.] */
-  int iVersion;            /* Structure version number (currently 1) */
-  int szOsFile;            /* Size of subclassed unqlite_file */
-  int mxPathname;          /* Maximum file pathname length */
-  int (*xOpen)(unqlite_vfs*, const char *zName, unqlite_file*,unsigned int flags);
-  int (*xDelete)(unqlite_vfs*, const char *zName, int syncDir);
-  int (*xAccess)(unqlite_vfs*, const char *zName, int flags, int *pResOut);
-  int (*xFullPathname)(unqlite_vfs*, const char *zName,int buf_len,char *zBuf);
-  int (*xTmpDir)(unqlite_vfs*,char *zBuf,int buf_len);
-  int (*xMmap)(const char *, void **, unqlite_int64 *);  /* Read-only memory map of the whole file */
-  void (*xUnmap)(void *, unqlite_int64);                /* Unmap a memory view */
-  int (*xSleep)(unqlite_vfs*, int microseconds);
-  int (*xCurrentTime)(unqlite_vfs*,Sytm *pOut);
-  int (*xGetLastError)(unqlite_vfs*, int, char *);
-};
-/*
- * Flags for the xAccess VFS method
- *
- * These integer constants can be used as the third parameter to
- * the xAccess method of an [unqlite_vfs] object.  They determine
- * what kind of permissions the xAccess method is looking for.
- * With UNQLITE_ACCESS_EXISTS, the xAccess method
- * simply checks whether the file exists.
- * With UNQLITE_ACCESS_READWRITE, the xAccess method
- * checks whether the named directory is both readable and writable
- * (in other words, if files can be added, removed, and renamed within
- * the directory).
- * The UNQLITE_ACCESS_READWRITE constant is currently used only by the
- * [temp_store_directory pragma], though this could change in a future
- * release of UnQLite.
- * With UNQLITE_ACCESS_READ, the xAccess method
- * checks whether the file is readable.  The UNQLITE_ACCESS_READ constant is
- * currently unused, though it might be used in a future release of
- * UnQLite.
- */
-#define UNQLITE_ACCESS_EXISTS    0
-#define UNQLITE_ACCESS_READWRITE 1   
-#define UNQLITE_ACCESS_READ      2 
-/*
- * The type used to represent a page number.  The first page in a file
- * is called page 1.  0 is used to represent "not a page".
- * A page number is an unsigned 64-bit integer.
- */
-typedef sxu64 pgno;
-/*
- * A database disk page is represented by an instance
- * of the follwoing structure.
- */
-typedef struct unqlite_page unqlite_page;
-struct unqlite_page
-{
-  unsigned char *zData;       /* Content of this page */
-  void *pUserData;            /* Extra content */
-  pgno pgno;                  /* Page number for this page */
-};
-/*
- * UnQLite handle to the underlying Key/Value Storage Engine (See below).
- */
-typedef void * unqlite_kv_handle;
-/*
- * UnQLite pager IO methods.
- *
- * An instance of the following structure define the exported methods of the UnQLite pager
- * to the underlying Key/Value storage engine.
- */
-typedef struct unqlite_kv_io unqlite_kv_io;
-struct unqlite_kv_io
-{
-	unqlite_kv_handle  pHandle;     /* UnQLite handle passed as the first parameter to the
-									 * method defined below.
-									 */
-	unqlite_kv_methods *pMethods;   /* Underlying storage engine */
-	/* Pager methods */
-	int (*xGet)(unqlite_kv_handle,pgno,unqlite_page **);
-	int (*xLookup)(unqlite_kv_handle,pgno,unqlite_page **);
-	int (*xNew)(unqlite_kv_handle,unqlite_page **);
-	int (*xWrite)(unqlite_page *);
-	int (*xDontWrite)(unqlite_page *);
-	int (*xDontJournal)(unqlite_page *);
-	int (*xDontMkHot)(unqlite_page *);
-	int (*xPageRef)(unqlite_page *);
-	int (*xPageUnref)(unqlite_page *);
-	int (*xPageSize)(unqlite_kv_handle);
-	int (*xReadOnly)(unqlite_kv_handle);
-	unsigned char * (*xTmpPage)(unqlite_kv_handle);
-	void (*xSetUnpin)(unqlite_kv_handle,void (*xPageUnpin)(void *)); 
-	void (*xSetReload)(unqlite_kv_handle,void (*xPageReload)(void *));
-	void (*xErr)(unqlite_kv_handle,const char *);
-};
-/*
- * Key/Value Storage Engine Cursor Object
- *
- * An instance of a subclass of the following object defines a cursor
- * used to scan through a key-value storage engine.
- */
-typedef struct unqlite_kv_cursor unqlite_kv_cursor;
-struct unqlite_kv_cursor
-{
-  unqlite_kv_engine *pStore; /* Must be first */
-  /* Subclasses will typically add additional fields */
-};
-/*
- * Possible seek positions.
- */
-#define UNQLITE_CURSOR_MATCH_EXACT  1
-#define UNQLITE_CURSOR_MATCH_LE     2
-#define UNQLITE_CURSOR_MATCH_GE     3
-/*
- * Key/Value Storage Engine.
- *
- * A Key-Value storage engine is defined by an instance of the following
- * object.
- * UnQLite works with run-time interchangeable storage engines (i.e. Hash, B+Tree, R+Tree, LSM, etc.).
- * The storage engine works with key/value pairs where both the key
- * and the value are byte arrays of arbitrary length and with no restrictions on content.
- * UnQLite come with two built-in KV storage engine: A Virtual Linear Hash (VLH) storage
- * engine is used for persistent on-disk databases with O(1) lookup time and an in-memory
- * hash-table or Red-black tree storage engine is used for in-memory databases.
- * Future versions of UnQLite might add other built-in storage engines (i.e. LSM). 
- * Registration of a Key/Value storage engine at run-time is done via [unqlite_lib_config()]
- * with a configuration verb set to UNQLITE_LIB_CONFIG_STORAGE_ENGINE.
- */
-struct unqlite_kv_engine
-{
-  const unqlite_kv_io *pIo; /* IO methods: MUST be first */
-   /* Subclasses will typically add additional fields */
-};
-/*
- * Key/Value Storage Engine Virtual Method Table.
- *
- * Key/Value storage engine methods is defined by an instance of the following
- * object.
- * Registration of a Key/Value storage engine at run-time is done via [unqlite_lib_config()]
- * with a configuration verb set to UNQLITE_LIB_CONFIG_STORAGE_ENGINE.
- */
-struct unqlite_kv_methods
-{
-  const char *zName; /* Storage engine name [i.e. Hash, B+tree, LSM, R-tree, Mem, etc.]*/
-  int szKv;          /* 'unqlite_kv_engine' subclass size */
-  int szCursor;      /* 'unqlite_kv_cursor' subclass size */
-  int iVersion;      /* Structure version, currently 1 */
-  /* Storage engine methods */
-  int (*xInit)(unqlite_kv_engine *,int iPageSize);
-  void (*xRelease)(unqlite_kv_engine *);
-  int (*xConfig)(unqlite_kv_engine *,int op,va_list ap);
-  int (*xOpen)(unqlite_kv_engine *,pgno);
-  int (*xReplace)(
-	  unqlite_kv_engine *,
-	  const void *pKey,int nKeyLen,
-	  const void *pData,unqlite_int64 nDataLen
-	  ); 
-    int (*xAppend)(
-	  unqlite_kv_engine *,
-	  const void *pKey,int nKeyLen,
-	  const void *pData,unqlite_int64 nDataLen
-	  );
-  void (*xCursorInit)(unqlite_kv_cursor *);
-  int (*xSeek)(unqlite_kv_cursor *,const void *pKey,int nByte,int iPos); /* Mandatory */
-  int (*xFirst)(unqlite_kv_cursor *);
-  int (*xLast)(unqlite_kv_cursor *);
-  int (*xValid)(unqlite_kv_cursor *);
-  int (*xNext)(unqlite_kv_cursor *);
-  int (*xPrev)(unqlite_kv_cursor *);
-  int (*xDelete)(unqlite_kv_cursor *);
-  int (*xKeyLength)(unqlite_kv_cursor *,int *);
-  int (*xKey)(unqlite_kv_cursor *,int (*xConsumer)(const void *,unsigned int,void *),void *pUserData);
-  int (*xDataLength)(unqlite_kv_cursor *,unqlite_int64 *);
-  int (*xData)(unqlite_kv_cursor *,int (*xConsumer)(const void *,unsigned int,void *),void *pUserData);
-  void (*xReset)(unqlite_kv_cursor *);
-  void (*xCursorRelease)(unqlite_kv_cursor *);
-};
-/*
- * UnQLite journal file suffix.
- */
-#ifndef UNQLITE_JOURNAL_FILE_SUFFIX
-#define UNQLITE_JOURNAL_FILE_SUFFIX "_unqlite_journal"
-#endif
-/* 
- * C-API-REF: Please refer to the official documentation for interfaces
- * purpose and expected parameters. 
- */ 
-
-/* Database Engine Handle */
-UNQLITE_APIEXPORT int unqlite_open(unqlite **ppDB,const char *zFilename,unsigned int iMode);
-UNQLITE_APIEXPORT int unqlite_config(unqlite *pDb,int nOp,...);
-UNQLITE_APIEXPORT int unqlite_close(unqlite *pDb);
-
-/* Key/Value (KV) Store Interfaces */
-UNQLITE_APIEXPORT int unqlite_kv_store(unqlite *pDb,const void *pKey,int nKeyLen,const void *pData,unqlite_int64 nDataLen);
-UNQLITE_APIEXPORT int unqlite_kv_append(unqlite *pDb,const void *pKey,int nKeyLen,const void *pData,unqlite_int64 nDataLen);
-UNQLITE_APIEXPORT int unqlite_kv_store_fmt(unqlite *pDb,const void *pKey,int nKeyLen,const char *zFormat,...);
-UNQLITE_APIEXPORT int unqlite_kv_append_fmt(unqlite *pDb,const void *pKey,int nKeyLen,const char *zFormat,...);
-UNQLITE_APIEXPORT int unqlite_kv_fetch(unqlite *pDb,const void *pKey,int nKeyLen,void *pBuf,unqlite_int64 /* in|out */*pBufLen);
-UNQLITE_APIEXPORT int unqlite_kv_fetch_callback(unqlite *pDb,const void *pKey,
-	                    int nKeyLen,int (*xConsumer)(const void *,unsigned int,void *),void *pUserData);
-UNQLITE_APIEXPORT int unqlite_kv_delete(unqlite *pDb,const void *pKey,int nKeyLen);
-UNQLITE_APIEXPORT int unqlite_kv_config(unqlite *pDb,int iOp,...);
-
-/*  Cursor Iterator Interfaces */
-UNQLITE_APIEXPORT int unqlite_kv_cursor_init(unqlite *pDb,unqlite_kv_cursor **ppOut);
-UNQLITE_APIEXPORT int unqlite_kv_cursor_release(unqlite *pDb,unqlite_kv_cursor *pCur);
-UNQLITE_APIEXPORT int unqlite_kv_cursor_seek(unqlite_kv_cursor *pCursor,const void *pKey,int nKeyLen,int iPos);
-UNQLITE_APIEXPORT int unqlite_kv_cursor_first_entry(unqlite_kv_cursor *pCursor);
-UNQLITE_APIEXPORT int unqlite_kv_cursor_last_entry(unqlite_kv_cursor *pCursor);
-UNQLITE_APIEXPORT int unqlite_kv_cursor_valid_entry(unqlite_kv_cursor *pCursor);
-UNQLITE_APIEXPORT int unqlite_kv_cursor_next_entry(unqlite_kv_cursor *pCursor);
-UNQLITE_APIEXPORT int unqlite_kv_cursor_prev_entry(unqlite_kv_cursor *pCursor);
-UNQLITE_APIEXPORT int unqlite_kv_cursor_key(unqlite_kv_cursor *pCursor,void *pBuf,int *pnByte);
-UNQLITE_APIEXPORT int unqlite_kv_cursor_key_callback(unqlite_kv_cursor *pCursor,int (*xConsumer)(const void *,unsigned int,void *),void *pUserData);
-UNQLITE_APIEXPORT int unqlite_kv_cursor_data(unqlite_kv_cursor *pCursor,void *pBuf,unqlite_int64 *pnData);
-UNQLITE_APIEXPORT int unqlite_kv_cursor_data_callback(unqlite_kv_cursor *pCursor,int (*xConsumer)(const void *,unsigned int,void *),void *pUserData);
-UNQLITE_APIEXPORT int unqlite_kv_cursor_delete_entry(unqlite_kv_cursor *pCursor);
-UNQLITE_APIEXPORT int unqlite_kv_cursor_reset(unqlite_kv_cursor *pCursor);
-
-/* Manual Transaction Manager */
-UNQLITE_APIEXPORT int unqlite_begin(unqlite *pDb);
-UNQLITE_APIEXPORT int unqlite_commit(unqlite *pDb);
-UNQLITE_APIEXPORT int unqlite_rollback(unqlite *pDb);
-
-/* Utility interfaces */
-UNQLITE_APIEXPORT int unqlite_util_random_string(unqlite *pDb,char *zBuf,unsigned int buf_size);
-UNQLITE_APIEXPORT unsigned int unqlite_util_random_num(unqlite *pDb);
-
-/* Global Library Management Interfaces */
-UNQLITE_APIEXPORT int unqlite_lib_config(int nConfigOp,...);
-UNQLITE_APIEXPORT int unqlite_lib_init(void);
-UNQLITE_APIEXPORT int unqlite_lib_shutdown(void);
-UNQLITE_APIEXPORT int unqlite_lib_is_threadsafe(void);
-UNQLITE_APIEXPORT const char * unqlite_lib_version(void);
-UNQLITE_APIEXPORT const char * unqlite_lib_signature(void);
-UNQLITE_APIEXPORT const char * unqlite_lib_ident(void);
-UNQLITE_APIEXPORT const char * unqlite_lib_copyright(void);
-
-#endif /* _UNQLITE_H_ */
+#include "unqlite.h"
 /*
  * ----------------------------------------------------------
  * File: unqliteInt.h
@@ -876,7 +89,7 @@ UNQLITE_APIEXPORT const char * unqlite_lib_copyright(void);
 #else
 #define UNQLITE_PRIVATE
 #include "unqlite.h"
-#endif 
+#endif
 /*
  * Constants for the largest and smallest possible 64-bit signed integers.
  * These macros are designed to work correctly on both 32-bit and 64-bit
@@ -927,7 +140,7 @@ typedef double             sxreal;
 #define SXI32_HIGH      0x7FFFFFFF
 #define SXU32_HIGH      0xFFFFFFFF
 #define SXI64_HIGH      0x7FFFFFFFFFFFFFFF
-#define SXU64_HIGH      0xFFFFFFFFFFFFFFFF 
+#define SXU64_HIGH      0xFFFFFFFFFFFFFFFF
 #if !defined(TRUE)
 #define TRUE 1
 #endif
@@ -938,13 +151,13 @@ typedef double             sxreal;
  * The following macros are used to cast pointers to integers and
  * integers to pointers.
  */
-#if defined(__PTRDIFF_TYPE__)  
+#if defined(__PTRDIFF_TYPE__)
 # define SX_INT_TO_PTR(X)  ((void*)(__PTRDIFF_TYPE__)(X))
 # define SX_PTR_TO_INT(X)  ((int)(__PTRDIFF_TYPE__)(X))
-#elif !defined(__GNUC__)    
+#elif !defined(__GNUC__)
 # define SX_INT_TO_PTR(X)  ((void*)&((char*)0)[X])
 # define SX_PTR_TO_INT(X)  ((int)(((char*)X)-(char*)0))
-#else                       
+#else
 # define SX_INT_TO_PTR(X)  ((void*)(X))
 # define SX_PTR_TO_INT(X)  ((int)(X))
 #endif
@@ -1009,7 +222,7 @@ typedef sxi32 (*ProcHashSum)(const void *, sxu32, unsigned char *, sxu32);
 typedef sxi32 (*ProcSort)(void *, sxu32, sxu32, ProcCmp);
 #define MACRO_LIST_PUSH(Head, Item)\
 	Item->pNext = Head;\
-	Head = Item; 
+	Head = Item;
 #define MACRO_LD_PUSH(Head, Item)\
 	if( Head == 0 ){\
 		Head = Item;\
@@ -1030,18 +243,18 @@ typedef sxi32 (*ProcSort)(void *, sxu32, sxu32, ProcCmp);
 struct SySet
 {
 	SyMemBackend *pAllocator; /* Memory backend */
-	void *pBase;              /* Base pointer */	
+	void *pBase;              /* Base pointer */
 	sxu32 nUsed;              /* Total number of used slots  */
 	sxu32 nSize;              /* Total number of available slots */
 	sxu32 eSize;              /* Size of a single slot */
-	sxu32 nCursor;	          /* Loop cursor */	
+	sxu32 nCursor;	          /* Loop cursor */
 	void *pUserData;          /* User private data associated with this container */
 };
 #define SySetBasePtr(S)           ((S)->pBase)
 #define SySetBasePtrJump(S, OFFT)  (&((char *)(S)->pBase)[OFFT*(S)->eSize])
 #define SySetUsed(S)              ((S)->nUsed)
 #define SySetSize(S)              ((S)->nSize)
-#define SySetElemSize(S)          ((S)->eSize) 
+#define SySetElemSize(S)          ((S)->eSize)
 #define SySetCursor(S)            ((S)->nCursor)
 #define SySetGetAllocator(S)      ((S)->pAllocator)
 #define SySetSetUserData(S, DATA)  ((S)->pUserData = DATA)
@@ -1274,7 +487,7 @@ struct SyToken
 struct SyStream
 {
 	const unsigned char *zInput; /* Complete text of the input */
-	const unsigned char *zText; /* Current input we are processing */	
+	const unsigned char *zText; /* Current input we are processing */
 	const unsigned char *zEnd; /* End of input marker */
 	sxu32  nLine; /* Total number of processed lines */
 	sxu32  nIgn; /* Total number of ignored tokens */
@@ -1306,7 +519,7 @@ struct SyLex
 **
 */
 /*
-** Assuming zIn points to the first byte of a UTF-8 character, 
+** Assuming zIn points to the first byte of a UTF-8 character,
 ** advance zIn to point to the first byte of the next UTF-8 character.
 */
 #define SX_JMP_UTF8(zIn, zEnd)\
@@ -1330,8 +543,8 @@ struct SyLex
 }
 /* Rely on the standard ctype */
 #include <ctype.h>
-#define SyToUpper(c) toupper(c) 
-#define SyToLower(c) tolower(c) 
+#define SyToUpper(c) toupper(c)
+#define SyToLower(c) tolower(c)
 #define SyisUpper(c) isupper(c)
 #define SyisLower(c) islower(c)
 #define SyisSpace(c) isspace(c)
@@ -1346,7 +559,7 @@ struct SyLex
 #define SyisAscii(c) isascii(c)
 #define SyisAlphaNum(c) isalnum(c)
 #define SyisGraph(c)     isgraph(c)
-#define SyDigToHex(c)    "0123456789ABCDEF"[c & 0x0F] 		
+#define SyDigToHex(c)    "0123456789ABCDEF"[c & 0x0F]
 #define SyDigToInt(c)     ((c < 0xc0 && SyisDigit(c))? (c - '0') : 0 )
 #define SyCharToUpper(c)  ((c < 0xc0 && SyisLower(c))? SyToUpper(c) : c)
 #define SyCharToLower(c)  ((c < 0xc0 && SyisUpper(c))? SyToLower(c) : c)
@@ -1465,7 +678,7 @@ typedef struct unqlite_db unqlite_db;
  * The following #defines specify the range of bytes used for locking.
  * SHARED_SIZE is the number of bytes available in the pool from which
  * a random byte is selected for a shared lock.  The pool of bytes for
- * shared locks begins at SHARED_FIRST. 
+ * shared locks begins at SHARED_FIRST.
  *
  * The same locking strategy and byte ranges are used for Unix and Windows.
  * This leaves open the possiblity of having clients on winNT, and
@@ -1481,7 +694,7 @@ typedef struct unqlite_db unqlite_db;
  * that all locks will fit on a single page even at the minimum page size.
  * PENDING_BYTE defines the beginning of the locks.  By default PENDING_BYTE
  * is set high so that we don't have to allocate an unused page except
- * for very large databases.  But one should test the page skipping logic 
+ * for very large databases.  But one should test the page skipping logic
  * by setting PENDING_BYTE low and running the entire regression suite.
  *
  * Changing the value of PENDING_BYTE results in a subtly incompatible
@@ -1531,7 +744,7 @@ struct unqlite
 	sxu32 nMagic;                    /* Sanity check against misuse */
 };
 #define UNQLITE_FL_DISABLE_AUTO_COMMIT   0x001 /* Disable auto-commit on close */
-/* 
+/*
  * Database signature to identify a valid database image.
  */
 #define UNQLITE_DB_SIG "unqlite"
@@ -1597,8 +810,8 @@ UNQLITE_PRIVATE int unqliteOsSectorSize(unqlite_file *id);
 UNQLITE_PRIVATE int unqliteOsOpen(
   unqlite_vfs *pVfs,
   SyMemBackend *pAlloc,
-  const char *zPath, 
-  unqlite_file **ppOut, 
+  const char *zPath,
+  unqlite_file **ppOut,
   unsigned int flags
 );
 UNQLITE_PRIVATE int unqliteOsCloseFree(SyMemBackend *pAlloc,unqlite_file *pId);
@@ -1674,10 +887,10 @@ static struct unqlGlobal_Data
 #if defined(UNQLITE_ENABLE_THREADS)
 	const SyMutexMethods *pMutexMethods;   /* Mutex methods */
 	SyMutex *pMutex;                       /* Global mutex */
-	sxu32 nThreadingLevel;                 /* Threading level: 0 == Single threaded/1 == Multi-Threaded 
+	sxu32 nThreadingLevel;                 /* Threading level: 0 == Single threaded/1 == Multi-Threaded
 										    * The threading level can be set using the [unqlite_lib_config()]
 											* interface with a configuration verb set to
-											* UNQLITE_LIB_CONFIG_THREAD_LEVEL_SINGLE or 
+											* UNQLITE_LIB_CONFIG_THREAD_LEVEL_SINGLE or
 											* UNQLITE_LIB_CONFIG_THREAD_LEVEL_MULTI
 											*/
 #endif
@@ -1688,17 +901,17 @@ static struct unqlGlobal_Data
 	unqlite *pDB;                          /* List of active DB handles */
 	sxu32 nMagic;                          /* Sanity check against library misuse */
 }sUnqlMPGlobal = {
-	{0, 0, 0, 0, 0, 0, 0, 0, {0}}, 
+	{0, 0, 0, 0, 0, 0, 0, 0, {0}},
 #if defined(UNQLITE_ENABLE_THREADS)
-	0, 
-	0, 
-	0, 
+	0,
+	0,
+	0,
 #endif
 	{0, 0, 0, 0, 0, 0, 0 },
 	UNQLITE_DEFAULT_PAGE_SIZE,
-	0, 
-	0, 
-	0, 
+	0,
+	0,
+	0,
 	0
 };
 #define UNQLITE_LIB_MAGIC  0xEA1495BA
@@ -1715,7 +928,7 @@ static struct unqlGlobal_Data
  *  are enabled so that the application is free to share the same database handle
  *  between different threads at the same time.
  */
-#define UNQLITE_THREAD_LEVEL_SINGLE 1 
+#define UNQLITE_THREAD_LEVEL_SINGLE 1
 #define UNQLITE_THREAD_LEVEL_MULTI  2
 /*
  * Find a Key Value storage engine from the set of installed engines.
@@ -1771,7 +984,7 @@ static sxi32 unqliteCoreConfigure(sxi32 nOp, va_list ap)
 			unqlite_kv_methods *pMethods = va_arg(ap,unqlite_kv_methods *);
 			/* Make sure we are delaing with a valid methods */
 			if( pMethods == 0 || SX_EMPTY_STR(pMethods->zName) || pMethods->xSeek == 0 || pMethods->xData == 0
-				|| pMethods->xKey == 0 || pMethods->xDataLength == 0 || pMethods->xKeyLength == 0 
+				|| pMethods->xKey == 0 || pMethods->xDataLength == 0 || pMethods->xKeyLength == 0
 				|| pMethods->szKv < (int)sizeof(unqlite_kv_engine) ){
 					rc = UNQLITE_INVALID;
 					break;
@@ -1809,7 +1022,7 @@ static sxi32 unqliteCoreConfigure(sxi32 nOp, va_list ap)
 			sUnqlMPGlobal.sAllocator.xMemError = xMemErr;
 			sUnqlMPGlobal.sAllocator.pUserData = pUserData;
 			break;
-												 }	  
+												 }
 		case UNQLITE_LIB_CONFIG_USER_MUTEX: {
 #if defined(UNQLITE_ENABLE_THREADS)
 			/* Use an alternative low-level mutex subsystem */
@@ -1853,10 +1066,10 @@ static sxi32 unqliteCoreConfigure(sxi32 nOp, va_list ap)
 				rc = UNQLITE_CORRUPT;
 				break;
 			}
-			sUnqlMPGlobal.pMutexMethods = pMethods;			
+			sUnqlMPGlobal.pMutexMethods = pMethods;
 			if( sUnqlMPGlobal.nThreadingLevel == 0 ){
 				/* Set a default threading level */
-				sUnqlMPGlobal.nThreadingLevel = UNQLITE_THREAD_LEVEL_MULTI; 
+				sUnqlMPGlobal.nThreadingLevel = UNQLITE_THREAD_LEVEL_MULTI;
 			}
 #endif
 			break;
@@ -1902,11 +1115,11 @@ int unqlite_lib_config(int nConfigOp,...)
 /*
  * Global library initialization
  * Refer to [unqlite_lib_init()]
- * This routine must be called to initialize the memory allocation subsystem, the mutex 
+ * This routine must be called to initialize the memory allocation subsystem, the mutex
  * subsystem prior to doing any serious work with the library. The first thread to call
  * this routine does the initialization process and set the magic number so no body later
  * can re-initialize the library. If subsequent threads call this  routine before the first
- * thread have finished the initialization process, then the subsequent threads must block 
+ * thread have finished the initialization process, then the subsequent threads must block
  * until the initialization process is done.
  */
 static sxi32 unqliteCoreInitialize(void)
@@ -2039,7 +1252,7 @@ static void unqliteCoreShutdown(void)
 			break;
 		}
 		pNext = pDb->pNext;
-		unqliteDbRelease(pDb); 
+		unqliteDbRelease(pDb);
 		pDb = pNext;
 		sUnqlMPGlobal.nDB--;
 	}
@@ -2186,7 +1399,7 @@ static int unqliteInitDatabase(
 {
 
 	int rc;
-	/* Initialiaze the memory subsystem */
+	/* Initialize the memory subsystem */
 	SyMemBackendInitFromParent(&pDB->sMem,pParent);
 	SyBlobInit(&pDB->sErr,&pDB->sMem);
 	/* Sanityze flags */
@@ -2388,7 +1601,7 @@ int unqlite_config(unqlite *pDb,int nConfigOp,...)
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return UNQLITE_ABORT; /* Another thread have released this instance */
 	 }
@@ -2415,7 +1628,7 @@ int unqlite_close(unqlite *pDb)
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return UNQLITE_ABORT; /* Another thread have released this instance */
 	 }
@@ -2457,7 +1670,7 @@ int unqlite_kv_store(unqlite *pDb,const void *pKey,int nKeyLen,const void *pData
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return UNQLITE_ABORT; /* Another thread have released this instance */
 	 }
@@ -2501,7 +1714,7 @@ int unqlite_kv_store_fmt(unqlite *pDb,const void *pKey,int nKeyLen,const char *z
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return UNQLITE_ABORT; /* Another thread have released this instance */
 	 }
@@ -2554,7 +1767,7 @@ int unqlite_kv_append(unqlite *pDb,const void *pKey,int nKeyLen,const void *pDat
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return UNQLITE_ABORT; /* Another thread have released this instance */
 	 }
@@ -2598,7 +1811,7 @@ int unqlite_kv_append_fmt(unqlite *pDb,const void *pKey,int nKeyLen,const char *
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return UNQLITE_ABORT; /* Another thread have released this instance */
 	 }
@@ -2653,7 +1866,7 @@ int unqlite_kv_fetch(unqlite *pDb,const void *pKey,int nKeyLen,void *pBuf,unqlit
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return UNQLITE_ABORT; /* Another thread have released this instance */
 	 }
@@ -2711,7 +1924,7 @@ int unqlite_kv_fetch_callback(unqlite *pDb,const void *pKey,int nKeyLen,int (*xC
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return UNQLITE_ABORT; /* Another thread have released this instance */
 	 }
@@ -2733,7 +1946,7 @@ int unqlite_kv_fetch_callback(unqlite *pDb,const void *pKey,int nKeyLen,int (*xC
 	 }
 	 if( rc == UNQLITE_OK && xConsumer ){
 		 /* Consume the data directly */
-		 rc = pMethods->xData(pCur,xConsumer,pUserData);	 
+		 rc = pMethods->xData(pCur,xConsumer,pUserData);
 	 }
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Leave DB mutex */
@@ -2757,7 +1970,7 @@ int unqlite_kv_delete(unqlite *pDb,const void *pKey,int nKeyLen)
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return UNQLITE_ABORT; /* Another thread have released this instance */
 	 }
@@ -2807,7 +2020,7 @@ int unqlite_kv_config(unqlite *pDb,int iOp,...)
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return UNQLITE_ABORT; /* Another thread have released this instance */
 	 }
@@ -2844,7 +2057,7 @@ int unqlite_kv_cursor_init(unqlite *pDb,unqlite_kv_cursor **ppOut)
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return UNQLITE_ABORT; /* Another thread have released this instance */
 	 }
@@ -2870,7 +2083,7 @@ int unqlite_kv_cursor_release(unqlite *pDb,unqlite_kv_cursor *pCur)
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return UNQLITE_ABORT; /* Another thread have released this instance */
 	 }
@@ -3175,7 +2388,7 @@ int unqlite_begin(unqlite *pDb)
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return UNQLITE_ABORT; /* Another thread have released this instance */
 	 }
@@ -3201,7 +2414,7 @@ int unqlite_commit(unqlite *pDb)
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return UNQLITE_ABORT; /* Another thread have released this instance */
 	 }
@@ -3227,7 +2440,7 @@ int unqlite_rollback(unqlite *pDb)
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return UNQLITE_ABORT; /* Another thread have released this instance */
 	 }
@@ -3256,7 +2469,7 @@ UNQLITE_APIEXPORT int unqlite_util_random_string(unqlite *pDb,char *zBuf,unsigne
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return UNQLITE_ABORT; /* Another thread have released this instance */
 	 }
@@ -3282,7 +2495,7 @@ UNQLITE_APIEXPORT unsigned int unqlite_util_random_num(unqlite *pDb)
 #if defined(UNQLITE_ENABLE_THREADS)
 	 /* Acquire DB mutex */
 	 SyMutexEnter(sUnqlMPGlobal.pMutexMethods, pDb->pMutex); /* NO-OP if sUnqlMPGlobal.nThreadingLevel != UNQLITE_THREAD_LEVEL_MULTI */
-	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE && 
+	 if( sUnqlMPGlobal.nThreadingLevel > UNQLITE_THREAD_LEVEL_SINGLE &&
 		 UNQLITE_THRD_DB_RELEASE(pDb) ){
 			 return 0; /* Another thread have released this instance */
 	 }
@@ -3327,7 +2540,7 @@ UNQLITE_APIEXPORT unsigned int unqlite_util_random_num(unqlite *pDb)
 ** So the bitmap is usually sparse and has low cardinality.
 */
 /*
- * Actually, this is not a bitmap but a simple hashtable where page 
+ * Actually, this is not a bitmap but a simple hashtable where page
  * number (64-bit unsigned integers) are used as the lookup keys.
  */
 typedef struct bitvec_rec bitvec_rec;
@@ -3344,14 +2557,14 @@ struct Bitvec
 	bitvec_rec **apRec;   /* Record table */
 	bitvec_rec *pList;    /* List of records */
 };
-/* 
+/*
  * Allocate a new bitvec instance.
 */
 UNQLITE_PRIVATE Bitvec * unqliteBitvecCreate(SyMemBackend *pAlloc,pgno iSize)
 {
 	bitvec_rec **apNew;
 	Bitvec *p;
-	
+
 	p = (Bitvec *)SyMemBackendAlloc(pAlloc,sizeof(*p) );
 	if( p == 0 ){
 		SXUNUSED(iSize); /* cc warning */
@@ -3378,7 +2591,7 @@ UNQLITE_PRIVATE Bitvec * unqliteBitvecCreate(SyMemBackend *pAlloc,pgno iSize)
  * Return true if installed. False otherwise.
  */
 UNQLITE_PRIVATE int unqliteBitvecTest(Bitvec *p,pgno i)
-{  
+{
 	bitvec_rec *pRec;
 	/* Point to the desired bucket */
 	pRec = p->apRec[i & (p->nSize - 1)];
@@ -3484,7 +2697,7 @@ UNQLITE_PRIVATE void unqliteBitvecDestroy(Bitvec *p)
 {
 	bitvec_rec *pNext,*pRec = p->pList;
 	SyMemBackend *pAlloc = p->pAlloc;
-	
+
 	for(;;){
 		if( p->nRec < 1 ){
 			break;
@@ -3539,11 +2752,11 @@ struct SyMutex
 };
 /* Preallocated static mutex */
 static SyMutex aStaticMutexes[] = {
-		{{0}, SXMUTEX_TYPE_STATIC_1}, 
-		{{0}, SXMUTEX_TYPE_STATIC_2}, 
-		{{0}, SXMUTEX_TYPE_STATIC_3}, 
-		{{0}, SXMUTEX_TYPE_STATIC_4}, 
-		{{0}, SXMUTEX_TYPE_STATIC_5}, 
+		{{0}, SXMUTEX_TYPE_STATIC_1},
+		{{0}, SXMUTEX_TYPE_STATIC_2},
+		{{0}, SXMUTEX_TYPE_STATIC_3},
+		{{0}, SXMUTEX_TYPE_STATIC_4},
+		{{0}, SXMUTEX_TYPE_STATIC_5},
 		{{0}, SXMUTEX_TYPE_STATIC_6}
 };
 static BOOL winMutexInit = FALSE;
@@ -3656,15 +2869,15 @@ struct SyMutex
 static SyMutex * UnixMutexNew(int nType)
 {
 	static SyMutex aStaticMutexes[] = {
-		{PTHREAD_MUTEX_INITIALIZER, SXMUTEX_TYPE_STATIC_1}, 
-		{PTHREAD_MUTEX_INITIALIZER, SXMUTEX_TYPE_STATIC_2}, 
-		{PTHREAD_MUTEX_INITIALIZER, SXMUTEX_TYPE_STATIC_3}, 
-		{PTHREAD_MUTEX_INITIALIZER, SXMUTEX_TYPE_STATIC_4}, 
-		{PTHREAD_MUTEX_INITIALIZER, SXMUTEX_TYPE_STATIC_5}, 
+		{PTHREAD_MUTEX_INITIALIZER, SXMUTEX_TYPE_STATIC_1},
+		{PTHREAD_MUTEX_INITIALIZER, SXMUTEX_TYPE_STATIC_2},
+		{PTHREAD_MUTEX_INITIALIZER, SXMUTEX_TYPE_STATIC_3},
+		{PTHREAD_MUTEX_INITIALIZER, SXMUTEX_TYPE_STATIC_4},
+		{PTHREAD_MUTEX_INITIALIZER, SXMUTEX_TYPE_STATIC_5},
 		{PTHREAD_MUTEX_INITIALIZER, SXMUTEX_TYPE_STATIC_6}
 	};
 	SyMutex *pMutex;
-	
+
 	if( nType == SXMUTEX_TYPE_FAST || nType == SXMUTEX_TYPE_RECURSIVE ){
 		pthread_mutexattr_t sRecursiveAttr;
   		/* Allocate a new mutex */
@@ -3688,7 +2901,7 @@ static SyMutex * UnixMutexNew(int nType)
 		pMutex = &aStaticMutexes[nType - 3];
 	}
   pMutex->nType = nType;
-  
+
   return pMutex;
 }
 static void UnixMutexRelease(SyMutex *pMutex)
@@ -3780,7 +2993,7 @@ static void * SyOSHeapRealloc(void *pOld, sxu32 nByte)
 #else
 	pNew = realloc(pOld, (size_t)nByte);
 #endif
-	return pNew;	
+	return pNew;
 }
 static void SyOSHeapFree(void *pPtr)
 {
@@ -3803,7 +3016,7 @@ UNQLITE_PRIVATE sxu32 SyStrlen(const char *zSrc)
 		if( !zIn[0] ){ break; } zIn++;
 		if( !zIn[0] ){ break; } zIn++;
 		if( !zIn[0] ){ break; } zIn++;
-		if( !zIn[0] ){ break; } zIn++;	
+		if( !zIn[0] ){ break; } zIn++;
 	}
 	return (sxu32)(zIn - zSrc);
 }
@@ -3811,7 +3024,7 @@ UNQLITE_PRIVATE sxi32 SyStrnicmp(const char *zLeft, const char *zRight, sxu32 SL
 {
   	register unsigned char *p = (unsigned char *)zLeft;
 	register unsigned char *q = (unsigned char *)zRight;
-	
+
 	if( SX_EMPTY_STR(p) || SX_EMPTY_STR(q) ){
 		return SX_EMPTY_STR(p)? SX_EMPTY_STR(q) ? 0 : -1 :1;
 	}
@@ -3820,7 +3033,7 @@ UNQLITE_PRIVATE sxi32 SyStrnicmp(const char *zLeft, const char *zRight, sxu32 SL
 		if( !SLen ){ return 0; }if( !*p || !*q || SyCharToLower(*p) != SyCharToLower(*q) ){ break; }p++;q++;--SLen;
 		if( !SLen ){ return 0; }if( !*p || !*q || SyCharToLower(*p) != SyCharToLower(*q) ){ break; }p++;q++;--SLen;
 		if( !SLen ){ return 0; }if( !*p || !*q || SyCharToLower(*p) != SyCharToLower(*q) ){ break; }p++;q++;--SLen;
-		
+
 	}
 	return (sxi32)(SyCharToLower(p[0]) - SyCharToLower(q[0]));
 }
@@ -3834,7 +3047,7 @@ UNQLITE_PRIVATE sxu32 Systrcpy(char *zDest, sxu32 nDestLen, const char *zSrc, sx
 			return 0;
 	}
 #endif
-	if( nLen <= 0 ){
+	if( nLen == 0 ){
 		nLen = SyStrlen(zSrc);
 	}
 	zEnd = &zBuf[nDestLen - 1]; /* reserve a room for the null terminator */
@@ -3868,7 +3081,7 @@ UNQLITE_PRIVATE void SyZero(void *pSrc, sxu32 nSize)
 UNQLITE_PRIVATE sxi32 SyMemcmp(const void *pB1, const void *pB2, sxu32 nSize)
 {
 	sxi32 rc;
-	if( nSize <= 0 ){
+	if( nSize == 0 ){
 		return 0;
 	}
 	if( pB1 == 0 || pB2 == 0 ){
@@ -3927,12 +3140,12 @@ static sxu32 MemOSChunkSize(void *pBlock)
 }
 /* Export OS allocation methods */
 static const SyMemMethods sOSAllocMethods = {
-	MemOSAlloc, 
-	MemOSRealloc, 
-	MemOSFree, 
-	MemOSChunkSize, 
-	0, 
-	0, 
+	MemOSAlloc,
+	MemOSRealloc,
+	MemOSFree,
+	MemOSChunkSize,
+	0,
+	0,
 	0
 };
 static void * MemBackendAlloc(SyMemBackend *pBackend, sxu32 nByte)
@@ -3946,7 +3159,7 @@ static void * MemBackendAlloc(SyMemBackend *pBackend, sxu32 nByte)
 	nByte += sizeof(SyMemBlock);
 	for(;;){
 		pBlock = (SyMemBlock *)pBackend->pMethods->xAlloc(nByte);
-		if( pBlock != 0 || pBackend->xMemError == 0 || nRetry > SXMEM_BACKEND_RETRY 
+		if( pBlock != 0 || pBackend->xMemError == 0 || nRetry > SXMEM_BACKEND_RETRY
 			|| SXERR_RETRY != pBackend->xMemError(pBackend->pUserData) ){
 				break;
 		}
@@ -4106,14 +3319,14 @@ UNQLITE_PRIVATE sxi32 SyMemBackendMakeThreadSafe(SyMemBackend *pBackend, const S
  * Memory pool allocator
  */
 #define SXMEM_POOL_MAGIC		0xDEAD
-#define SXMEM_POOL_MAXALLOC		(1<<(SXMEM_POOL_NBUCKETS+SXMEM_POOL_INCR)) 
+#define SXMEM_POOL_MAXALLOC		(1<<(SXMEM_POOL_NBUCKETS+SXMEM_POOL_INCR))
 #define SXMEM_POOL_MINALLOC		(1<<(SXMEM_POOL_INCR))
 static sxi32 MemPoolBucketAlloc(SyMemBackend *pBackend, sxu32 nBucket)
 {
 	char *zBucket, *zBucketEnd;
 	SyMemHeader *pHeader;
 	sxu32 nBucketSize;
-	
+
 	/* Allocate one big block first */
 	zBucket = (char *)MemBackendAlloc(&(*pBackend), SXMEM_POOL_MAXALLOC);
 	if( zBucket == 0 ){
@@ -4130,10 +3343,10 @@ static sxi32 MemPoolBucketAlloc(SyMemBackend *pBackend, sxu32 nBucket)
 		pHeader->pNext = (SyMemHeader *)&zBucket[nBucketSize];
 		/* Advance the cursor to the next available chunk */
 		pHeader = pHeader->pNext;
-		zBucket += nBucketSize;	
+		zBucket += nBucketSize;
 	}
 	pHeader->pNext = 0;
-	
+
 	return SXRET_OK;
 }
 static void * MemBackendPoolAlloc(SyMemBackend *pBackend, sxu32 nByte)
@@ -4602,7 +3815,7 @@ UNQLITE_PRIVATE sxi32 SySetPut(SySet *pSet, const void *pItem)
 		if( pSet->pAllocator == 0 ){
 			return  SXERR_LOCKED;
 		}
-		if( pSet->nSize <= 0 ){
+		if( pSet->nSize == 0 ){
 			pSet->nSize = 4;
 		}
 		pNew = SyMemBackendRealloc(pSet->pAllocator, pSet->pBase, pSet->eSize * pSet->nSize * 2);
@@ -4614,7 +3827,7 @@ UNQLITE_PRIVATE sxi32 SySetPut(SySet *pSet, const void *pItem)
 	}
 	zbase = (unsigned char *)pSet->pBase;
 	SX_MACRO_FAST_MEMCPY(pItem, &zbase[pSet->nUsed * pSet->eSize], pSet->eSize);
-	pSet->nUsed++;	
+	pSet->nUsed++;
 	return SXRET_OK;
 }
 UNQLITE_PRIVATE sxi32 SySetRelease(SySet *pSet)
@@ -4645,7 +3858,7 @@ UNQLITE_PRIVATE sxi32 SySetRelease(SySet *pSet)
 #define SXFMT_ERROR       9 /* Used to indicate no such conversion type */
 /* Extension by Symisc Systems */
 #define SXFMT_RAWSTR     13 /* %z Pointer to raw string (SyString *) */
-#define SXFMT_UNUSED     15 
+#define SXFMT_UNUSED     15
 /*
 ** Allowed values for SyFmtInfo.flags
 */
@@ -4677,13 +3890,13 @@ struct SyFmtConsumer
 	sxi32 nType; /* Type of the consumer see below */
 	sxi32 rc;	/* Consumer return value;Abort processing if rc != SXRET_OK */
  union{
-	struct{	
+	struct{
 	ProcConsumer xUserConsumer;
 	void *pUserData;
-	}sFunc;  
+	}sFunc;
 	SyBlob *pBlob;
- }uConsumer;	
-}; 
+ }uConsumer;
+};
 #ifndef SX_OMIT_FLOATINGPOINT
 static int getdigit(sxlongreal *val, int *cnt)
 {
@@ -4711,27 +3924,27 @@ static sxi32 InternFormat(ProcConsumer xConsumer, void *pUserData, const char *z
 	 * used conversion types first.
 	 */
 static const SyFmtInfo aFmt[] = {
-  {  'd', 10, SXFLAG_SIGNED, SXFMT_RADIX, "0123456789", 0    }, 
-  {  's',  0, 0, SXFMT_STRING,     0,                  0    }, 
-  {  'c',  0, 0, SXFMT_CHARX,      0,                  0    }, 
-  {  'x', 16, 0, SXFMT_RADIX,      "0123456789abcdef", "x0" }, 
-  {  'X', 16, 0, SXFMT_RADIX,      "0123456789ABCDEF", "X0" }, 
+  {  'd', 10, SXFLAG_SIGNED, SXFMT_RADIX, "0123456789", 0    },
+  {  's',  0, 0, SXFMT_STRING,     0,                  0    },
+  {  'c',  0, 0, SXFMT_CHARX,      0,                  0    },
+  {  'x', 16, 0, SXFMT_RADIX,      "0123456789abcdef", "x0" },
+  {  'X', 16, 0, SXFMT_RADIX,      "0123456789ABCDEF", "X0" },
          /* -- Extensions by Symisc Systems -- */
   {  'z',  0, 0, SXFMT_RAWSTR,     0,                   0   }, /* Pointer to a raw string (SyString *) */
-  {  'B',  2, 0, SXFMT_RADIX,      "01",                "b0"}, 
+  {  'B',  2, 0, SXFMT_RADIX,      "01",                "b0"},
          /* -- End of Extensions -- */
-  {  'o',  8, 0, SXFMT_RADIX,      "01234567",         "0"  }, 
-  {  'u', 10, 0, SXFMT_RADIX,      "0123456789",       0    }, 
+  {  'o',  8, 0, SXFMT_RADIX,      "01234567",         "0"  },
+  {  'u', 10, 0, SXFMT_RADIX,      "0123456789",       0    },
 #ifndef SX_OMIT_FLOATINGPOINT
-  {  'f',  0, SXFLAG_SIGNED, SXFMT_FLOAT,       0,     0    }, 
-  {  'e',  0, SXFLAG_SIGNED, SXFMT_EXP,        "e",    0    }, 
-  {  'E',  0, SXFLAG_SIGNED, SXFMT_EXP,        "E",    0    }, 
-  {  'g',  0, SXFLAG_SIGNED, SXFMT_GENERIC,    "e",    0    }, 
-  {  'G',  0, SXFLAG_SIGNED, SXFMT_GENERIC,    "E",    0    }, 
+  {  'f',  0, SXFLAG_SIGNED, SXFMT_FLOAT,       0,     0    },
+  {  'e',  0, SXFLAG_SIGNED, SXFMT_EXP,        "e",    0    },
+  {  'E',  0, SXFLAG_SIGNED, SXFMT_EXP,        "E",    0    },
+  {  'g',  0, SXFLAG_SIGNED, SXFMT_GENERIC,    "e",    0    },
+  {  'G',  0, SXFLAG_SIGNED, SXFMT_GENERIC,    "E",    0    },
 #endif
-  {  'i', 10, SXFLAG_SIGNED, SXFMT_RADIX, "0123456789", 0    }, 
-  {  'n',  0, 0, SXFMT_SIZE,       0,                  0    }, 
-  {  '%',  0, 0, SXFMT_PERCENT,    0,                  0    }, 
+  {  'i', 10, SXFLAG_SIGNED, SXFMT_RADIX, "0123456789", 0    },
+  {  'n',  0, 0, SXFMT_SIZE,       0,                  0    },
+  {  '%',  0, 0, SXFMT_PERCENT,    0,                  0    },
   {  'p', 10, 0, SXFMT_RADIX,      "0123456789",       0    }
 };
   int c;                     /* Next character in the format string */
@@ -4752,7 +3965,7 @@ static const SyFmtInfo aFmt[] = {
   char prefix;             /* Prefix character."+" or "-" or " " or '\0'.*/
   sxu8 errorflag = 0;      /* True if an error is encountered */
   sxu8 xtype;              /* Conversion paradigm */
-  char *zExtra;    
+  char *zExtra;
   static char spaces[] = "                                                  ";
 #define etSPACESIZE ((int)sizeof(spaces)-1)
 #ifndef SX_OMIT_FLOATINGPOINT
@@ -4791,7 +4004,7 @@ static const SyFmtInfo aFmt[] = {
       return errorflag > 0 ? SXERR_FORMAT : SXRET_OK;
     }
     /* Find out what flags are present */
-    flag_leftjustify = flag_plussign = flag_blanksign = 
+    flag_leftjustify = flag_plussign = flag_blanksign =
      flag_alternateform = flag_zeropad = 0;
     do{
       switch( c ){
@@ -4900,12 +4113,12 @@ static const SyFmtInfo aFmt[] = {
         ** I think this is stupid.*/
         if( longvalue==0 ) flag_alternateform = 0;
 #else
-        /* More sensible: turn off the prefix for octal (to prevent "00"), 
+        /* More sensible: turn off the prefix for octal (to prevent "00"),
         ** but leave the prefix for hex.*/
         if( longvalue==0 && infop->base==8 ) flag_alternateform = 0;
 #endif
         if( infop->flags & SXFLAG_SIGNED ){
-          if( longvalue<0 ){ 
+          if( longvalue<0 ){
             longvalue = -longvalue;
 			/* Ticket 1433-003 */
 			if( longvalue < 0 ){
@@ -4941,7 +4154,7 @@ static const SyFmtInfo aFmt[] = {
             longvalue = longvalue/base;
           }while( longvalue>0 );
         }
-        length = &buf[SXFMT_BUFSIZ-1]-bufpt;
+        length = (int)(&buf[SXFMT_BUFSIZ-1]-bufpt);
         for(idx=precision-length; idx>0; idx--){
           *(--bufpt) = '0';                             /* Zero pad */
         }
@@ -4953,7 +4166,7 @@ static const SyFmtInfo aFmt[] = {
             for(pre=infop->prefix; (x=(*pre))!=0; pre++) *(--bufpt) = x;
           }
         }
-        length = &buf[SXFMT_BUFSIZ-1]-bufpt;
+        length = (int)(&buf[SXFMT_BUFSIZ-1]-bufpt);
         break;
       case SXFMT_FLOAT:
       case SXFMT_EXP:
@@ -5062,7 +4275,7 @@ static const SyFmtInfo aFmt[] = {
         /* The converted number is in buf[] and zero terminated.Output it.
         ** Note that the number is in the usual order, not reversed as with
         ** integer conversions.*/
-        length = bufpt-buf;
+        length = (int)(bufpt-buf);
         bufpt = buf;
 
         /* Special case:  Add leading zeros if the flag_zeropad flag is
@@ -5190,7 +4403,7 @@ static const SyFmtInfo aFmt[] = {
     }
   }/* End for loop over the format string */
   return errorflag ? SXERR_FORMAT : SXRET_OK;
-} 
+}
 static sxi32 FormatConsumer(const void *pSrc, unsigned int nLen, void *pData)
 {
 	SyFmtConsumer *pConsumer = (SyFmtConsumer *)pData;
@@ -5204,14 +4417,14 @@ static sxi32 FormatConsumer(const void *pSrc, unsigned int nLen, void *pData)
 			/* Blob consumer */
 			rc = SyBlobAppend(pConsumer->uConsumer.pBlob, pSrc, (sxu32)nLen);
 			break;
-		default: 
+		default:
 			/* Unknown consumer */
 			break;
 	}
 	/* Update total number of bytes consumed so far */
 	pConsumer->nLen += nLen;
 	pConsumer->rc = rc;
-	return rc;	
+	return rc;
 }
 static sxi32 FormatMount(sxi32 nType, void *pConsumer, ProcConsumer xUserCons, void *pUserData, sxu32 *pOutLen, const char *zFormat, va_list ap)
 {
@@ -5235,10 +4448,10 @@ static sxi32 FormatMount(sxi32 nType, void *pConsumer, ProcConsumer xUserCons, v
 		case SXFMT_CONS_BLOB:
 			sCons.uConsumer.pBlob = (SyBlob *)pConsumer;
 			break;
-		default: 
+		default:
 			return SXERR_UNKNOWN;
 	}
-	InternFormat(FormatConsumer, &sCons, zFormat, ap); 
+	InternFormat(FormatConsumer, &sCons, zFormat, ap);
 	if( pOutLen ){
 		*pOutLen = sCons.nLen;
 	}
@@ -5247,27 +4460,28 @@ static sxi32 FormatMount(sxi32 nType, void *pConsumer, ProcConsumer xUserCons, v
 UNQLITE_PRIVATE sxu32 SyBlobFormatAp(SyBlob *pBlob, const char *zFormat, va_list ap)
 {
 	sxu32 n = 0; /* cc warning */
-#if defined(UNTRUST)	
+#if defined(UNTRUST)
 	if( SX_EMPTY_STR(zFormat) ){
 		return 0;
 	}
-#endif	
+#endif
 	FormatMount(SXFMT_CONS_BLOB, &(*pBlob), 0, 0, &n, zFormat, ap);
 	return n;
 }
+#if defined(__UNIXES__)
 UNQLITE_PRIVATE sxu32 SyBufferFormat(char *zBuf, sxu32 nLen, const char *zFormat, ...)
 {
 	SyBlob sBlob;
 	va_list ap;
 	sxu32 n;
-#if defined(UNTRUST)	
+#if defined(UNTRUST)
 	if( SX_EMPTY_STR(zFormat) ){
 		return 0;
 	}
-#endif	
+#endif
 	if( SXRET_OK != SyBlobInitFromBuf(&sBlob, zBuf, nLen - 1) ){
 		return 0;
-	}		
+	}
 	va_start(ap, zFormat);
 	FormatMount(SXFMT_CONS_BLOB, &sBlob, 0, 0, 0, zFormat, ap);
 	va_end(ap);
@@ -5277,6 +4491,7 @@ UNQLITE_PRIVATE sxu32 SyBufferFormat(char *zBuf, sxu32 nLen, const char *zFormat
 	SyBlobAppend(&sBlob, "\0", sizeof(char));
 	return n;
 }
+#endif
 /*
  * Psuedo Random Number Generator (PRNG)
  * @authors: SQLite authors <http://www.sqlite.org/>
@@ -5346,11 +4561,11 @@ UNQLITE_PRIVATE sxi32 SyRandomnessInit(SyPRNGCtx *pCtx, ProcRandomSeed xSeed, vo
 	if( pCtx->nMagic == SXPRNG_MAGIC ){
 		return SXRET_OK; /* Already initialized */
 	}
- /* Initialize the state of the random number generator once, 
+ /* Initialize the state of the random number generator once,
   ** the first time this routine is called.The seed value does
   ** not need to contain a lot of randomness since we are not
   ** trying to do secure encryption or anything like that...
-  */	
+  */
 	if( xSeed == 0 ){
 		xSeed = SyOSUtilRandomSeed;
 	}
@@ -5369,7 +4584,7 @@ UNQLITE_PRIVATE sxi32 SyRandomnessInit(SyPRNGCtx *pCtx, ProcRandomSeed xSeed, vo
       pCtx->s[i] = t;
     }
 	pCtx->nMagic = SXPRNG_MAGIC;
-	
+
 	return SXRET_OK;
 }
 /*
@@ -5378,7 +4593,7 @@ UNQLITE_PRIVATE sxi32 SyRandomnessInit(SyPRNGCtx *pCtx, ProcRandomSeed xSeed, vo
 static sxu8 randomByte(SyPRNGCtx *pCtx)
 {
   sxu8 t;
-  
+
   /* Generate and return single random byte */
   pCtx->i++;
   t = pCtx->s[pCtx->i];
@@ -5401,12 +4616,12 @@ UNQLITE_PRIVATE sxi32 SyRandomness(SyPRNGCtx *pCtx, void *pBuf, sxu32 nLen)
 		return SXERR_CORRUPT;
 	}
 	for(;;){
-		if( zBuf >= zEnd ){break;}	zBuf[0] = randomByte(pCtx);	zBuf++;	
-		if( zBuf >= zEnd ){break;}	zBuf[0] = randomByte(pCtx);	zBuf++;	
-		if( zBuf >= zEnd ){break;}	zBuf[0] = randomByte(pCtx);	zBuf++;	
-		if( zBuf >= zEnd ){break;}	zBuf[0] = randomByte(pCtx);	zBuf++;	
+		if( zBuf >= zEnd ){break;}	zBuf[0] = randomByte(pCtx);	zBuf++;
+		if( zBuf >= zEnd ){break;}	zBuf[0] = randomByte(pCtx);	zBuf++;
+		if( zBuf >= zEnd ){break;}	zBuf[0] = randomByte(pCtx);	zBuf++;
+		if( zBuf >= zEnd ){break;}	zBuf[0] = randomByte(pCtx);	zBuf++;
 	}
-	return SXRET_OK;  
+	return SXRET_OK;
 }
 UNQLITE_PRIVATE void SyBigEndianPack32(unsigned char *buf,sxu32 nb)
 {
@@ -5437,7 +4652,7 @@ UNQLITE_PRIVATE void SyBigEndianPack64(unsigned char *buf,sxu64 n64)
 	buf[3] = n64 & 0xFF; n64 >>=8;
 	buf[2] = n64 & 0xFF; n64 >>=8;
 	buf[1] = n64 & 0xFF; n64 >>=8;
-	buf[0] = (sxu8)n64 ; 
+	buf[0] = (sxu8)n64 ;
 }
 UNQLITE_PRIVATE void SyBigEndianUnpack64(const unsigned char *buf,sxu64 *n64)
 {
@@ -5489,7 +4704,7 @@ UNQLITE_PRIVATE void SyDosTimeFormat(sxu32 nDosDate, Sytm *pOut)
 #ifndef UNQLITE_AMALGAMATION
 #include "unqliteInt.h"
 #endif
-/* 
+/*
  * This file implements disk based hashtable using the linear hashing algorithm.
  * This implementation is the one decribed in the paper:
  *  LINEAR HASHING : A NEW TOOL FOR FILE AND TABLE ADDRESSING. Witold Litwin. I. N. Ft. I. A.. 78 150 Le Chesnay, France.
@@ -5502,7 +4717,7 @@ UNQLITE_PRIVATE void SyDosTimeFormat(sxu32 nDosDate, Sytm *pOut)
  */
 #define L_HASH_WORD "chm@symisc"
 /*
- * Cell size on disk. 
+ * Cell size on disk.
  */
 #define L_HASH_CELL_SZ (4/*Hash*/+4/*Key*/+8/*Data*/+2/* Offset of the next cell */+8/*Overflow*/)
 /*
@@ -5553,7 +4768,7 @@ struct lhcell
 ** structure.
 */
 typedef struct lhphdr lhphdr;
-struct lhphdr 
+struct lhphdr
 {
   sxu16 iOfft; /* Offset of the first cell */
   sxu16 iFree; /* Offset of the first free block*/
@@ -5587,7 +4802,7 @@ struct lhash_bmap_rec
 {
 	pgno iLogic;                   /* Logical bucket number */
 	pgno iReal;                    /* Real bucket number */
-	lhash_bmap_rec *pNext,*pPrev;  /* Link to other bucket map */     
+	lhash_bmap_rec *pNext,*pPrev;  /* Link to other bucket map */
 	lhash_bmap_rec *pNextCol,*pPrevCol; /* Collision links */
 };
 typedef struct lhash_bmap_page lhash_bmap_page;
@@ -5683,7 +4898,7 @@ static int lhMapInstallBucket(lhash_kv_engine *pEngine,pgno iLogic,pgno iReal)
 		lhash_bmap_rec *pEntry;
 		lhash_bmap_rec **apNew;
 		sxu32 n;
-		
+
 		apNew = (lhash_bmap_rec **)SyMemBackendAlloc(&pEngine->sAllocator, nNewSize * sizeof(lhash_bmap_rec *));
 		if( apNew ){
 			/* Zero the new table */
@@ -5756,7 +4971,7 @@ static int lhMapLoadPage(lhash_kv_engine *pEngine,lhash_bmap_page *pMap,const un
 	/* All done */
 	return UNQLITE_OK;
 }
-/* 
+/*
  * Allocate a new cell instance.
  */
 static lhcell * lhNewCell(lhash_kv_engine *pEngine,lhpage *pPage)
@@ -5778,8 +4993,8 @@ static lhcell * lhNewCell(lhash_kv_engine *pEngine,lhpage *pPage)
  */
 static void lhCellDiscard(lhcell *pCell)
 {
-	lhpage *pPage = pCell->pPage->pMaster;	
-	
+	lhpage *pPage = pCell->pPage->pMaster;
+
 	if( pCell->pPrevCol ){
 		pCell->pPrevCol->pNextCol = pCell->pNextCol;
 	}else{
@@ -5836,7 +5051,7 @@ static int lhInstallCell(lhcell *pCell)
 		lhcell *pEntry;
 		lhcell **apNew;
 		sxu32 n;
-		
+
 		apNew = (lhcell **)SyMemBackendAlloc(&pPage->pHash->sAllocator, nNewSize * sizeof(lhcell *));
 		if( apNew ){
 			/* Zero the new table */
@@ -5964,10 +5179,10 @@ static int lhParseOneCell(lhpage *pPage,const unsigned char *zRaw,const unsigned
 	iOfft = (sxu16)(zRaw - (const unsigned char *)pPage->pRaw->zData);
 	/* 4 byte hash number */
 	SyBigEndianUnpack32(zRaw,&iHash);
-	zRaw += 4;	
+	zRaw += 4;
 	/* 4 byte key length  */
 	SyBigEndianUnpack32(zRaw,&nKey);
-	zRaw += 4;	
+	zRaw += 4;
 	/* 8 byte data length */
 	SyBigEndianUnpack64(zRaw,&nData);
 	zRaw += 8;
@@ -6383,7 +5598,7 @@ static int lhash_read_header(lhash_kv_engine *pEngine,unqlite_page *pHeader)
 	zRaw += 8;
 	/* Next generation */
 	pEngine->nmax_split_nucket = pEngine->max_split_bucket << 1;
-	/* Initialiaze the bucket map */
+	/* Initialize the bucket map */
 	pMap = &pEngine->sPageMap;
 	/* Fill in the structure */
 	pMap->iNum = pHeader->pgno;
@@ -6440,7 +5655,7 @@ static int lhRecordLookup(
 	pgno iBucket;
 	sxu32 nHash;
 	int rc;
-	/* Acquire the first page (hash Header) so that everything gets loaded autmatically */
+	/* Acquire the first page (hash Header) so that everything gets loaded automatically */
 	rc = pEngine->pIo->xGet(pEngine->pIo->pHandle,1,0);
 	if( rc != UNQLITE_OK ){
 		return rc;
@@ -6607,8 +5822,8 @@ static int lhPageDefragment(lhpage *pPage)
 	lhcell *pCell;
 	/* Get a temporary page from the pager. This opertaion never fail */
 	zTmp = pEngine->pIo->xTmpPage(pEngine->pIo->pHandle);
-	/* Move the target cells to the begining */
-	pCell = pPage->pList;
+	/* Move the target cells to the beginning */
+	pCell = pPage->pMaster->pList;
 	/* Write the slave page number */
 	SyBigEndianPack64(&zTmp[2/*Offset of the first cell */+2/*Offset of the first free block */],pPage->sHdr.iSlave);
 	zPtr = &zTmp[L_HASH_PAGE_HDR_SZ]; /* Offset to start writing from */
@@ -6686,7 +5901,7 @@ static int lhPageDefragment(lhpage *pPage)
 **
 ** If the page contains nBytes of free space but does not contain
 ** nBytes of contiguous free space, then this routine automatically
-** calls defragementPage() to consolidate all free space before 
+** calls defragementPage() to consolidate all free space before
 ** allocating the new chunk.
 */
 static int lhAllocateSpace(lhpage *pPage,sxu64 nAmount,sxu16 *pOfft)
@@ -7074,14 +6289,14 @@ static lhcell * lhFindSibeling(lhcell *pCell)
 {
 	lhpage *pPage = pCell->pPage->pMaster;
 	lhcell *pEntry;
-	pEntry = pPage->pFirst; 
+	pEntry = pPage->pFirst;
 	while( pEntry ){
 		if( pEntry->pPage == pCell->pPage && pEntry->iNext == pCell->iStart ){
 			/* Sibeling found */
 			return pEntry;
 		}
 		/* Point to the previous entry */
-		pEntry = pEntry->pPrev; 
+		pEntry = pEntry->pPrev;
 	}
 	/* Last inserted cell */
 	return 0;
@@ -7601,7 +6816,7 @@ static int lhFindSlavePage(lhpage *pPage,sxu64 nAmount,sxu16 *pOfft,lhpage **ppS
 		if( UNQLITE_OK != lhAllocateSpace(pNew,L_HASH_CELL_SZ+nAmount,&iOfft) ){
 			/* Cell header only */
 			lhAllocateSpace(pNew,L_HASH_CELL_SZ,&iOfft); /* Never fail */
-		}	
+		}
 		*pOfft = iOfft;
 	}
 	/* Link this page to the previous slave page */
@@ -7695,7 +6910,7 @@ static int lhPageSplit(
 	lhcell *pCell,*pNext;
 	SyBlob sWorker;
 	pgno iBucket;
-	int rc; 
+	int rc;
 	SyBlobInit(&sWorker,&pOld->pHash->sAllocator);
 	/* Perform the split */
 	pCell = pOld->pList;
@@ -7880,7 +7095,7 @@ static int lh_record_insert(
 	int iCnt;
 	int rc;
 
-	/* Acquire the first page (DB hash Header) so that everything gets loaded autmatically */
+	/* Acquire the first page (DB hash Header) so that everything gets loaded automatically */
 	rc = pEngine->pIo->xGet(pEngine->pIo->pHandle,1,0);
 	if( rc != UNQLITE_OK ){
 		return rc;
@@ -8003,7 +7218,7 @@ static int lhash_write_header(lhash_kv_engine *pEngine,unqlite_page *pHeader)
 	/* Maximum split bucket */
 	SyBigEndianPack64(zRaw,pEngine->max_split_bucket);
 	zRaw += 8;
-	/* Initialiaze the bucket map */
+	/* Initialize the bucket map */
 	pMap = &pEngine->sPageMap;
 	/* Fill in the structure */
 	pMap->iNum = pHeader->pgno;
@@ -8099,7 +7314,7 @@ static sxu32 lhash_bin_hash(const void *pSrc,sxu32 nLen)
 		if( zIn >= zEnd ){ break; } nH = nH * 33 + zIn[0] ; zIn++;
 		if( zIn >= zEnd ){ break; } nH = nH * 33 + zIn[0] ; zIn++;
 		if( zIn >= zEnd ){ break; } nH = nH * 33 + zIn[0] ; zIn++;
-	}	
+	}
 	return nH;
 }
 /*
@@ -8201,7 +7416,7 @@ struct lhash_kv_cursor
 	unqlite_page *pRaw;   /* Raw disk page */
 	lhash_bmap_rec *pRec; /* Logical to real bucket map */
 };
-/* 
+/*
  * Possible state of the cursor
  */
 #define L_HASH_CURSOR_STATE_NEXT_PAGE 1 /* Next page in the list */
@@ -8409,7 +7624,7 @@ static int lhCursorKeyLength(unqlite_kv_cursor *pCursor,int *pLen)
 {
 	lhash_kv_cursor *pCur = (lhash_kv_cursor *)pCursor;
 	lhcell *pCell;
-	
+
 	if( pCur->iState != L_HASH_CURSOR_STATE_CELL || pCur->pCell == 0 ){
 		/* Invalid state */
 		return UNQLITE_INVALID;
@@ -8427,7 +7642,7 @@ static int lhCursorDataLength(unqlite_kv_cursor *pCursor,unqlite_int64 *pLen)
 {
 	lhash_kv_cursor *pCur = (lhash_kv_cursor *)pCursor;
 	lhcell *pCell;
-	
+
 	if( pCur->iState != L_HASH_CURSOR_STATE_CELL || pCur->pCell == 0 ){
 		/* Invalid state */
 		return UNQLITE_INVALID;
@@ -8546,7 +7761,7 @@ UNQLITE_PRIVATE const unqlite_kv_methods * unqliteExportDiskKvStorage(void)
 		lhCursorDataLength,         /* xDataLength */
 		lhCursorData,               /* xData */
 		lhCursorReset,              /* xReset */
-		0                           /* xRelease */                        
+		0                           /* xRelease */
 	};
 	return &sDiskStore;
 }
@@ -8572,7 +7787,7 @@ UNQLITE_PRIVATE const unqlite_kv_methods * unqliteExportDiskKvStorage(void)
 #ifndef UNQLITE_AMALGAMATION
 #include "unqliteInt.h"
 #endif
-/* 
+/*
  * This file implements an in-memory key value storage engine for unQLite.
  * Note that this storage engine does not support transactions.
  *
@@ -8632,7 +7847,7 @@ static mem_hash_record * MemHashNewRecord(
 	void *pDupData;
 	sxu32 nByte;
 	char *zPtr;
-	
+
 	/* Total number of bytes to alloc */
 	nByte = sizeof(mem_hash_record) + nKey;
 	/* Allocate a new instance */
@@ -8721,7 +7936,7 @@ static mem_hash_record * MemHashGetEntry(
 		if( pEntry == 0 ){
 			break;
 		}
-		if( pEntry->nHash == nHash && pEntry->nKeyLen == (sxu32)nKeyLen && 
+		if( pEntry->nHash == nHash && pEntry->nKeyLen == (sxu32)nKeyLen &&
 			pEngine->xCmp(pEntry->pKey,pKey,pEntry->nKeyLen) == 0 ){
 				return pEntry;
 		}
@@ -8751,7 +7966,7 @@ static int MemHashGrowTable(mem_hash_kv_engine *pEngine)
 	n = 0;
 	pEntry = pEngine->pLast;
 	for(;;){
-		
+
 		/* Loop one */
 		if( n >= pEngine->nRecord ){
 			break;
@@ -9009,7 +8224,7 @@ static sxu32 MemHashFunc(const void *pSrc,sxu32 nLen)
 		if( zIn >= zEnd ){ break; } nH = nH * 33 + zIn[0] ; zIn++;
 		if( zIn >= zEnd ){ break; } nH = nH * 33 + zIn[0] ; zIn++;
 		if( zIn >= zEnd ){ break; } nH = nH * 33 + zIn[0] ; zIn++;
-	}	
+	}
 	return nH;
 }
 /* Default bucket size */
@@ -9022,7 +8237,7 @@ static sxu32 MemHashFunc(const void *pSrc,sxu32 nLen)
 static int MemHashInit(unqlite_kv_engine *pKvEngine,int iPageSize)
 {
 	mem_hash_kv_engine *pEngine = (mem_hash_kv_engine *)pKvEngine;
-	/* Note that this instance is already zeroed */	
+	/* Note that this instance is already zeroed */
 	/* Memory backend */
 	SyMemBackendInitFromParent(&pEngine->sAlloc,unqliteExportMemBackend());
 	/* Default hash & comparison function */
@@ -9181,7 +8396,7 @@ static int MemHashAppend(
 		/* Append data to the existing record */
 		if( nNew > SXU32_HIGH ){
 			/* Overflow */
-			pEngine->pIo->xErr(pEngine->pIo->pHandle,"Append operation will cause data overflow");	
+			pEngine->pIo->xErr(pEngine->pIo->pHandle,"Append operation will cause data overflow");
 			return UNQLITE_LIMIT;
 		}
 		nData = (sxu32)nNew;
@@ -9226,7 +8441,7 @@ UNQLITE_PRIVATE const unqlite_kv_methods * unqliteExportMemKvStorage(void)
 		MemHashCursorDataLength,    /* xDataLength */
 		MemHashCursorData,          /* xData */
 		MemHashCursorReset,         /* xReset */
-		0        /* xRelease */                        
+		0        /* xRelease */
 	};
 	return &sMemStore;
 }
@@ -9305,9 +8520,9 @@ UNQLITE_PRIVATE int unqliteOsSectorSize(unqlite_file *id)
 UNQLITE_PRIVATE int unqliteOsOpen(
   unqlite_vfs *pVfs,
   SyMemBackend *pAlloc,
-  const char *zPath, 
-  unqlite_file **ppOut, 
-  unsigned int flags 
+  const char *zPath,
+  unqlite_file **ppOut,
+  unsigned int flags
 )
 {
 	unqlite_file *pFile;
@@ -9346,9 +8561,9 @@ UNQLITE_PRIVATE int unqliteOsDelete(unqlite_vfs *pVfs, const char *zPath, int di
   return pVfs->xDelete(pVfs, zPath, dirSync);
 }
 UNQLITE_PRIVATE int unqliteOsAccess(
-  unqlite_vfs *pVfs, 
-  const char *zPath, 
-  int flags, 
+  unqlite_vfs *pVfs,
+  const char *zPath,
+  int flags,
   int *pResOut
 ){
   return pVfs->xAccess(pVfs, zPath, flags, pResOut);
@@ -9375,7 +8590,7 @@ UNQLITE_PRIVATE int unqliteOsAccess(
 #ifndef UNQLITE_AMALGAMATION
 #include "unqliteInt.h"
 #endif
-/* 
+/*
  * Omit the whole layer from the build if compiling for platforms other than Unix (Linux, BSD, Solaris, OS X, etc.).
  * Note: Mostly SQLite3 source tree.
  */
@@ -9408,7 +8623,7 @@ UNQLITE_PRIVATE int unqliteOsAccess(
 #include <time.h>
 #include <sys/time.h>
 #include <errno.h>
-#if defined(__APPLE__) 
+#if defined(__APPLE__)
 # include <sys/mount.h>
 #endif
 /*
@@ -9433,7 +8648,7 @@ UNQLITE_PRIVATE int unqliteOsAccess(
 */
 #define MAX_PATHNAME 512
 /*
-** Only set the lastErrno if the error code is a real error and not 
+** Only set the lastErrno if the error code is a real error and not
 ** a normal expected return code of UNQLITE_BUSY or UNQLITE_OK
 */
 #define IS_LOCK_ERROR(x)  ((x != UNQLITE_OK) && (x != UNQLITE_BUSY))
@@ -9488,11 +8703,11 @@ struct unixFile {
 /*
 ** Helper functions to obtain and relinquish the global mutex. The
 ** global mutex is used to protect the unixInodeInfo and
-** vxworksFileId objects used by this file, all of which may be 
+** vxworksFileId objects used by this file, all of which may be
 ** shared by multiple threads.
 **
-** Function unixMutexHeld() is used to assert() that the global mutex 
-** is held when required. This function is only used as part of assert() 
+** Function unixMutexHeld() is used to assert() that the global mutex
+** is held when required. This function is only used as part of assert()
 ** statements. e.g.
 **
 **   unixEnterMutex()
@@ -9521,44 +8736,44 @@ static void unixLeaveMutex(void){
 ** This routine translates a standard POSIX errno code into something
 ** useful to the clients of the unqlite3 functions.  Specifically, it is
 ** intended to translate a variety of "try again" errors into UNQLITE_BUSY
-** and a variety of "please close the file descriptor NOW" errors into 
+** and a variety of "please close the file descriptor NOW" errors into
 ** UNQLITE_IOERR
-** 
+**
 ** Errors during initialization of locks, or file system support for locks,
 ** should handle ENOLCK, ENOTSUP, EOPNOTSUPP separately.
 */
 static int unqliteErrorFromPosixError(int posixError, int unqliteIOErr) {
   switch (posixError) {
-  case 0: 
+  case 0:
     return UNQLITE_OK;
-    
+
   case EAGAIN:
   case ETIMEDOUT:
   case EBUSY:
   case EINTR:
-  case ENOLCK:  
-    /* random NFS retry error, unless during file system support 
+  case ENOLCK:
+    /* random NFS retry error, unless during file system support
      * introspection, in which it actually means what it says */
     return UNQLITE_BUSY;
- 
-  case EACCES: 
+
+  case EACCES:
     /* EACCES is like EAGAIN during locking operations, but not any other time*/
       return UNQLITE_BUSY;
-    
-  case EPERM: 
+
+  case EPERM:
     return UNQLITE_PERM;
-    
+
   case EDEADLK:
     return UNQLITE_IOERR;
-    
+
 #if EOPNOTSUPP!=ENOTSUP
-  case EOPNOTSUPP: 
-    /* something went terribly awry, unless during file system support 
+  case EOPNOTSUPP:
+    /* something went terribly awry, unless during file system support
      * introspection, in which it actually means what it says */
 #endif
 #ifdef ENOTSUP
-  case ENOTSUP: 
-    /* invalid fd, unless during file system support introspection, in which 
+  case ENOTSUP:
+    /* invalid fd, unless during file system support introspection, in which
      * it actually means what it says */
 #endif
   case EIO:
@@ -9571,8 +8786,8 @@ static int unqliteErrorFromPosixError(int posixError, int unqliteIOErr) {
   case ESTALE:
   case ENOSYS:
     /* these should force the client to close the file and reconnect */
-    
-  default: 
+
+  default:
     return unqliteIOErr;
   }
 }
@@ -9625,7 +8840,7 @@ static int unqliteErrorFromPosixError(int posixError, int unqliteIOErr) {
 ** cnt>0 means there are cnt shared locks on the file.
 **
 ** Any attempt to lock or unlock a file first checks the locking
-** structure.  The fcntl() system call is only invoked to set a 
+** structure.  The fcntl() system call is only invoked to set a
 ** POSIX lock if the internal lock structure transitions between
 ** a locked and an unlocked state.
 **
@@ -9710,9 +8925,9 @@ void unqlite_free(void *p)
 ** cleared and UNQLITE_OK returned.
 **
 ** Otherwise, if an error occurs, then successfully closed file descriptor
-** entries are removed from the list, and UNQLITE_IOERR_CLOSE returned. 
+** entries are removed from the list, and UNQLITE_IOERR_CLOSE returned.
 ** not deleted and UNQLITE_IOERR_CLOSE returned.
-*/ 
+*/
 static int closePendingFds(unixFile *pFile){
   int rc = UNQLITE_OK;
   unixInodeInfo *pInode = pFile->pInode;
@@ -9850,7 +9065,7 @@ static int unixCheckReservedLock(unqlite_file *id, int *pResOut){
   int reserved = 0;
   unixFile *pFile = (unixFile*)id;
 
- 
+
   unixEnterMutex(); /* Because pFile->pInode is shared across threads */
 
   /* Check if a thread in this process holds such a lock */
@@ -9874,9 +9089,9 @@ static int unixCheckReservedLock(unqlite_file *id, int *pResOut){
       reserved = 1;
     }
   }
-  
+
   unixLeaveMutex();
- 
+
   *pResOut = reserved;
   return rc;
 }
@@ -9922,7 +9137,7 @@ static int unixLock(unqlite_file *id, int eFileLock){
   **
   ** A process may only obtain a RESERVED lock after it has a SHARED lock.
   ** A RESERVED lock is implemented by grabbing a write-lock on the
-  ** 'reserved byte'. 
+  ** 'reserved byte'.
   **
   ** A process may only obtain a PENDING lock after it has obtained a
   ** SHARED lock. A PENDING lock is implemented by obtaining a write-lock
@@ -9936,7 +9151,7 @@ static int unixLock(unqlite_file *id, int eFileLock){
   ** implemented by obtaining a write-lock on the entire 'shared byte
   ** range'. Since all other locks require a read-lock on one of the bytes
   ** within this range, this ensures that no other locks are held on the
-  ** database. 
+  ** database.
   **
   ** The reason a single byte cannot be used instead of the 'shared byte
   ** range' is that some versions of unixdows do not support read-locks. By
@@ -9965,7 +9180,7 @@ static int unixLock(unqlite_file *id, int eFileLock){
   /* If some thread using this PID has a lock via a different unixFile*
   ** handle that precludes the requested lock, return BUSY.
   */
-  if( (pFile->eFileLock!=pInode->eFileLock && 
+  if( (pFile->eFileLock!=pInode->eFileLock &&
           (pInode->eFileLock>=PENDING_LOCK || eFileLock>SHARED_LOCK))
   ){
     rc = UNQLITE_BUSY;
@@ -9976,7 +9191,7 @@ static int unixLock(unqlite_file *id, int eFileLock){
   ** has a SHARED or RESERVED lock, then increment reference counts and
   ** return UNQLITE_OK.
   */
-  if( eFileLock==SHARED_LOCK && 
+  if( eFileLock==SHARED_LOCK &&
       (pInode->eFileLock==SHARED_LOCK || pInode->eFileLock==RESERVED_LOCK) ){
     pFile->eFileLock = SHARED_LOCK;
     pInode->nShared++;
@@ -9989,7 +9204,7 @@ static int unixLock(unqlite_file *id, int eFileLock){
   */
   lock.l_len = 1L;
   lock.l_whence = SEEK_SET;
-  if( eFileLock==SHARED_LOCK 
+  if( eFileLock==SHARED_LOCK
       || (eFileLock==EXCLUSIVE_LOCK && pFile->eFileLock<PENDING_LOCK)
   ){
     lock.l_type = (eFileLock==SHARED_LOCK?F_RDLCK:F_WRLCK);
@@ -10021,8 +9236,8 @@ static int unixLock(unqlite_file *id, int eFileLock){
     if( fcntl(pFile->h, F_SETLK, &lock)!=0 ){
       if( s != -1 ){
         /* This could happen with a network mount */
-        tErrno = errno; 
-        rc = unqliteErrorFromPosixError(tErrno, UNQLITE_LOCKERR); 
+        tErrno = errno;
+        rc = unqliteErrorFromPosixError(tErrno, UNQLITE_LOCKERR);
         if( IS_LOCK_ERROR(rc) ){
           pFile->lastErrno = tErrno;
         }
@@ -10099,11 +9314,11 @@ static void setPendingFd(unixFile *pFile){
 **
 ** If the locking level of the file descriptor is already at or below
 ** the requested locking level, this routine is a no-op.
-** 
+**
 ** If handleNFSUnlock is true, then on downgrading an EXCLUSIVE_LOCK to SHARED
 ** the byte range is divided into 2 parts and the first part is unlocked then
-** set to a read lock, then the other part is simply unlocked.  This works 
-** around a bug in BSD NFS lockd (also seen on MacOSX 10.3+) that fails to 
+** set to a read lock, then the other part is simply unlocked.  This works
+** around a bug in BSD NFS lockd (also seen on MacOSX 10.3+) that fails to
 ** remove the write lock on a region when a read lock is set.
 */
 static int _posixUnlock(unqlite_file *id, int eFileLock, int handleNFSUnlock){
@@ -10118,14 +9333,14 @@ static int _posixUnlock(unqlite_file *id, int eFileLock, int handleNFSUnlock){
     return UNQLITE_OK;
   }
   unixEnterMutex();
-  
+
   h = pFile->h;
   pInode = pFile->pInode;
-  
+
   if( pFile->eFileLock>SHARED_LOCK ){
     /* downgrading to a shared lock on NFS involves clearing the write lock
     ** before establishing the readlock - to avoid a race condition we downgrade
-    ** the lock in 2 blocks, so that part of the range will be covered by a 
+    ** the lock in 2 blocks, so that part of the range will be covered by a
     ** write lock until the rest is covered by a read lock:
     **  1:   [WWWWW]
     **  2:   [....W]
@@ -10135,7 +9350,7 @@ static int _posixUnlock(unqlite_file *id, int eFileLock, int handleNFSUnlock){
     if( eFileLock==SHARED_LOCK ){
       if( handleNFSUnlock ){
         off_t divSize = SHARED_SIZE - 1;
-        
+
         lock.l_type = F_UNLCK;
         lock.l_whence = SEEK_SET;
         lock.l_start = SHARED_FIRST;
@@ -10212,7 +9427,7 @@ static int _posixUnlock(unqlite_file *id, int eFileLock, int handleNFSUnlock){
       lock.l_type = F_UNLCK;
       lock.l_whence = SEEK_SET;
       lock.l_start = lock.l_len = 0L;
-      
+
       if( fcntl(h, F_SETLK, &lock)!=(-1) ){
         pInode->eFileLock = NO_LOCK;
       }else{
@@ -10231,7 +9446,7 @@ static int _posixUnlock(unqlite_file *id, int eFileLock, int handleNFSUnlock){
     ** was deferred because of outstanding locks.
     */
     pInode->nLock--;
- 
+
     if( pInode->nLock==0 ){
       int rc2 = closePendingFds(pFile);
       if( rc==UNQLITE_OK ){
@@ -10239,11 +9454,11 @@ static int _posixUnlock(unqlite_file *id, int eFileLock, int handleNFSUnlock){
       }
     }
   }
-	
+
 end_unlock:
 
   unixLeaveMutex();
-  
+
   if( rc==UNQLITE_OK ) pFile->eFileLock = eFileLock;
   return rc;
 }
@@ -10258,7 +9473,7 @@ static int unixUnlock(unqlite_file *id, int eFileLock){
   return _posixUnlock(id, eFileLock, 0);
 }
 /*
-** This function performs the parts of the "close file" operation 
+** This function performs the parts of the "close file" operation
 ** common to all locking schemes. It closes the directory and file
 ** handles, if they are valid, and sets all fields of the unixFile
 ** structure to 0.
@@ -10300,7 +9515,7 @@ static int unixClose(unqlite_file *id){
     if( pFile->pInode && pFile->pInode->nLock ){
       /* If there are outstanding locks, do not actually close the file just
       ** yet because that would clear those locks.  Instead, add the file
-      ** descriptor to pInode->pUnused list.  It will be automatically closed 
+      ** descriptor to pInode->pUnused list.  It will be automatically closed
       ** when the last lock is cleared.
       */
       setPendingFd(pFile);
@@ -10315,14 +9530,14 @@ static int unixClose(unqlite_file *id){
 ******************************************************************************/
 /*
 **
-** The next division contains implementations for all methods of the 
+** The next division contains implementations for all methods of the
 ** unqlite_file object other than the locking methods.  The locking
 ** methods were defined in divisions above (one locking method per
 ** division).  Those methods that are common to all locking modes
 ** are gather together into this division.
 */
 /*
-** Seek to the offset passed as the second argument, then read cnt 
+** Seek to the offset passed as the second argument, then read cnt
 ** bytes into pBuf. Return the number of bytes actually read.
 **
 ** NB:  If you define USE_PREAD or USE_PREAD64, then it might also
@@ -10339,19 +9554,19 @@ static int seekAndRead(unixFile *id, unqlite_int64 offset, void *pBuf, int cnt){
 #if (!defined(USE_PREAD) && !defined(USE_PREAD64))
   unqlite_int64 newOffset;
 #endif
- 
+
 #if defined(USE_PREAD)
   got = pread(id->h, pBuf, cnt, offset);
 #elif defined(USE_PREAD64)
   got = pread64(id->h, pBuf, cnt, offset);
 #else
   newOffset = lseek(id->h, offset, SEEK_SET);
-  
+
   if( newOffset!=offset ){
     if( newOffset == -1 ){
       ((unixFile*)id)->lastErrno = errno;
     }else{
-      ((unixFile*)id)->lastErrno = 0;			
+      ((unixFile*)id)->lastErrno = 0;
     }
     return -1;
   }
@@ -10368,14 +9583,14 @@ static int seekAndRead(unixFile *id, unqlite_int64 offset, void *pBuf, int cnt){
 ** wrong.
 */
 static int unixRead(
-  unqlite_file *id, 
-  void *pBuf, 
+  unqlite_file *id,
+  void *pBuf,
   unqlite_int64 amt,
   unqlite_int64 offset
 ){
   unixFile *pFile = (unixFile *)id;
   int got;
-  
+
   got = seekAndRead(pFile, offset, pBuf, (int)amt);
   if( got==(int)amt ){
     return UNQLITE_OK;
@@ -10401,7 +9616,7 @@ static int seekAndWrite(unixFile *id, unqlite_int64 offset, const void *pBuf, un
 #if (!defined(USE_PREAD) && !defined(USE_PREAD64))
   unqlite_int64 newOffset;
 #endif
-  
+
 #if defined(USE_PREAD)
   got = pwrite(id->h, pBuf, cnt, offset);
 #elif defined(USE_PREAD64)
@@ -10412,7 +9627,7 @@ static int seekAndWrite(unixFile *id, unqlite_int64 offset, const void *pBuf, un
     if( newOffset == -1 ){
       ((unixFile*)id)->lastErrno = errno;
     }else{
-      ((unixFile*)id)->lastErrno = 0;			
+      ((unixFile*)id)->lastErrno = 0;
     }
     return -1;
   }
@@ -10428,10 +9643,10 @@ static int seekAndWrite(unixFile *id, unqlite_int64 offset, const void *pBuf, un
 ** or some other error code on failure.
 */
 static int unixWrite(
-  unqlite_file *id, 
-  const void *pBuf, 
+  unqlite_file *id,
+  const void *pBuf,
   unqlite_int64 amt,
-  unqlite_int64 offset 
+  unqlite_int64 offset
 ){
   unixFile *pFile = (unixFile*)id;
   int wrote = 0;
@@ -10441,7 +9656,7 @@ static int unixWrite(
     offset += wrote;
     pBuf = &((char*)pBuf)[wrote];
   }
-  
+
   if( amt>0 ){
     if( wrote<0 ){
       /* lastErrno set by seekAndWrite */
@@ -10481,8 +9696,8 @@ static int unixWrite(
 **
 ** SQLite sets the dataOnly flag if the size of the file is unchanged.
 ** The idea behind dataOnly is that it should only write the file content
-** to disk, not the inode.  We only set dataOnly if the file size is 
-** unchanged since the file size is part of the inode.  However, 
+** to disk, not the inode.  We only set dataOnly if the file size is
+** unchanged since the file size is part of the inode.  However,
 ** Ted Ts'o tells us that fdatasync() will also write the inode if the
 ** file size has changed.  The only real difference between fdatasync()
 ** and fsync(), Ted tells us, is that fdatasync() will not flush the
@@ -10511,11 +9726,11 @@ static int full_fsync(int fd, int fullSync, int dataOnly){
     rc = 1;
   }
   /* If the FULLFSYNC failed, fall back to attempting an fsync().
-  ** It shouldn't be possible for fullfsync to fail on the local 
+  ** It shouldn't be possible for fullfsync to fail on the local
   ** file system (on OSX), so failure indicates that FULLFSYNC
-  ** isn't supported for this file system. So, attempt an fsync 
-  ** and (for now) ignore the overhead of a superfluous fcntl call.  
-  ** It'd be better to detect fullfsync support once and avoid 
+  ** isn't supported for this file system. So, attempt an fsync
+  ** and (for now) ignore the overhead of a superfluous fcntl call.
+  ** It'd be better to detect fullfsync support once and avoid
   ** the fcntl call every time sync is called.
   */
   if( rc ) rc = fsync(fd);
@@ -10525,7 +9740,7 @@ static int full_fsync(int fd, int fullSync, int dataOnly){
   ** so currently we default to the macro that redefines fdatasync to fsync
   */
   rc = fsync(fd);
-#else 
+#else
   rc = fdatasync(fd);
 #endif /* ifdef UNQLITE_NO_SYNC elif HAVE_FULLFSYNC */
   if( rc!= -1 ){
@@ -10610,9 +9825,9 @@ static int unixTruncate(unqlite_file *id, sxi64 nByte){
 static int unixFileSize(unqlite_file *id,sxi64 *pSize){
   int rc;
   struct stat buf;
-  
+
   rc = fstat(((unixFile*)id)->h, &buf);
-  
+
   if( rc!=0 ){
     ((unixFile*)id)->lastErrno = errno;
     return UNQLITE_IOERR;
@@ -10682,7 +9897,7 @@ static int fillInUnixFile(
   unixFile *pNew = (unixFile *)pId;
   int rc = UNQLITE_OK;
 
-  /* Parameter isDelete is only used on vxworks. Express this explicitly 
+  /* Parameter isDelete is only used on vxworks. Express this explicitly
   ** here to prevent compiler warnings about unused parameters.
   */
   SXUNUSED(isDelete);
@@ -10693,7 +9908,7 @@ static int fillInUnixFile(
   pNew->dirfd = dirfd;
   pNew->fileFlags = 0;
   pNew->zPath = zFilename;
-  
+
   unixEnterMutex();
   rc = findInodeInfo(pNew, &pNew->pInode);
   if( rc!=UNQLITE_OK ){
@@ -10719,7 +9934,7 @@ static int fillInUnixFile(
       h = -1;
   }
   unixLeaveMutex();
-  
+
   pNew->lastErrno = 0;
   if( rc!=UNQLITE_OK ){
     if( dirfd>=0 ) close(dirfd); /* silent leak if fail, already in error */
@@ -10759,7 +9974,7 @@ static int openDirectory(const char *zFilename, int *pFd){
   return (fd>=0?UNQLITE_OK: UNQLITE_IOERR );
 }
 /*
-** Search for an unused file descriptor that was opened on the database 
+** Search for an unused file descriptor that was opened on the database
 ** file (not a journal or master-journal file) identified by pathname
 ** zPath with UNQLITE_OPEN_XXX flags matching those passed as the second
 ** argument to this function.
@@ -10768,7 +9983,7 @@ static int openDirectory(const char *zFilename, int *pFd){
 ** but the associated file descriptor could not be closed because some
 ** other file descriptor open on the same file is holding a file-lock.
 ** Refer to comments in the unixClose() function and the lengthy comment
-** describing "Posix Advisory Locking" at the start of this file for 
+** describing "Posix Advisory Locking" at the start of this file for
 ** further details. Also, ticket #4018.
 **
 ** If a suitable file descriptor is found, then it is returned. If no
@@ -10810,18 +10025,18 @@ static UnixUnusedFd *findReusableFd(const char *zPath, int flags){
 ** This function is called by unixOpen() to determine the unix permissions
 ** to create new files with. If no error occurs, then UNQLITE_OK is returned
 ** and a value suitable for passing as the third argument to open(2) is
-** written to *pMode. If an IO error occurs, an SQLite error code is 
+** written to *pMode. If an IO error occurs, an SQLite error code is
 ** returned and the value of *pMode is not modified.
 **
 ** If the file being opened is a temporary file, it is always created with
 ** the octal permissions 0600 (read/writable by owner only). If the file
-** is a database or master journal file, it is created with the permissions 
+** is a database or master journal file, it is created with the permissions
 ** mask UNQLITE_DEFAULT_FILE_PERMISSIONS.
 **
-** Finally, if the file being opened is a WAL or regular journal file, then 
-** this function queries the file-system for the permissions on the 
-** corresponding database file and sets *pMode to this value. Whenever 
-** possible, WAL and journal files are created using the same permissions 
+** Finally, if the file being opened is a WAL or regular journal file, then
+** this function queries the file-system for the permissions on the
+** corresponding database file and sets *pMode to this value. Whenever
+** possible, WAL and journal files are created using the same permissions
 ** as the associated database file.
 */
 static int findCreateFileMode(
@@ -10840,7 +10055,7 @@ static int findCreateFileMode(
 }
 /*
 ** Open the file zPath.
-** 
+**
 ** Previously, the SQLite OS layer used three functions in place of this
 ** one:
 **
@@ -10851,13 +10066,13 @@ static int findCreateFileMode(
 ** These calls correspond to the following combinations of flags:
 **
 **     ReadWrite() ->     (READWRITE | CREATE)
-**     ReadOnly()  ->     (READONLY) 
+**     ReadOnly()  ->     (READONLY)
 **     OpenExclusive() -> (READWRITE | CREATE | EXCLUSIVE)
 **
 ** The old OpenExclusive() accepted a boolean argument - "delFlag". If
 ** true, the file was configured to be automatically deleted when the
-** file handle closed. To achieve the same effect using this new 
-** interface, add the DELETEONCLOSE flag to those specified above for 
+** file handle closed. To achieve the same effect using this new
+** interface, add the DELETEONCLOSE flag to those specified above for
 ** OpenExclusive().
 */
 static int unixOpen(
@@ -10886,7 +10101,7 @@ static int unixOpen(
   const char *zName = zPath;
 
   SyZero(p,sizeof(unixFile));
-  
+
   pUnused = findReusableFd(zName, flags);
   if( pUnused ){
 	  fd = pUnused->fd;
@@ -10897,10 +10112,10 @@ static int unixOpen(
       }
   }
   p->pUnused = pUnused;
-  
+
   /* Determine the value of the flags parameter passed to POSIX function
   ** open(). These must be calculated even if open() is not called, as
-  ** they may be stored as part of the file handle and used by the 
+  ** they may be stored as part of the file handle and used by the
   ** 'conch file' locking functions later on.  */
   if( isReadonly )  openFlags |= O_RDONLY;
   if( isReadWrite ) openFlags |= O_RDWR;
@@ -10920,7 +10135,7 @@ static int unixOpen(
       goto open_finished;
     }
   }
-  
+
   if( p->pUnused ){
     p->pUnused->fd = fd;
     p->pUnused->flags = flags;
@@ -10948,7 +10163,7 @@ static int unixOpen(
 
   noLock = 0;
 
-#if defined(__APPLE__) 
+#if defined(__APPLE__)
   struct statfs fsInfo;
   if( fstatfs(fd, &fsInfo) == -1 ){
     ((unixFile*)pFile)->lastErrno = errno;
@@ -10960,7 +10175,7 @@ static int unixOpen(
     ((unixFile*)pFile)->fsFlags |= UNQLITE_FSFLAGS_IS_MSDOS;
   }
 #endif
-  
+
   rc = fillInUnixFile(pVfs, fd, dirfd, pFile, zPath, noLock, isDelete);
 open_finished:
   if( rc!=UNQLITE_OK ){
@@ -10979,7 +10194,7 @@ static int unixDelete(
 ){
   int rc = UNQLITE_OK;
   SXUNUSED(NotUsed);
-  
+
   if( unlink(zPath)==(-1) && errno!=ENOENT ){
 	  return UNQLITE_IOERR;
   }
@@ -11080,9 +10295,9 @@ static int unixAccess(
 /*
 ** Turn a relative pathname into a full pathname. The relative path
 ** is stored as a nul-terminated string in the buffer pointed to by
-** zPath. 
+** zPath.
 **
-** zOut points to a buffer of at least unqlite_vfs.mxPathname bytes 
+** zOut points to a buffer of at least unqlite_vfs.mxPathname bytes
 ** (in this case, MAX_PATHNAME bytes). The full-path is written to
 ** this buffer before returning.
 */
@@ -11194,7 +10409,7 @@ UNQLITE_PRIVATE const unqlite_vfs * unqliteExportBuiltinVfs(void)
 ** Some microsoft compilers lack this definition.
 */
 #ifndef INVALID_FILE_ATTRIBUTES
-# define INVALID_FILE_ATTRIBUTES ((DWORD)-1) 
+# define INVALID_FILE_ATTRIBUTES ((DWORD)-1)
 #endif
 /*
 ** WinCE lacks native support for file locking so we have to fake it
@@ -11227,14 +10442,14 @@ struct winFile {
   int szChunk;            /* Chunk size */
 #ifdef __WIN_CE__
   WCHAR *zDeleteOnClose;  /* Name of file to delete when closing */
-  HANDLE hMutex;          /* Mutex used to control access to shared lock */  
+  HANDLE hMutex;          /* Mutex used to control access to shared lock */
   HANDLE hShared;         /* Shared memory segment used for locking */
   winceLock local;        /* Locks obtained by this instance of winFile */
   winceLock *shared;      /* Global shared lock memory for the file  */
 #endif
 };
 /*
-** Convert a UTF-8 string to microsoft unicode (UTF-16?). 
+** Convert a UTF-8 string to microsoft unicode (UTF-16?).
 **
 ** Space to hold the returned string is obtained from HeapAlloc().
 */
@@ -11280,7 +10495,7 @@ static char *unicodeToUtf8(const WCHAR *zWideFilename){
 /*
 ** Convert an ansi string to microsoft unicode, based on the
 ** current codepage settings for file apis.
-** 
+**
 ** Space to hold the returned string is obtained
 ** from malloc.
 */
@@ -11325,8 +10540,8 @@ char *unqlite_win32_mbcs_to_utf8(const char *zFilename){
 #endif
 
 /*
-** Move the current position of the file handle passed as the first 
-** argument to offset iOffset within the file. If successful, return 0. 
+** Move the current position of the file handle passed as the first
+** argument to offset iOffset within the file. If successful, return 0.
 ** Otherwise, set pFile->lastErrno and return non-zero.
 */
 static int seekWinFile(winFile *pFile, unqlite_int64 iOffset){
@@ -11337,11 +10552,11 @@ static int seekWinFile(winFile *pFile, unqlite_int64 iOffset){
   upperBits = (LONG)((iOffset>>32) & 0x7fffffff);
   lowerBits = (LONG)(iOffset & 0xffffffff);
 
-  /* API oddity: If successful, SetFilePointer() returns a dword 
+  /* API oddity: If successful, SetFilePointer() returns a dword
   ** containing the lower 32-bits of the new file-offset. Or, if it fails,
-  ** it returns INVALID_SET_FILE_POINTER. However according to MSDN, 
-  ** INVALID_SET_FILE_POINTER may also be a valid new offset. So to determine 
-  ** whether an error has actually occured, it is also necessary to call 
+  ** it returns INVALID_SET_FILE_POINTER. However according to MSDN,
+  ** INVALID_SET_FILE_POINTER may also be a valid new offset. So to determine
+  ** whether an error has actually occured, it is also necessary to call
   ** GetLastError().
   */
   dwRet = SetFilePointer(pFile->h, lowerBits, &upperBits, FILE_BEGIN);
@@ -11796,8 +11011,8 @@ static int winDelete(
 	  && (Sleep(100), 1)
 	  );
 	HeapFree(GetProcessHeap(),0,zConverted);
- 
-  return (   (rc == INVALID_FILE_ATTRIBUTES) 
+
+  return (   (rc == INVALID_FILE_ATTRIBUTES)
           && (error == ERROR_FILE_NOT_FOUND)) ? UNQLITE_OK : UNQLITE_IOERR;
 }
 /*
@@ -11821,13 +11036,13 @@ static int winAccess(
   }
   SyZero(&sAttrData,sizeof(sAttrData));
   if( GetFileAttributesExW((WCHAR*)zConverted,
-	  GetFileExInfoStandard, 
+	  GetFileExInfoStandard,
 	  &sAttrData) ){
       /* For an UNQLITE_ACCESS_EXISTS query, treat a zero-length file
       ** as if it does not exist.
       */
       if(    flags==UNQLITE_ACCESS_EXISTS
-          && sAttrData.nFileSizeHigh==0 
+          && sAttrData.nFileSizeHigh==0
           && sAttrData.nFileSizeLow==0 ){
         attr = INVALID_FILE_ATTRIBUTES;
       }else{
@@ -11934,7 +11149,7 @@ static int getSectorSize(
       bytesPerSector = UNQLITE_DEFAULT_SECTOR_SIZE;
     }
   }
-  return (int) bytesPerSector; 
+  return (int) bytesPerSector;
 }
 /*
 ** Sleep for a little while.  Return the amount of time slept.
@@ -12042,7 +11257,7 @@ static int winOpen(
   }else{
     dwDesiredAccess = GENERIC_READ;
   }
-  /* UNQLITE_OPEN_EXCLUSIVE is used to make sure that a new file is 
+  /* UNQLITE_OPEN_EXCLUSIVE is used to make sure that a new file is
   ** created.
   */
   if( isExclusive ){
@@ -12094,7 +11309,7 @@ static HANDLE OpenReadOnly(LPCWSTR pPath)
 	DWORD dwType = FILE_ATTRIBUTE_NORMAL | FILE_FLAG_RANDOM_ACCESS;
 	DWORD dwShare = FILE_SHARE_READ | FILE_SHARE_WRITE;
 	DWORD dwAccess = GENERIC_READ;
-	DWORD dwCreate = OPEN_EXISTING;	
+	DWORD dwCreate = OPEN_EXISTING;
 	HANDLE pHandle;
 	pHandle = CreateFileW(pPath, dwAccess, dwShare, 0, dwCreate, dwType, 0);
 	if( pHandle == INVALID_HANDLE_VALUE){
@@ -12205,8 +11420,8 @@ UNQLITE_PRIVATE const unqlite_vfs * unqliteExportBuiltinVfs(void)
 **               +---------> READER-------+      |
 **               |              |                |
 **               |              V                |
-**               |<-------WRITER_LOCKED--------->| 
-**               |              |                |  
+**               |<-------WRITER_LOCKED--------->|
+**               |              |                |
 **               |              V                |
 **               |<------WRITER_CACHEMOD-------->|
 **               |              |                |
@@ -12215,7 +11430,7 @@ UNQLITE_PRIVATE const unqlite_vfs * unqliteExportBuiltinVfs(void)
 **               |              |                |
 **               |              V                |
 **               +<------WRITER_FINISHED-------->+
-** 
+**
 **  OPEN:
 **
 **    The pager starts up in this state. Nothing is guaranteed in this
@@ -12228,35 +11443,35 @@ UNQLITE_PRIVATE const unqlite_vfs * unqliteExportBuiltinVfs(void)
 **
 **  READER:
 **
-**    In this state all the requirements for reading the database in 
+**    In this state all the requirements for reading the database in
 **    rollback mode are met. Unless the pager is (or recently
-**    was) in exclusive-locking mode, a user-level read transaction is 
+**    was) in exclusive-locking mode, a user-level read transaction is
 **    open. The database size is known in this state.
-** 
+**
 **    * A read transaction may be active (but a write-transaction cannot).
 **    * A SHARED or greater lock is held on the database file.
-**    * The dbSize variable may be trusted (even if a user-level read 
+**    * The dbSize variable may be trusted (even if a user-level read
 **      transaction is not active). The dbOrigSize variables
 **      may not be trusted at this point.
-**    * Even if a read-transaction is not open, it is guaranteed that 
+**    * Even if a read-transaction is not open, it is guaranteed that
 **      there is no hot-journal in the file-system.
 **
 **  WRITER_LOCKED:
 **
 **    The pager moves to this state from READER when a write-transaction
-**    is first opened on the database. In WRITER_LOCKED state, all locks 
-**    required to start a write-transaction are held, but no actual 
+**    is first opened on the database. In WRITER_LOCKED state, all locks
+**    required to start a write-transaction are held, but no actual
 **    modifications to the cache or database have taken place.
 **
-**    In rollback mode, a RESERVED or (if the transaction was opened with 
+**    In rollback mode, a RESERVED or (if the transaction was opened with
 **    EXCLUSIVE flag) EXCLUSIVE lock is obtained on the database file when
-**    moving to this state, but the journal file is not written to or opened 
-**    to in this state. If the transaction is committed or rolled back while 
-**    in WRITER_LOCKED state, all that is required is to unlock the database 
+**    moving to this state, but the journal file is not written to or opened
+**    to in this state. If the transaction is committed or rolled back while
+**    in WRITER_LOCKED state, all that is required is to unlock the database
 **    file.
 **
 **    * A write transaction is active.
-**    * If the connection is open in rollback-mode, a RESERVED or greater 
+**    * If the connection is open in rollback-mode, a RESERVED or greater
 **      lock is held on the database file.
 **    * The dbSize and dbOrigSize variables are all valid.
 **    * The contents of the pager cache have not been modified.
@@ -12272,7 +11487,7 @@ UNQLITE_PRIVATE const unqlite_vfs * unqliteExportBuiltinVfs(void)
 **
 **    * A write transaction is active.
 **    * A RESERVED or greater lock is held on the database file.
-**    * The journal file is open and the first header has been written 
+**    * The journal file is open and the first header has been written
 **      to it, but the header has not been synced to disk.
 **    * The contents of the page cache have been modified.
 **
@@ -12283,7 +11498,7 @@ UNQLITE_PRIVATE const unqlite_vfs * unqliteExportBuiltinVfs(void)
 **
 **    * A write transaction is active.
 **    * An EXCLUSIVE or greater lock is held on the database file.
-**    * The journal file is open and the first header has been written 
+**    * The journal file is open and the first header has been written
 **      and synced to disk.
 **    * The contents of the page cache have been modified (and possibly
 **      written to disk).
@@ -12293,8 +11508,8 @@ UNQLITE_PRIVATE const unqlite_vfs * unqliteExportBuiltinVfs(void)
 **    A rollback-mode pager changes to WRITER_FINISHED state from WRITER_DBMOD
 **    state after the entire transaction has been successfully written into the
 **    database file. In this state the transaction may be committed simply
-**    by finalizing the journal file. Once in WRITER_FINISHED state, it is 
-**    not possible to modify the database further. At this point, the upper 
+**    by finalizing the journal file. Once in WRITER_FINISHED state, it is
+**    not possible to modify the database further. At this point, the upper
 **    layer must either commit or rollback the transaction.
 **
 **    * A write transaction is active.
@@ -12302,8 +11517,8 @@ UNQLITE_PRIVATE const unqlite_vfs * unqliteExportBuiltinVfs(void)
 **    * All writing and syncing of journal and database data has finished.
 **      If no error occured, all that remains is to finalize the journal to
 **      commit the transaction. If an error did occur, the caller will need
-**      to rollback the transaction. 
-**  
+**      to rollback the transaction.
+**
 **
 */
 #define PAGER_OPEN                  0
@@ -12324,7 +11539,7 @@ static const unsigned char aJournalMagic[] = {
   0xa6, 0xe8, 0xcd, 0x2b, 0x1c, 0x92, 0xdb, 0x9f,
 };
 /*
-** The journal header size for this pager. This is usually the same 
+** The journal header size for this pager. This is usually the same
 ** size as a single disk sector. See also setSectorSize().
 */
 #define JOURNAL_HDR_SZ(pPager) (pPager->iSectorSize)
@@ -12415,9 +11630,9 @@ struct Pager
 };
 /* Control flags */
 #define PAGER_CTRL_COMMIT_ERR   0x001 /* Commit error */
-#define PAGER_CTRL_DIRTY_COMMIT 0x002 /* Dirty commit has been applied */ 
+#define PAGER_CTRL_DIRTY_COMMIT 0x002 /* Dirty commit has been applied */
 /*
-** Read a 32-bit integer from the given file descriptor. 
+** Read a 32-bit integer from the given file descriptor.
 ** All values are stored on disk as big-endian.
 */
 static int ReadInt32(unqlite_file *pFd,sxu32 *pOut,sxi64 iOfft)
@@ -12432,7 +11647,7 @@ static int ReadInt32(unqlite_file *pFd,sxu32 *pOut,sxi64 iOfft)
 	return UNQLITE_OK;
 }
 /*
-** Read a 64-bit integer from the given file descriptor. 
+** Read a 64-bit integer from the given file descriptor.
 ** All values are stored on disk as big-endian.
 */
 static int ReadInt64(unqlite_file *pFd,sxu64 *pOut,sxi64 iOfft)
@@ -12469,7 +11684,7 @@ static int WriteInt64(unqlite_file *pFd,sxu64 iNum,sxi64 iOfft)
 	return rc;
 }
 /*
-** The maximum allowed sector size. 64KiB. If the xSectorsize() method 
+** The maximum allowed sector size. 64KiB. If the xSectorsize() method
 ** returns a value larger than this, then MAX_SECTOR_SIZE is used instead.
 ** This could conceivably cause corruption following a power failure on
 ** such a system. This is currently an undocumented limit.
@@ -12529,7 +11744,7 @@ static Page * pager_fetch_page(Pager *pPager,pgno page_num)
 static Page * pager_alloc_page(Pager *pPager,pgno num_page)
 {
 	Page *pNew;
-	
+
 	pNew = (Page *)SyMemBackendPoolAlloc(pPager->pAllocator,sizeof(Page)+pPager->iPageSize);
 	if( pNew == 0 ){
 		return 0;
@@ -12942,7 +12157,7 @@ static Page * pager_get_hot_pages(Pager *pPager)
 ** - 8 bytes: Initial database page count.
 ** - 4 bytes: Sector size used by the process that wrote this journal.
 ** - 4 bytes: Database page size.
-** 
+**
 ** Followed by (JOURNAL_HDR_SZ - 28) bytes of unused space.
 */
 /*
@@ -13020,21 +12235,21 @@ static int pager_read_journal_header(
 	}
 	/* Check that the values read from the page-size and sector-size fields
     ** are within range. To be 'in range', both values need to be a power
-    ** of two greater than or equal to 512 or 32, and not greater than their 
+    ** of two greater than or equal to 512 or 32, and not greater than their
     ** respective compile time maximum limits.
     */
     if( iPageSize < UNQLITE_MIN_PAGE_SIZE || iSectorSize<32
      || iPageSize > UNQLITE_MAX_PAGE_SIZE || iSectorSize>MAX_SECTOR_SIZE
-     || ((iPageSize-1)&iPageSize)!=0    || ((iSectorSize-1)&iSectorSize)!=0 
+     || ((iPageSize-1)&iPageSize)!=0    || ((iSectorSize-1)&iSectorSize)!=0
     ){
-      /* If the either the page-size or sector-size in the journal-header is 
-      ** invalid, then the process that wrote the journal-header must have 
-      ** crashed before the header was synced. In this case stop reading 
+      /* If the either the page-size or sector-size in the journal-header is
+      ** invalid, then the process that wrote the journal-header must have
+      ** crashed before the header was synced. In this case stop reading
       ** the journal file here.
       */
       return UNQLITE_DONE;
     }
-    /* Update the assumed sector-size to match the value used by 
+    /* Update the assumed sector-size to match the value used by
     ** the process that created this journal. If this journal was
     ** created by a process other than this one, then this routine
     ** is being called from within pager_playback(). The local value
@@ -13075,10 +12290,10 @@ static int pager_write_journal_header(Pager *pPager,unsigned char *zBuf)
 }
 /*
 ** Parameter aData must point to a buffer of pPager->pageSize bytes
-** of data. Compute and return a checksum based ont the contents of the 
+** of data. Compute and return a checksum based ont the contents of the
 ** page of data and the current value of pPager->cksumInit.
 **
-** This is not a real checksum. It is really just the sum of the 
+** This is not a real checksum. It is really just the sum of the
 ** random initial value (pPager->cksumInit) and every 200th byte
 ** of the page data, starting with byte offset (pPager->pageSize%200).
 ** Each byte is interpreted as an 8-bit unsigned integer.
@@ -13086,8 +12301,8 @@ static int pager_write_journal_header(Pager *pPager,unsigned char *zBuf)
 ** Changing the formula used to compute this checksum results in an
 ** incompatible journal file format.
 **
-** If journal corruption occurs due to a power failure, the most likely 
-** scenario is that one end or the other of the record will be changed. 
+** If journal corruption occurs due to a power failure, the most likely
+** scenario is that one end or the other of the record will be changed.
 ** It is much less likely that the two ends of the journal record will be
 ** correct and the middle be corrupt.  Thus, this "checksum" scheme,
 ** though fast and simple, catches the mostly likely kind of corruption.
@@ -13148,14 +12363,14 @@ static int pager_play_back_one_page(Pager *pPager,sxi64 *pOfft,unsigned char *zT
 }
 /*
 ** Playback the journal and thus restore the database file to
-** the state it was in before we started making changes.  
+** the state it was in before we started making changes.
 **
-** The journal file format is as follows: 
+** The journal file format is as follows:
 **
 **  (1)  8 byte prefix.  A copy of aJournalMagic[].
 **  (2)  4 byte big-endian integer which is the number of valid page records
-**       in the journal. 
-**  (3)  4 byte big-endian integer which is the initial value for the 
+**       in the journal.
+**  (3)  4 byte big-endian integer which is the initial value for the
 **       sanity checksum.
 **  (4)  8 byte integer which is the number of pages to truncate the
 **       database to during a rollback.
@@ -13218,7 +12433,7 @@ static int pager_playback(Pager *pPager)
 		return UNQLITE_NOMEM;
 	}
 	SyZero((void *)zTmp,(sxu32)pPager->iPageSize);
-	/* Copy original pages out of the journal and back into the 
+	/* Copy original pages out of the journal and back into the
     ** database file and/or page cache.
     */
 	iOfft = pPager->iJournalOfft;
@@ -13250,7 +12465,7 @@ end_playback:
 ** succeeds, set the Pager.iLock variable to match the (attempted) new lock.
 **
 ** Except, if Pager.iLock is set to NO_LOCK when this function is
-** called, do not modify it. See the comment above the #define of 
+** called, do not modify it. See the comment above the #define of
 ** NO_LOCK for an explanation of this.
 */
 static int pager_unlock_db(Pager *pPager, int eLock)
@@ -13265,11 +12480,11 @@ static int pager_unlock_db(Pager *pPager, int eLock)
 /*
 ** Lock the database file to level eLock, which must be either SHARED_LOCK,
 ** RESERVED_LOCK or EXCLUSIVE_LOCK. If the caller is successful, set the
-** Pager.eLock variable to the new locking state. 
+** Pager.eLock variable to the new locking state.
 **
-** Except, if Pager.eLock is set to NO_LOCK when this function is 
-** called, do not modify it unless the new locking state is EXCLUSIVE_LOCK. 
-** See the comment above the #define of NO_LOCK for an explanation 
+** Except, if Pager.eLock is set to NO_LOCK when this function is
+** called, do not modify it unless the new locking state is EXCLUSIVE_LOCK.
+** See the comment above the #define of NO_LOCK for an explanation
 ** of this.
 */
 static int pager_lock_db(Pager *pPager, int eLock){
@@ -13291,13 +12506,13 @@ static int pager_lock_db(Pager *pPager, int eLock){
 ** a similar or greater lock is already held, this function is a no-op
 ** (returning UNQLITE_OK immediately).
 **
-** Otherwise, attempt to obtain the lock using unqliteOsLock(). Invoke 
-** the busy callback if the lock is currently not available. Repeat 
-** until the busy callback returns false or until the attempt to 
+** Otherwise, attempt to obtain the lock using unqliteOsLock(). Invoke
+** the busy callback if the lock is currently not available. Repeat
+** until the busy callback returns false or until the attempt to
 ** obtain the lock succeeds.
 **
 ** Return UNQLITE_OK on success and an error code if we cannot obtain
-** the lock. If the lock is obtained successfully, set the Pager.state 
+** the lock. If the lock is obtained successfully, set the Pager.state
 ** variable to locktype before returning.
 */
 static int pager_wait_on_lock(Pager *pPager, int locktype){
@@ -13310,7 +12525,7 @@ static int pager_wait_on_lock(Pager *pPager, int locktype){
 /*
 ** This function is called after transitioning from PAGER_OPEN to
 ** PAGER_SHARED state. It tests if there is a hot journal present in
-** the file-system for the given pager. A hot journal is one that 
+** the file-system for the given pager. A hot journal is one that
 ** needs to be played back. According to this function, a hot-journal
 ** file exists if the following criteria are met:
 **
@@ -13325,7 +12540,7 @@ static int pager_wait_on_lock(Pager *pPager, int locktype){
 ** just deleted using OsDelete, *pExists is set to 0 and UNQLITE_OK
 ** is returned.
 **
-** If a hot-journal file is found to exist, *pExists is set to 1 and 
+** If a hot-journal file is found to exist, *pExists is set to 1 and
 ** UNQLITE_OK returned. If no hot-journal file is present, *pExists is
 ** set to 0 and UNQLITE_OK returned. If an IO error occurs while trying
 ** to determine whether or not a hot-journal file exists, the IO error
@@ -13343,7 +12558,7 @@ static int pager_has_hot_journal(Pager *pPager, int *pExists)
     int locked = 0;             /* True if some process holds a RESERVED lock */
 
     /* Race condition here:  Another process might have been holding the
-    ** the RESERVED lock and have a journal open at the unqliteOsAccess() 
+    ** the RESERVED lock and have a journal open at the unqliteOsAccess()
     ** call above, but then delete the journal and drop the lock before
     ** we get to the following unqliteOsCheckReservedLock() call.  If that
     ** is the case, this routine might think there is a hot journal when
@@ -13353,9 +12568,9 @@ static int pager_has_hot_journal(Pager *pPager, int *pExists)
     rc = unqliteOsCheckReservedLock(pPager->pfd, &locked);
     if( rc==UNQLITE_OK && !locked ){
       sxi64 n = 0;                    /* Size of db file in bytes */
- 
+
       /* Check the size of the database file. If it consists of 0 pages,
-      ** then delete the journal file. See the header comment above for 
+      ** then delete the journal file. See the header comment above for
       ** the reasoning here.  Delete the obsolete journal file under
       ** a RESERVED lock to avoid race conditions.
       */
@@ -13404,12 +12619,12 @@ static int pager_journal_rollback(Pager *pPager,int check_hot)
       ** important that a RESERVED lock is not obtained on the way to the
       ** EXCLUSIVE lock. If it were, another process might open the
       ** database file, detect the RESERVED lock, and conclude that the
-      ** database is safe to read while this process is still rolling the 
+      ** database is safe to read while this process is still rolling the
       ** hot-journal back.
-      ** 
+      **
       ** Because the intermediate RESERVED lock is not requested, any
-      ** other process attempting to access the database file will get to 
-      ** this point in the code and fail to obtain its own EXCLUSIVE lock 
+      ** other process attempting to access the database file will get to
+      ** this point in the code and fail to obtain its own EXCLUSIVE lock
       ** on the database file.
       **
       ** Unless the pager is in locking_mode=exclusive mode, the lock is
@@ -13515,12 +12730,12 @@ static int pager_extract_header(Pager *pPager,const unsigned char *zRaw,sxu32 nB
 	zRaw += 4; /* 4 byte page size */
 	/* Check that the values read from the page-size and sector-size fields
     ** are within range. To be 'in range', both values need to be a power
-    ** of two greater than or equal to 512 or 32, and not greater than their 
+    ** of two greater than or equal to 512 or 32, and not greater than their
     ** respective compile time maximum limits.
     */
     if( pPager->iPageSize<UNQLITE_MIN_PAGE_SIZE || pPager->iSectorSize<32
      || pPager->iPageSize>UNQLITE_MAX_PAGE_SIZE || pPager->iSectorSize>MAX_SECTOR_SIZE
-     || ((pPager->iPageSize<-1)&pPager->iPageSize)!=0    || ((pPager->iSectorSize-1)&pPager->iSectorSize)!=0 
+     || ((pPager->iPageSize<-1)&pPager->iPageSize)!=0    || ((pPager->iSectorSize-1)&pPager->iSectorSize)!=0
     ){
       return UNQLITE_CORRUPT;
 	}
@@ -13639,10 +12854,10 @@ static int pager_create_header(Pager *pPager)
 **      on the database file), then an attempt is made to obtain a
 **      SHARED lock on the database file. Immediately after obtaining
 **      the SHARED lock, the file-system is checked for a hot-journal,
-**      which is played back if present. 
+**      which is played back if present.
 **
-** If everything is successful, UNQLITE_OK is returned. If an IO error 
-** occurs while locking the database, checking for a hot-journal file or 
+** If everything is successful, UNQLITE_OK is returned. If an IO error
+** occurs while locking the database, checking for a hot-journal file or
 ** rolling back a journal file, the IO error code is returned.
 */
 static int pager_shared_lock(Pager *pPager)
@@ -13710,12 +12925,12 @@ static int pager_shared_lock(Pager *pPager)
 			}
 		}else if( rc == UNQLITE_BUSY ){
 			unqliteGenError(pPager->pDb,"Another process or thread have a reserved or exclusive lock on this database");
-		}		
+		}
 	}
 	return rc;
 }
 /*
-** Begin a write-transaction on the specified pager object. If a 
+** Begin a write-transaction on the specified pager object. If a
 ** write-transaction has already been opened, this function is a no-op.
 */
 UNQLITE_PRIVATE int unqlitePagerBegin(Pager *pPager)
@@ -13768,7 +12983,7 @@ fail:
 }
 /*
 ** This function is called at the start of every write transaction.
-** There must already be a RESERVED or EXCLUSIVE lock on the database 
+** There must already be a RESERVED or EXCLUSIVE lock on the database
 ** file when this routine is called.
 **
 */
@@ -13870,7 +13085,7 @@ static int unqliteFinalizeJournal(Pager *pPager,int *pRetry,int close_jrnl)
 	return UNQLITE_OK;
 }
 /*
- * Mark a single data page as writeable. The page is written into the 
+ * Mark a single data page as writeable. The page is written into the
  * main journal as required.
  */
 static int page_write(Pager *pPager,Page *pPage)
@@ -13912,7 +13127,7 @@ static int page_write(Pager *pPager,Page *pPage)
 			unqliteGenError(pPager->pDb,"Database maximum page limit (64-bit) reached");
 			return UNQLITE_LIMIT;
 		}
-	}	
+	}
 	return UNQLITE_OK;
 }
 /*
@@ -14047,7 +13262,7 @@ static int pager_commit_phase1(Pager *pPager)
 		}
 	}
 	if( pPager->iFlags & PAGER_CTRL_DIRTY_COMMIT ){
-		/* Synce the database first if a dirty commit have been applied */
+		/* Sync the database first if a dirty commit have been applied */
 		unqliteOsSync(pPager->pfd,UNQLITE_SYNC_NORMAL);
 	}
 	/* Write the dirty pages */
@@ -14058,6 +13273,19 @@ static int pager_commit_phase1(Pager *pPager)
 		pPager->pFirstDirty = pDirty;
 		unqliteGenError(pPager->pDb,"IO error while writing dirty pages, rollback your database");
 		return rc;
+	}
+	/* release all pages */
+	{
+		Page *p;
+
+		while (1) {
+			p = pPager->pAll;
+			if (p == 0) {
+				break;
+			}
+			pager_unlink_page(pPager, p);
+			pager_release_page(pPager, p);
+		}
 	}
 	/* If the file on disk is not the same size as the database image,
      * then use unqliteOsTruncate to grow or shrink the file here.
@@ -14086,7 +13314,7 @@ static int pager_commit_phase2(Pager *pPager)
 				/* Finally, unlink the journal file */
 				unqliteOsDelete(pPager->pVfs,pPager->zJournal,1);
 			}
-			/* Downgrade to shraed lock */
+			/* Downgrade to shared lock */
 			pager_unlock_db(pPager,SHARED_LOCK);
 			pPager->iState = PAGER_READER;
 			if( pPager->pVec ){
@@ -14148,7 +13376,7 @@ static int pager_dirty_commit(Pager *pPager)
 ** This routine ensures that:
 **
 **   * the journal is synced,
-**   * all dirty pages are written to the database file, 
+**   * all dirty pages are written to the database file,
 **   * the database file is truncated (if required), and
 **   * the database file synced.
 **   * the journal file is deleted.
@@ -14250,20 +13478,20 @@ static int pager_reset_state(Pager *pPager,int bResetKvEngine)
 	return UNQLITE_OK;
 }
 /*
-** If a write transaction is open, then all changes made within the 
+** If a write transaction is open, then all changes made within the
 ** transaction are reverted and the current write-transaction is closed.
 ** The pager falls back to PAGER_READER state if successful.
 **
 ** Otherwise, in rollback mode, this function performs two functions:
 **
-**   1) It rolls back the journal file, restoring all database file and 
+**   1) It rolls back the journal file, restoring all database file and
 **      in-memory cache pages to the state they were in when the transaction
 **      was opened, and
 **
 **   2) It finalizes the journal file, so that it is not used for hot
 **      rollback at any point in the future (i.e. deletion).
 **
-** Finalization of the journal file (task 2) is only performed if the 
+** Finalization of the journal file (task 2) is only performed if the
 ** rollback is successful.
 **
 */
@@ -14331,9 +13559,9 @@ static int unqlitePagerDontWrite(unqlite_page *pMyPage)
 	return UNQLITE_OK;
 }
 /*
-** Mark a data page as writeable. This routine must be called before 
-** making changes to a page. The caller must check the return value 
-** of this function and be careful not to change any page data unless 
+** Mark a data page as writeable. This routine must be called before
+** making changes to a page. The caller must check the return value
+** of this function and be careful not to change any page data unless
 ** this routine returns UNQLITE_OK.
 */
 static int unqlitePageWrite(unqlite_page *pMyPage)
@@ -14371,10 +13599,10 @@ static int unqlitePageWrite(unqlite_page *pMyPage)
 }
 /*
 ** Acquire a reference to page number pgno in pager pPager (a page
-** reference has type unqlite_page*). If the requested reference is 
+** reference has type unqlite_page*). If the requested reference is
 ** successfully obtained, it is copied to *ppPage and UNQLITE_OK returned.
 **
-** If the requested page is already in the cache, it is returned. 
+** If the requested page is already in the cache, it is returned.
 ** Otherwise, a new page object is allocated and populated with data
 ** read from the database file.
 */
@@ -14438,11 +13666,11 @@ static int unqliteInMemory(const char *zFilename)
 		return TRUE;
 	}
 	n = SyStrlen(zFilename);
-	if( n == sizeof(":mem:") - 1 && 
+	if( n == sizeof(":mem:") - 1 &&
 		SyStrnicmp(zFilename,":mem:",sizeof(":mem:") - 1) == 0 ){
 			return TRUE;
 	}
-	if( n == sizeof(":memory:") - 1 && 
+	if( n == sizeof(":memory:") - 1 &&
 		SyStrnicmp(zFilename,":memory:",sizeof(":memory:") - 1) == 0 ){
 			return TRUE;
 	}
@@ -14783,7 +14011,7 @@ UNQLITE_PRIVATE sxu32 unqlitePagerRandomNum(Pager *pPager)
 	return iNum;
 }
 /* Exported KV IO Methods */
-/* 
+/*
  * Refer to [unqlitePagerAcquire()]
  */
 static int unqliteKvIoPageGet(unqlite_kv_handle pHandle,pgno iNum,unqlite_page **ppPage)
@@ -14792,7 +14020,7 @@ static int unqliteKvIoPageGet(unqlite_kv_handle pHandle,pgno iNum,unqlite_page *
 	rc = unqlitePagerAcquire((Pager *)pHandle,iNum,ppPage,0,0);
 	return rc;
 }
-/* 
+/*
  * Refer to [unqlitePagerAcquire()]
  */
 static int unqliteKvIoPageLookup(unqlite_kv_handle pHandle,pgno iNum,unqlite_page **ppPage)
@@ -14801,14 +14029,14 @@ static int unqliteKvIoPageLookup(unqlite_kv_handle pHandle,pgno iNum,unqlite_pag
 	rc = unqlitePagerAcquire((Pager *)pHandle,iNum,ppPage,1,0);
 	return rc;
 }
-/* 
+/*
  * Refer to [unqlitePagerAcquire()]
  */
 static int unqliteKvIoNewPage(unqlite_kv_handle pHandle,unqlite_page **ppPage)
 {
 	Pager *pPager = (Pager *)pHandle;
 	int rc;
-	/* 
+	/*
 	 * Acquire a reader-lock first so that pPager->dbSize get initialized.
 	 */
 	rc = pager_shared_lock(pPager);
@@ -14817,7 +14045,7 @@ static int unqliteKvIoNewPage(unqlite_kv_handle pHandle,unqlite_page **ppPage)
 	}
 	return rc;
 }
-/* 
+/*
  * Refer to [unqlitePageWrite()]
  */
 static int unqliteKvIopageWrite(unqlite_page *pPage)
@@ -14830,7 +14058,7 @@ static int unqliteKvIopageWrite(unqlite_page *pPage)
 	rc = unqlitePageWrite(pPage);
 	return rc;
 }
-/* 
+/*
  * Refer to [unqlitePagerDontWrite()]
  */
 static int unqliteKvIoPageDontWrite(unqlite_page *pPage)
@@ -14843,7 +14071,7 @@ static int unqliteKvIoPageDontWrite(unqlite_page *pPage)
 	rc = unqlitePagerDontWrite(pPage);
 	return rc;
 }
-/* 
+/*
  * Refer to [unqliteBitvecSet()]
  */
 static int unqliteKvIoPageDontJournal(unqlite_page *pRaw)
@@ -14862,13 +14090,13 @@ static int unqliteKvIoPageDontJournal(unqlite_page *pRaw)
 	}
 	return UNQLITE_OK;
 }
-/* 
+/*
  * Do not add a page to the hot dirty list.
  */
 static int unqliteKvIoPageDontMakeHot(unqlite_page *pRaw)
 {
 	Page *pPage = (Page *)pRaw;
-	
+
 	if( pPage == 0 ){
 		/* TICKET 1433-0348 */
 		return UNQLITE_OK;
@@ -14896,7 +14124,7 @@ static int unqliteKvIoPageDontMakeHot(unqlite_page *pRaw)
 
 	return UNQLITE_OK;
 }
-/* 
+/*
  * Refer to [page_ref()]
  */
 static int unqliteKvIopage_ref(unqlite_page *pPage)
@@ -14906,7 +14134,7 @@ static int unqliteKvIopage_ref(unqlite_page *pPage)
 	}
 	return UNQLITE_OK;
 }
-/* 
+/*
  * Refer to [page_unref()]
  */
 static int unqliteKvIoPageUnRef(unqlite_page *pPage)
@@ -14916,28 +14144,28 @@ static int unqliteKvIoPageUnRef(unqlite_page *pPage)
 	}
 	return UNQLITE_OK;
 }
-/* 
+/*
  * Refer to the declaration of the [Pager] structure
  */
 static int unqliteKvIoReadOnly(unqlite_kv_handle pHandle)
 {
 	return ((Pager *)pHandle)->is_rdonly;
 }
-/* 
+/*
  * Refer to the declaration of the [Pager] structure
  */
 static int unqliteKvIoPageSize(unqlite_kv_handle pHandle)
 {
 	return ((Pager *)pHandle)->iPageSize;
 }
-/* 
+/*
  * Refer to the declaration of the [Pager] structure
  */
 static unsigned char * unqliteKvIoTempPage(unqlite_kv_handle pHandle)
 {
 	return ((Pager *)pHandle)->zTmpPage;
 }
-/* 
+/*
  * Set a page unpin callback.
  * Refer to the declaration of the [Pager] structure
  */
@@ -14946,7 +14174,7 @@ static void unqliteKvIoPageUnpin(unqlite_kv_handle pHandle,void (*xPageUnpin)(vo
 	Pager *pPager = (Pager *)pHandle;
 	pPager->xPageUnpin = xPageUnpin;
 }
-/* 
+/*
  * Set a page reload callback.
  * Refer to the declaration of the [Pager] structure
  */
@@ -14955,7 +14183,7 @@ static void unqliteKvIoPageReload(unqlite_kv_handle pHandle,void (*xPageReload)(
 	Pager *pPager = (Pager *)pHandle;
 	pPager->xPageReload = xPageReload;
 }
-/* 
+/*
  * Log an error.
  * Refer to the declaration of the [Pager] structure
  */
@@ -14971,12 +14199,12 @@ static int pager_kv_io_init(Pager *pPager,unqlite_kv_methods *pMethods,unqlite_k
 {
 	pIo->pHandle =  pPager;
 	pIo->pMethods = pMethods;
-	
+
 	pIo->xGet    = unqliteKvIoPageGet;
 	pIo->xLookup = unqliteKvIoPageLookup;
 	pIo->xNew    = unqliteKvIoNewPage;
-	
-	pIo->xWrite     = unqliteKvIopageWrite; 
+
+	pIo->xWrite     = unqliteKvIopageWrite;
 	pIo->xDontWrite = unqliteKvIoPageDontWrite;
 	pIo->xDontJournal = unqliteKvIoPageDontJournal;
 	pIo->xDontMkHot = unqliteKvIoPageDontMakeHot;
@@ -15002,7 +14230,7 @@ static int pager_kv_io_init(Pager *pPager,unqlite_kv_methods *pMethods,unqlite_k
  * Symisc UnQLite-KV: A Transactional Key/Value Store Database Engine.
  * Copyright (C) 2016, Symisc Systems http://unqlite.org/
  * Copyright (C) 2014, Yuras Shumovich <shumovichy@gmail.com>
- * Version 1.1
+ * Version 1.1.2
  * For information on licensing, redistribution of this file, and for a DISCLAIMER OF ALL WARRANTIES
  * please contact Symisc Systems via:
  *       legal@symisc.net
@@ -15031,7 +14259,7 @@ static int pager_kv_io_init(Pager *pPager,unqlite_kv_methods *pMethods,unqlite_k
  * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
  * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.

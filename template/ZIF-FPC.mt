@@ -3,8 +3,9 @@
 #note ZIF socket with horizontal entry
 #pins 4 6 ...
 #flags aux-pad(mechanic,2) rebuild
-#param 8 @PT  1.0 @PP  2.75 @SH 11.6 @SV  1.3 @PW 0.6 @PL  1.8 @PLA 2 @PWA \
-#      5.8 @BW 12.6 @BL  0.2 @BP  0.65 @TS 15 @TW  0.2 @STP
+#param 8 @?PT   "oval" @PSH \
+#      1.0 @PP  1.3 @PW   0.6 @PL   2.75 @SH   11.6 @SV   1.8 @PLA   2 @PWA \
+#      5.8 @BW  12.6 @BL  0.2 @BP   0.65 @TS   15 @TW   0.2 @STP
 #model ZIF-FPC
 $MODULE {NAME}
 AR ZIF-FPC
@@ -32,7 +33,10 @@ DS {X1} {DY1} {X1} {Y1} {BP} 21
 DS {X1} {Y1} {DX1} {Y1} {BP} 21
 # pads
 $PAD
-{? PN PT <=}Sh "{PN}" O {PW} {PL} 0 0 0
+{?:STDPAD PN PT <=} #standard pad
+{?PRR 0 <}Sh "{PN}" {PSH} {PW} {PL} 0 0 0
+{?PRR 0 >=}Sh "{PN}" {PSH} {PW} {PL} 0 0 0 {PRR}
+:STDPAD
 {? PN PT >}Sh "" R {PWA} {PLA} 0 0 0
 Dr 0 0 0
 At SMD N 00888000

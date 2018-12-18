@@ -2,7 +2,9 @@
 #brief Zig-zag In-line Package
 #note Surface-mount single-line headers and sockets.
 #pins 3 4 ...
-#param 6 @PT 2.54 @PP 2.5 @SH 3.0 @PW 1.2 @PL 2.5 @BW 15.14 @BL 0.3 @STP 0.2 @BP 0.65 @TS 15 @TW
+#param 6 @PT    "rect" @PSH \
+#      2.54 @PP   2.5 @SH   3.0 @PW   1.2 @PL   0.3 @STP   0.2 @BP   0.65 @TS   15 @TW \
+#      2.5 @BW   15.14 @BL
 #model HDR1x_SMD
 $MODULE {NAME}
 AR HDR1x_SMD
@@ -26,7 +28,8 @@ DS {X1} {Y2} {X1} {Y2 SEGM -} {BP} 21
 DS {X2} {Y1} {X2} {Y1 SEGM +} {BP} 21
 DS {X2} {Y2} {X2} {Y2 SEGM -} {BP} 21
 $PAD
-Sh "{PN}" R {PW} {PL} 0 0 0
+{?PRR 0 <}Sh "{PN}" {PSH} {PW} {PL} 0 0 0
+{?PRR 0 >=}Sh "{PN}" {PSH} {PW} {PL} 0 0 0 {PRR}
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""

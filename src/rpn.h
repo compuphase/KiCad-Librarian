@@ -2,7 +2,7 @@
  *  Librarian for KiCad, a free EDA CAD application.
  *  The RPN expression parser.
  *
- *  Copyright (C) 2013-2015 CompuPhase
+ *  Copyright (C) 2013-2018 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: rpn.h 5387 2015-10-22 19:31:30Z thiadmer $
+ *  $Id: rpn.h 5907 2018-12-14 22:05:40Z thiadmer $
  */
 #ifndef __rpn_h
 #define __rpn_h

@@ -2,7 +2,7 @@
  *  Librarian for KiCad, a free EDA CAD application.
  *  The dialog for the search paths settings.
  *
- *  Copyright (C) 2013-2015 CompuPhase
+ *  Copyright (C) 2013-2018 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -16,16 +16,15 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: libmngr_paths.cpp 5784 2017-12-26 14:12:22Z thiadmer $
+ *  $Id: libmngr_paths.cpp 5907 2018-12-14 22:05:40Z thiadmer $
  */
 #include "librarymanager.h"
 #include "libmngr_paths.h"
 #include <wx/dirdlg.h>
 #include <wx/fileconf.h>
 
-libmngrDlgPaths::libmngrDlgPaths( wxWindow* parent )
-:
-DlgPaths( parent )
+libmngrDlgPaths::libmngrDlgPaths(wxWindow* parent)
+    : DlgPaths(parent)
 {
     /* fill in the list of search paths */
     wxFileConfig *config = new wxFileConfig(APP_NAME, VENDOR_NAME, theApp->GetINIPath());
@@ -47,6 +46,10 @@ DlgPaths( parent )
         m_lstSymbols->AppendString(path);
         idx++;
     }
+
+    bool recurse = false;
+    config->Read(wxT("path/recurse"), &recurse);
+    m_chkRecurseDirectories->SetValue(recurse);
 
     delete config;
 
@@ -135,6 +138,9 @@ void libmngrDlgPaths::OnOK( wxCommandEvent& event )
         key = key.Format(wxT("paths/symbols%d"), idx + 1);
         config->Write(key, path);
     }
+
+    bool recurse = m_chkRecurseDirectories->GetValue();
+    config->Write(wxT("path/recurse"), recurse);
 
     delete config;
     event.Skip();

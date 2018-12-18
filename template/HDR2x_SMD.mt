@@ -2,9 +2,9 @@
 #brief SMD pin array, dual row
 #note Standard dual row pin headers, SMD version
 #pins 4 6 ...
-#param 4 @?PT  PT 2 * @PT \
-#      2.54 @PP  5.08 @SH  3.0 @PW  1.4 @PL  0.2 @BP  0.65 @TS  15 @TW  0.2 @STP \
-#      5.08 @BW  PT 2 / PP * @BL
+#param 4 @?PT   PT 2 * @PT   "rect" @PSH \
+#      2.54 @PP   5.08 @SH   3.0 @PW   1.4 @PL   0.2 @STP   0.2 @BP   0.65 @TS   15 @TW \
+#      5.08 @BW   PT 2 / PP * @BL
 #model HDR2x_SMD
 $MODULE {NAME}
 AR HDR2x_SMD
@@ -28,7 +28,8 @@ DS {X1} {Y2} {X2} {Y2} {BP} 21
 DS {X1} {Y2} {X1} {Y2 OFFS -} {BP} 21
 DS {X2} {Y2} {X2} {Y2 OFFS -} {BP} 21
 $PAD
-Sh "{PN}" R {PW} {PL} 0 0 0
+{?PRR 0 <}Sh "{PN}" {PSH} {PW} {PL} 0 0 0
+{?PRR 0 >=}Sh "{PN}" {PSH} {PW} {PL} 0 0 0 {PRR}
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""

@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: librarymanager.h 5387 2015-10-22 19:31:30Z thiadmer $
+ *  $Id: librarymanager.h 5686 2017-05-24 13:56:46Z thiadmer $
  */
 #ifndef __librarymanager__
 #define __librarymanager__
@@ -25,29 +25,29 @@
 #include <wx/frame.h>
 
 #if defined __MSDOS__ || defined __WIN32__ || defined _Windows || defined _WIN32 || defined WIN32
-	#define DIRSEP_CHAR	'\\'	/* directory separator character */
-	#define DIRSEP_STR	"\\"
+  #define DIRSEP_CHAR '\\'  /* directory separator character */
+  #define DIRSEP_STR  "\\"
 #elif defined macintosh || defined __APPLE__
-	#define DIRSEP_CHAR ':'
-	#define DIRSEP_STR	":"
+  #define DIRSEP_CHAR ':'
+  #define DIRSEP_STR  ":"
 #else
-	#define DIRSEP_CHAR '/'
-	#define DIRSEP_STR	"/"
+  #define DIRSEP_CHAR '/'
+  #define DIRSEP_STR  "/"
 #endif
 
-#define APP_NAME	wxT("KiCadLibrarian")
-#define VENDOR_NAME	wxT("CompuPhase")
+#define APP_NAME  wxT("KiCadLibrarian")
+#define VENDOR_NAME wxT("CompuPhase")
 
 enum {
-	IDM_SWAPABOVE	= 2000,
-	IDM_SWAPBELOW,
-	IDM_PASTEPINLIST,
+  IDM_SWAPABOVE = 2000,
+  IDM_SWAPBELOW,
+  IDM_PASTEPINLIST,
     IDM_PASTEGENERAL,
-	IDM_PINTYPE		= 2100,
-	IDM_PINSHAPE	= 2200,
-	IDM_PINSECTION	= 2300,
-	/* ----- */
-	IDC_FILTER      = 3000,
+  IDM_PINTYPE   = 2100,
+  IDM_PINSHAPE  = 2200,
+  IDM_PINSECTION  = 2300,
+  /* ----- */
+  IDC_FILTER      = 3000,
     IDC_EXPORT,
 };
 
@@ -64,12 +64,12 @@ public:
         { return strTemplates; }
     wxString GetDocumentationPath() const   /* the path where the documentation is */
         { return strDocumentationPath; }
-	wxString GetUserDataPath() const		/* the path where user data can be stored */
-		{ return strUserDataPath; }
+  wxString GetUserDataPath() const    /* the path where user data can be stored */
+    { return strUserDataPath; }
     wxString GetFontFile() const            /* the full path/filename to the font */
         { return strFontFile; }
-	wxString GetINIPath() const				/* the full path/filename to the INI file, or wxEmptyString */
-		{ return strINIPath; }
+  wxString GetINIPath() const       /* the full path/filename to the INI file, or wxEmptyString */
+    { return strINIPath; }
 
 private:
     wxString strRootPath;
@@ -78,7 +78,7 @@ private:
     wxString strDocumentationPath;
     wxString strUserDataPath;
     wxString strFontFile;
-	wxString strINIPath;
+  wxString strINIPath;
 };
 
 extern LibraryManagerApp* theApp;

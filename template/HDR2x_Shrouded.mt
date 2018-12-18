@@ -2,7 +2,7 @@
 #brief Vertical DIL shrouded header
 #note Vertical DIL shrouded header with polarity slot (through-hole)
 #pins 8 10 ...
-#param 4 @?PT   PT 2 * @PT \
+#param 4 @?PT   PT 2 * @PT   "sqcircle" @PSH \
 #      2.54 @PP   2.54 @SH   1.6 @PW   1.6 @PL   1.0 @DS   0.2 @BP   0.65 @TS   15 @TW \
 #      8.89 @BW   PT 2 / 1 - PP * 10.16 + @BL
 #model HDR2x_Shrouded
@@ -32,8 +32,8 @@ DS {X1 THK +} {Y2 THK -} {X1 THK +} {YS2} {BP} 21
 DS {X1} {YS1} {X1 THK +} {YS1} {BP} 21
 DS {X1} {YS2} {X1 THK +} {YS2} {BP} 21
 $PAD
-{? PN 1 =}Sh "{PN}" R {PW} {PL} 0 0 0
-{? PN 1 >}Sh "{PN}" C {PW} {PL} 0 0 0
+{?PRR 0 <}Sh "{PN}" {PSH} {PW} {PL} 0 0 0
+{?PRR 0 >=}Sh "{PN}" {PSH} {PW} {PL} 0 0 0 {PRR}
 Dr {DS} 0 0
 At STD N 00E0FFFF
 Ne 0 ""

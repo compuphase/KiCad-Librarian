@@ -2,7 +2,9 @@
 #brief Quad Flat Package w/ Pins
 #note Without exposed pad.
 #pins 28 32 ...
-#param 32 @?PT  0.8 @PP  8.5 @SH  8.5 @SV  1.3 @PW  0.45 @PL  0.2 @BP  0.65 @TS  15 @TW  0.2 @STP \
+#param 32 @?PT   "oval" @PSH \
+#      0.8 @PP  8.5 @SH   8.5 @SV   1.3 @PW   0.45 @PL   0.2 @STP \
+#      0.2 @BP  0.65 @TS  15 @TW \
 #      PT 4 / floor 1 - PP * 2.9 + @SH  SH @SV \
 #      SH 1.7 - @BW  SV 1.7 - @BL
 #model QFP
@@ -36,8 +38,9 @@ DC {XC} {YC} {XC RAD +} {YC} {BP} 21
 {PT 4 / round @PINS}
 $PAD
 {PN 1 - PINS / floor @ROW}
-{? ROW 0 = ROW 2 = |}Sh "{PN}" O {PW} {PL} 0 0 0
-{? ROW 1 = ROW 3 = |}Sh "{PN}" O {PW} {PL} 0 0 900
+{900  0   ROW 1 = ROW 3 = |  ? @ANGLE}
+{?PRR 0 <}Sh "{PN}" {PSH} {PW} {PL} 0 0 {ANGLE}
+{?PRR 0 >=}Sh "{PN}" {PSH} {PW} {PL} 0 0 {ANGLE} {PRR}
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""

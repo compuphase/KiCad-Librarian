@@ -2,7 +2,7 @@
 #brief Chip LED
 #note Chip LED (multi-colour) in zig-zag pin numbering, SMD version
 #pins 2 4 6
-#param 4 @?PT \
+#param 4 @?PT    "rect" @PSH \
 #      2.2 @PP   4.2 @SH   1.6 @PW   1.4 @PL   0.2 @BP   0.65 @TS   15 @TW   0.1 @STP \
 #      5.2 @BW   3.4 @BL   1 @PPDIR
 #flags rebuild
@@ -45,7 +45,8 @@ DS {X1} {Y1} {X1} {Y2} {BP} 21
 DS {X2} {Y1} {X2} {Y2} {BP} 21
 :VERLINES
 $PAD
-Sh "{PN}" R {PW} {PL} 0 0 0
+{?PRR 0 <}Sh "{PN}" {PSH} {PW} {PL} 0 0 0
+{?PRR 0 >=}Sh "{PN}" {PSH} {PW} {PL} 0 0 0 {PRR}
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""

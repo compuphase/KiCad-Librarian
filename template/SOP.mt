@@ -1,9 +1,10 @@
 #version 1
 #brief Small Outline w/ Pins
 #note Suitable for SOIC and SSOP parts. Without exposed pad.
-#pins 6 8 ...
-#param 8 @?PT  1.27 @PP  5.6 @SH  1.75 @PW  0.65 @PL  0.2 @BP  0.65 @TS  15 @TW  0.2 @STP \
-#      3.6 @BW  PT 2 / floor 1 - PP * 1.2 + @BL
+#pins 4 6 8 ...
+#param 8 @?PT   "oval" @PSH \
+#      1.27 @PP  5.6 @SH   1.75 @PW   0.65 @PL   0.2 @STP   0.2 @BP   0.65 @TS   15 @TW \
+#      3.6 @BW   PT 2 / floor 1 - PP * 1.2 + @BL
 #model SOP
 $MODULE {NAME}
 AR SOP
@@ -30,7 +31,8 @@ DS {BW 2 /} {BL 2 /} {BW 2 / ~} {BL 2 /} {BP} 21
 DS {BW 2 / ~} {BL 2 /} {BW 2 / ~} {BL 2 / ~} {BP} 21
 DC {XC} {YC} {XC RAD +} {YC} {BP} 21
 $PAD
-Sh "{PN}" O {PW} {PL} 0 0 0
+{?PRR 0 <}Sh "{PN}" {PSH} {PW} {PL} 0 0 0
+{?PRR 0 >=}Sh "{PN}" {PSH} {PW} {PL} 0 0 0 {PRR}
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""

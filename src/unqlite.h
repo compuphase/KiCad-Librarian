@@ -1,11 +1,15 @@
-/* This file was automatically generated.  Do not edit (Except for compile time directives)! */ 
+/* This file was automatically generated.  Do not edit (Except for compile time directives)! */
 #ifndef _UNQLITE_H_
 #define _UNQLITE_H_
+/* Make sure we can call this stuff from C++ */
+#ifdef __cplusplus
+extern "C" {
+#endif
 /*
  * Symisc UnQLite-KV: A Transactional Key/Value Database Engine.
  * Copyright (C) 2016, Symisc Systems http://unqlite.org/
  * Copyright (C) 2014, Yuras Shumovich <shumovichy@gmail.com>
- * Version 1.1
+ * Version 1.1.2
  * For information on licensing, redistribution of this file, and for a DISCLAIMER OF ALL WARRANTIES
  * please contact Symisc Systems via:
  *       legal@symisc.net
@@ -15,7 +19,7 @@
  *      http://unqlite.org/licensing.html
  */
 /*
- * Copyright (C) 2016 Symisc Systems, S.U.A.R.L [M.I.A.G Mrad Chems Eddine <chm@symisc.net>].
+ * Copyright (C) 2012, 2018 Symisc Systems, S.U.A.R.L [M.I.A.G Mrad Chems Eddine <chm@symisc.net>].
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -34,12 +38,12 @@
  * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
  * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
- /* $SymiscID: unqlite.h v1.1 Win10 2016-12-02 00:04:12 stable <chm@symisc.net>  $ */
+ /* $SymiscID: unqlite.h v1.2 Win10 2108-01-21 23:59:12 stable <chm@symisc.net>  $ */
 #include <stdarg.h> /* needed for the definition of va_list */
 /*
  * Compile time engine version, signature, identification in the symisc source tree
@@ -55,13 +59,13 @@
  * version number and Y is the minor version number and Z is the release
  * number.
  */
-#define UNQLITE_VERSION "1.1.1"
+#define UNQLITE_VERSION "1.1.2"
 /*
  * The UNQLITE_VERSION_NUMBER C preprocessor macro resolves to an integer
  * with the value (X*1000000 + Y*1000 + Z) where X, Y, and Z are the same
  * numbers used in [UNQLITE_VERSION].
  */
-#define UNQLITE_VERSION_NUMBER 1001001
+#define UNQLITE_VERSION_NUMBER 1001002
 /*
  * The UNQLITE_SIG C preprocessor macro evaluates to a string
  * literal which is the public signature of the unqlite engine.
@@ -69,7 +73,7 @@
  * generated Server MIME header as follows:
  *   Server: YourWebServer/x.x unqlite/x.x.x \r\n
  */
-#define UNQLITE_SIG "unqlite/1.1.1"
+#define UNQLITE_SIG "unqlite/1.1.2"
 /*
  * UnQLite identification in the Symisc source tree:
  * Each particular check-in of a particular software released
@@ -86,7 +90,7 @@
  *   licensing@symisc.net
  *   contact@symisc.net
  */
-#define UNQLITE_COPYRIGHT "Copyright (C) Symisc Systems, S.U.A.R.L [Mrad Chems Eddine <chm@symisc.net>] 2016, http://unqlite.org/"
+#define UNQLITE_COPYRIGHT "Copyright (C) Symisc Systems, S.U.A.R.L [Mrad Chems Eddine <chm@symisc.net>] 2012-2018, http://unqlite.org/"
 
 /* Forward declaration to public objects */
 typedef struct unqlite_io_methods unqlite_io_methods;
@@ -118,7 +122,7 @@ typedef struct unqlite unqlite;
  * at run-time using the unqlite_lib_config() interface together with one of these verbs:
  *    UNQLITE_LIB_CONFIG_THREAD_LEVEL_SINGLE
  *    UNQLITE_LIB_CONFIG_THREAD_LEVEL_MULTI
- *  Platforms others than Windows and UNIX systems must install their own mutex subsystem via 
+ *  Platforms others than Windows and UNIX systems must install their own mutex subsystem via
  *  unqlite_lib_config() with a configuration verb set to UNQLITE_LIB_CONFIG_USER_MUTEX.
  *  Otherwise the library is not threadsafe.
  *  Note that you must link UnQLite with the POSIX threads library under UNIX systems (i.e: -lpthread).
@@ -130,7 +134,7 @@ typedef struct unqlite unqlite;
 /* Windows Systems */
 #if !defined(__WINNT__)
 #define __WINNT__
-#endif 
+#endif
 /*
  * Determine if we are dealing with WindowsCE - which has a much
  * reduced API.
@@ -229,7 +233,7 @@ struct Sytm
 	 (pSYTM)->tm_zone = 0;
 
 /* Dynamic memory allocation methods. */
-struct SyMemMethods 
+struct SyMemMethods
 {
 	void * (*xAlloc)(unsigned int);          /* [Required:] Allocate a memory chunk */
 	void * (*xRealloc)(void *, unsigned int); /* [Required:] Re-allocate a memory chunk */
@@ -242,7 +246,7 @@ struct SyMemMethods
 /* Out of memory callback signature. */
 typedef int (*ProcMemError)(void *);
 /* Mutex methods. */
-struct SyMutexMethods 
+struct SyMutexMethods
 {
 	int (*xGlobalInit)(void);		/* [Optional:] Global mutex initialization */
 	void  (*xGlobalRelease)(void);	/* [Optional:] Global Release callback () */
@@ -260,7 +264,7 @@ struct SyMutexMethods
 #define	SX_APIEXPORT
 #endif
 /* Standard return values from Symisc public interfaces */
-#define SXRET_OK       0      /* Not an error */	
+#define SXRET_OK       0      /* Not an error */
 #define SXERR_MEM      (-1)   /* Out of memory */
 #define SXERR_IO       (-2)   /* IO error */
 #define SXERR_EMPTY    (-3)   /* Empty field */
@@ -280,7 +284,7 @@ struct SyMutexMethods
 #define SXERR_NOTIMPLEMENTED  (-17) /* Operation not implemented */
 #define SXERR_EOF      (-18) /* End of input */
 #define SXERR_PERM     (-19) /* Permission error */
-#define SXERR_NOOP     (-20) /* No-op */	
+#define SXERR_NOOP     (-20) /* No-op */
 #define SXERR_FORMAT   (-21) /* Invalid format */
 #define SXERR_NEXT     (-22) /* Not an error */
 #define SXERR_OS       (-23) /* System call return an error */
@@ -296,8 +300,8 @@ struct SyMutexMethods
 #define SXERR_RETRY    (-33) /* Retry your call */
 #define SXERR_IGNORE   (-63) /* Ignore */
 #endif /* SYMISC_PUBLIC_DEFS */
-/* 
- * Marker for exported interfaces. 
+/*
+ * Marker for exported interfaces.
  */
 #define UNQLITE_APIEXPORT SX_APIEXPORT
 /*
@@ -317,7 +321,7 @@ typedef sxi64 unqlite_int64;
 #define UNQLITE_ABORT    SXERR_ABORT   /* Another thread have released this instance */
 #define UNQLITE_IOERR    SXERR_IO      /* IO error */
 #define UNQLITE_CORRUPT  SXERR_CORRUPT /* Corrupt pointer */
-#define UNQLITE_LOCKED   SXERR_LOCKED  /* Forbidden Operation */ 
+#define UNQLITE_LOCKED   SXERR_LOCKED  /* Forbidden Operation */
 #define UNQLITE_BUSY	 SXERR_BUSY    /* The database file is locked */
 #define UNQLITE_DONE	 SXERR_DONE    /* Operation done */
 #define UNQLITE_PERM     SXERR_PERM    /* Permission error */
@@ -347,7 +351,7 @@ typedef sxi64 unqlite_int64;
  * Each options require a variable number of arguments.
  * The [unqlite_config()] interface will return UNQLITE_OK on success, any other
  * return value indicates failure.
- * For a full discussion on the configuration verbs and their expected 
+ * For a full discussion on the configuration verbs and their expected
  * parameters, please refer to this page:
  *      http://unqlite.org/c_api/unqlite_config.html
  */
@@ -383,8 +387,8 @@ typedef sxi64 unqlite_int64;
  * value indicates failure.
  * Notes:
  * The default configuration is recommended for most applications and so the call to
- * [unqlite_lib_config()] is usually not necessary. It is provided to support rare 
- * applications with unusual needs. 
+ * [unqlite_lib_config()] is usually not necessary. It is provided to support rare
+ * applications with unusual needs.
  * The [unqlite_lib_config()] interface is not threadsafe. The application must insure that
  * no other [unqlite_*()] interfaces are invoked by other threads while [unqlite_lib_config()]
  * is running. Furthermore, [unqlite_lib_config()] may only be invoked prior to library
@@ -395,11 +399,11 @@ typedef sxi64 unqlite_int64;
  * refer to this page:
  *      http://unqlite.org/c_api/unqlite_lib.html
  */
-#define UNQLITE_LIB_CONFIG_USER_MALLOC            1 /* ONE ARGUMENT: const SyMemMethods *pMemMethods */ 
+#define UNQLITE_LIB_CONFIG_USER_MALLOC            1 /* ONE ARGUMENT: const SyMemMethods *pMemMethods */
 #define UNQLITE_LIB_CONFIG_MEM_ERR_CALLBACK       2 /* TWO ARGUMENTS: int (*xMemError)(void *), void *pUserData */
-#define UNQLITE_LIB_CONFIG_USER_MUTEX             3 /* ONE ARGUMENT: const SyMutexMethods *pMutexMethods */ 
-#define UNQLITE_LIB_CONFIG_THREAD_LEVEL_SINGLE    4 /* NO ARGUMENTS */ 
-#define UNQLITE_LIB_CONFIG_THREAD_LEVEL_MULTI     5 /* NO ARGUMENTS */ 
+#define UNQLITE_LIB_CONFIG_USER_MUTEX             3 /* ONE ARGUMENT: const SyMutexMethods *pMutexMethods */
+#define UNQLITE_LIB_CONFIG_THREAD_LEVEL_SINGLE    4 /* NO ARGUMENTS */
+#define UNQLITE_LIB_CONFIG_THREAD_LEVEL_MULTI     5 /* NO ARGUMENTS */
 #define UNQLITE_LIB_CONFIG_VFS                    6 /* ONE ARGUMENT: const unqlite_vfs *pVfs */
 #define UNQLITE_LIB_CONFIG_STORAGE_ENGINE         7 /* ONE ARGUMENT: unqlite_kv_methods *pStorage */
 #define UNQLITE_LIB_CONFIG_PAGE_SIZE              8 /* ONE ARGUMENT: int iPageSize */
@@ -466,7 +470,7 @@ struct unqlite_file {
  * This object defines the methods used to perform various operations
  * against the open file represented by the [unqlite_file] object.
  *
- * If the xOpen method sets the unqlite_file.pMethods element 
+ * If the xOpen method sets the unqlite_file.pMethods element
  * to a non-NULL pointer, then the unqlite_io_methods.xClose method
  * may be invoked even if the xOpen reported that it failed.  The
  * only way to prevent a call to xClose following a failed xOpen
@@ -485,13 +489,13 @@ struct unqlite_file {
  * UNQLITE_LOCK_RESERVED
  * UNQLITE_LOCK_PENDING
  * UNQLITE_LOCK_EXCLUSIVE
- * 
+ *
  * xLock() increases the lock. xUnlock() decreases the lock.
  * The xCheckReservedLock() method checks whether any database connection,
  * either in this process or in some other process, is holding a RESERVED,
  * PENDING, or EXCLUSIVE lock on the file. It returns true if such a lock exists
  * and false otherwise.
- * 
+ *
  * The xSectorSize() method returns the sector size of the device that underlies
  * the file. The sector size is the minimum write that can be performed without
  * disturbing other bytes in the file.
@@ -529,11 +533,11 @@ struct unqlite_io_methods {
  * must register their own vfs in order to be able to use the UnQLite library.
  *
  * The value of the iVersion field is initially 1 but may be larger in
- * future versions of UnQLite. 
+ * future versions of UnQLite.
  *
  * The szOsFile field is the size of the subclassed [unqlite_file] structure
  * used by this VFS. mxPathname is the maximum length of a pathname in this VFS.
- * 
+ *
  * At least szOsFile bytes of memory are allocated by UnQLite to hold the [unqlite_file]
  * structure passed as the third argument to xOpen. The xOpen method does not have to
  * allocate the structure; it should just fill it in. Note that the xOpen method must
@@ -580,8 +584,8 @@ struct unqlite_vfs {
  * UnQLite.
  */
 #define UNQLITE_ACCESS_EXISTS    0
-#define UNQLITE_ACCESS_READWRITE 1   
-#define UNQLITE_ACCESS_READ      2 
+#define UNQLITE_ACCESS_READWRITE 1
+#define UNQLITE_ACCESS_READ      2
 /*
  * The type used to represent a page number.  The first page in a file
  * is called page 1.  0 is used to represent "not a page".
@@ -629,7 +633,7 @@ struct unqlite_kv_io
 	int (*xPageSize)(unqlite_kv_handle);
 	int (*xReadOnly)(unqlite_kv_handle);
 	unsigned char * (*xTmpPage)(unqlite_kv_handle);
-	void (*xSetUnpin)(unqlite_kv_handle,void (*xPageUnpin)(void *)); 
+	void (*xSetUnpin)(unqlite_kv_handle,void (*xPageUnpin)(void *));
 	void (*xSetReload)(unqlite_kv_handle,void (*xPageReload)(void *));
 	void (*xErr)(unqlite_kv_handle,const char *);
 };
@@ -662,7 +666,7 @@ struct unqlite_kv_cursor
  * UnQLite come with two built-in KV storage engine: A Virtual Linear Hash (VLH) storage
  * engine is used for persistent on-disk databases with O(1) lookup time and an in-memory
  * hash-table or Red-black tree storage engine is used for in-memory databases.
- * Future versions of UnQLite might add other built-in storage engines (i.e. LSM). 
+ * Future versions of UnQLite might add other built-in storage engines (i.e. LSM).
  * Registration of a Key/Value storage engine at run-time is done via [unqlite_lib_config()]
  * with a configuration verb set to UNQLITE_LIB_CONFIG_STORAGE_ENGINE.
  */
@@ -694,7 +698,7 @@ struct unqlite_kv_methods
 	  unqlite_kv_engine *,
 	  const void *pKey,int nKeyLen,
 	  const void *pData,unqlite_int64 nDataLen
-	  ); 
+	  );
     int (*xAppend)(
 	  unqlite_kv_engine *,
 	  const void *pKey,int nKeyLen,
@@ -721,10 +725,10 @@ struct unqlite_kv_methods
 #ifndef UNQLITE_JOURNAL_FILE_SUFFIX
 #define UNQLITE_JOURNAL_FILE_SUFFIX "_unqlite_journal"
 #endif
-/* 
+/*
  * C-API-REF: Please refer to the official documentation for interfaces
- * purpose and expected parameters. 
- */ 
+ * purpose and expected parameters.
+ */
 
 /* Database Engine Handle */
 UNQLITE_APIEXPORT int unqlite_open(unqlite **ppDB,const char *zFilename,unsigned int iMode);
@@ -777,4 +781,7 @@ UNQLITE_APIEXPORT const char * unqlite_lib_signature(void);
 UNQLITE_APIEXPORT const char * unqlite_lib_ident(void);
 UNQLITE_APIEXPORT const char * unqlite_lib_copyright(void);
 
+#ifdef __cplusplus
+}
+#endif /* __cplusplus */
 #endif /* _UNQLITE_H_ */

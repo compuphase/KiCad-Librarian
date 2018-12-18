@@ -1,12 +1,11 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Feb 14 2017)
+// C++ code generated with wxFormBuilder (version Oct 26 2018)
 // http://www.wxformbuilder.org/
 //
-// PLEASE DO "NOT" EDIT THIS FILE!
+// PLEASE DO *NOT* EDIT THIS FILE!
 ///////////////////////////////////////////////////////////////////////////
 
-#ifndef __LIBMNGR_GUI_BASE_H__
-#define __LIBMNGR_GUI_BASE_H__
+#pragma once
 
 #include <wx/artprov.h>
 #include <wx/xrc/xmlres.h>
@@ -85,10 +84,10 @@
 ///////////////////////////////////////////////////////////////////////////////
 /// Class AppFrame
 ///////////////////////////////////////////////////////////////////////////////
-class AppFrame : public wxFrame 
+class AppFrame : public wxFrame
 {
 	private:
-	
+
 	protected:
 		wxMenuBar* m_menubar;
 		wxMenu* m_mnuFile;
@@ -108,13 +107,13 @@ class AppFrame : public wxFrame
 		wxListCtrl* m_listModulesRight;
 		wxPanel* m_panelBottom;
 		wxAuiToolBar* m_toolBar;
-		wxAuiToolBarItem* m_toolZoomIn; 
-		wxAuiToolBarItem* m_toolZoomOut; 
-		wxAuiToolBarItem* m_tool3DView; 
-		wxAuiToolBarItem* m_toolMeasure; 
-		wxAuiToolBarItem* m_toolDetailsPanel; 
-		wxAuiToolBarItem* m_toolLeftFootprint; 
-		wxAuiToolBarItem* m_toolRightFootprint; 
+		wxAuiToolBarItem* m_toolZoomIn;
+		wxAuiToolBarItem* m_toolZoomOut;
+		wxAuiToolBarItem* m_tool3DView;
+		wxAuiToolBarItem* m_toolMeasure;
+		wxAuiToolBarItem* m_toolDetailsPanel;
+		wxAuiToolBarItem* m_toolLeftFootprint;
+		wxAuiToolBarItem* m_toolRightFootprint;
 		wxSplitterWindow* m_splitterViewPanel;
 		wxPanel* m_panelView;
 		wxScrolledWindow* m_panelSettings;
@@ -138,6 +137,8 @@ class AppFrame : public wxFrame
 		wxStaticText* m_lblPadSize;
 		wxTextCtrl* m_txtPadWidth;
 		wxTextCtrl* m_txtPadLength;
+		wxStaticText* m_lblPadRadius;
+		wxTextCtrl* m_txtPadRadius;
 		wxStaticText* m_lblPitch;
 		wxTextCtrl* m_txtPitch;
 		wxStaticText* m_lblPadSpan;
@@ -163,7 +164,7 @@ class AppFrame : public wxFrame
 		wxButton* m_btnSavePart;
 		wxButton* m_btnRevertPart;
 		wxStatusBar* m_statusBar;
-		
+
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnCloseApp( wxCloseEvent& event ) { event.Skip(); }
 		virtual void OnNewLibrary( wxCommandEvent& event ) { event.Skip(); }
@@ -236,35 +237,35 @@ class AppFrame : public wxFrame
 		virtual void OnSavePart( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnRevertPart( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnStatusBarDblClk( wxMouseEvent& event ) { event.Skip(); }
-		
-	
+
+
 	public:
-		
+
 		AppFrame( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("KiCad Librarian"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( 700,450 ), long style = wxDEFAULT_FRAME_STYLE|wxRESIZE_BORDER|wxTAB_TRAVERSAL );
-		
+
 		~AppFrame();
-		
+
 		void m_splitterOnIdle( wxIdleEvent& )
 		{
 			m_splitter->SetSashPosition( 185 );
 			m_splitter->Disconnect( wxEVT_IDLE, wxIdleEventHandler( AppFrame::m_splitterOnIdle ), NULL, this );
 		}
-		
+
 		void m_splitterViewPanelOnIdle( wxIdleEvent& )
 		{
 			m_splitterViewPanel->SetSashPosition( -200 );
 			m_splitterViewPanel->Disconnect( wxEVT_IDLE, wxIdleEventHandler( AppFrame::m_splitterViewPanelOnIdle ), NULL, this );
 		}
-	
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class DlgPaths
 ///////////////////////////////////////////////////////////////////////////////
-class DlgPaths : public wxDialog 
+class DlgPaths : public wxDialog
 {
 	private:
-	
+
 	protected:
 		wxStaticText* m_lblFootprintPaths;
 		wxListBox* m_lstFootprints;
@@ -274,10 +275,11 @@ class DlgPaths : public wxDialog
 		wxListBox* m_lstSymbols;
 		wxButton* m_btnAddSymbol;
 		wxButton* m_btnRemoveSymbol;
+		wxCheckBox* m_chkRecurseDirectories;
 		wxStdDialogButtonSizer* m_sdbSizer;
 		wxButton* m_sdbSizerOK;
 		wxButton* m_sdbSizerCancel;
-		
+
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnFootprintPathSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnAddFootprintPath( wxCommandEvent& event ) { event.Skip(); }
@@ -286,22 +288,22 @@ class DlgPaths : public wxDialog
 		virtual void OnAddSymbolPath( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnRemoveSymbolPath( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnOK( wxCommandEvent& event ) { event.Skip(); }
-		
-	
+
+
 	public:
-		
-		DlgPaths( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Search paths"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER ); 
+
+		DlgPaths( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Search paths"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 		~DlgPaths();
-	
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class DlgReport
 ///////////////////////////////////////////////////////////////////////////////
-class DlgReport : public wxDialog 
+class DlgReport : public wxDialog
 {
 	private:
-	
+
 	protected:
 		wxStaticText* m_lblPageSize;
 		wxChoice* m_choicePageSize;
@@ -313,28 +315,29 @@ class DlgReport : public wxDialog
 		wxCheckBox* m_chkValueLabels;
 		wxCheckBox* m_chkPadInfo;
 		wxCheckBox* m_chkFPList;
+		wxCheckBox* m_chkIndex;
 		wxStdDialogButtonSizer* m_sdbSizer;
 		wxButton* m_sdbSizerOK;
 		wxButton* m_sdbSizerCancel;
-		
+
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnOK( wxCommandEvent& event ) { event.Skip(); }
-		
-	
+
+
 	public:
-		
-		DlgReport( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Report options"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER ); 
+
+		DlgReport( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Report options"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 		~DlgReport();
-	
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class DlgOptions
 ///////////////////////////////////////////////////////////////////////////////
-class DlgOptions : public wxDialog 
+class DlgOptions : public wxDialog
 {
 	private:
-	
+
 	protected:
 		wxStaticText* m_lblFontSize;
 		wxSpinCtrl* m_spinFontSize;
@@ -363,25 +366,25 @@ class DlgOptions : public wxDialog
 		wxStdDialogButtonSizer* m_sdbSizer;
 		wxButton* m_sdbSizerOK;
 		wxButton* m_sdbSizerCancel;
-		
+
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnOK( wxCommandEvent& event ) { event.Skip(); }
-		
-	
+
+
 	public:
-		
-		DlgOptions( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("User Interface"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER ); 
+
+		DlgOptions( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("User Interface"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 		~DlgOptions();
-	
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class DlgTemplateOpts
 ///////////////////////////////////////////////////////////////////////////////
-class DlgTemplateOpts : public wxDialog 
+class DlgTemplateOpts : public wxDialog
 {
 	private:
-	
+
 	protected:
 		wxStaticText* m_lblVariables;
 		wxGrid* m_gridTemplateVars;
@@ -389,25 +392,25 @@ class DlgTemplateOpts : public wxDialog
 		wxStdDialogButtonSizer* m_sdbSizer;
 		wxButton* m_sdbSizerOK;
 		wxButton* m_sdbSizerCancel;
-		
+
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnOK( wxCommandEvent& event ) { event.Skip(); }
-		
-	
+
+
 	public:
-		
-		DlgTemplateOpts( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Template variables"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER ); 
+
+		DlgTemplateOpts( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Template variables"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 		~DlgTemplateOpts();
-	
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class DlgNewFootprint
 ///////////////////////////////////////////////////////////////////////////////
-class DlgNewFootprint : public wxDialog 
+class DlgNewFootprint : public wxDialog
 {
 	private:
-	
+
 	protected:
 		wxListBox* m_lstTemplates;
 		wxStaticText* m_lblName;
@@ -418,28 +421,28 @@ class DlgNewFootprint : public wxDialog
 		wxStdDialogButtonSizer* m_sdbSizerOkCancel;
 		wxButton* m_sdbSizerOkCancelOK;
 		wxButton* m_sdbSizerOkCancelCancel;
-		
+
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnTemplateSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnNextImage( wxSpinEvent& event ) { event.Skip(); }
 		virtual void OnPrevImage( wxSpinEvent& event ) { event.Skip(); }
 		virtual void OnOk( wxCommandEvent& event ) { event.Skip(); }
-		
-	
+
+
 	public:
-		
-		DlgNewFootprint( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("New footprint"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER ); 
+
+		DlgNewFootprint( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("New footprint"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 		~DlgNewFootprint();
-	
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class DlgRemoteLink
 ///////////////////////////////////////////////////////////////////////////////
-class DlgRemoteLink : public wxDialog 
+class DlgRemoteLink : public wxDialog
 {
 	private:
-	
+
 	protected:
 		wxStaticText* m_lblURL;
 		wxTextCtrl* m_txtURL;
@@ -458,27 +461,27 @@ class DlgRemoteLink : public wxDialog
 		wxButton* m_btnSignUp;
 		wxButton* m_btnOK;
 		wxButton* m_btnCancel;
-		
+
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnSignUp( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnOK( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnCancel( wxCommandEvent& event ) { event.Skip(); }
-		
-	
+
+
 	public:
-		
-		DlgRemoteLink( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Repository"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER ); 
+
+		DlgRemoteLink( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Repository"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 		~DlgRemoteLink();
-	
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class DlgRemoteSignUp
 ///////////////////////////////////////////////////////////////////////////////
-class DlgRemoteSignUp : public wxDialog 
+class DlgRemoteSignUp : public wxDialog
 {
 	private:
-	
+
 	protected:
 		wxStaticText* m_lblURL;
 		wxTextCtrl* m_txtURL;
@@ -497,25 +500,25 @@ class DlgRemoteSignUp : public wxDialog
 		wxStdDialogButtonSizer* m_sdbSizer;
 		wxButton* m_sdbSizerOK;
 		wxButton* m_sdbSizerCancel;
-		
+
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnOK( wxCommandEvent& event ) { event.Skip(); }
-		
-	
+
+
 	public:
-		
-		DlgRemoteSignUp( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Repository - sign up"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER ); 
+
+		DlgRemoteSignUp( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("Repository - sign up"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 		~DlgRemoteSignUp();
-	
+
 };
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class DlgNewSymbol
 ///////////////////////////////////////////////////////////////////////////////
-class DlgNewSymbol : public wxDialog 
+class DlgNewSymbol : public wxDialog
 {
 	private:
-	
+
 	protected:
 		wxListBox* m_lstTemplates;
 		wxStaticText* m_lblName;
@@ -527,17 +530,16 @@ class DlgNewSymbol : public wxDialog
 		wxStdDialogButtonSizer* m_sdbSizerOkCancel;
 		wxButton* m_sdbSizerOkCancelOK;
 		wxButton* m_sdbSizerOkCancelCancel;
-		
+
 		// Virtual event handlers, overide them in your derived class
 		virtual void OnTemplateSelect( wxCommandEvent& event ) { event.Skip(); }
 		virtual void OnOk( wxCommandEvent& event ) { event.Skip(); }
-		
-	
+
+
 	public:
-		
-		DlgNewSymbol( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("New symbol"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER ); 
+
+		DlgNewSymbol( wxWindow* parent, wxWindowID id = wxID_ANY, const wxString& title = wxT("New symbol"), const wxPoint& pos = wxDefaultPosition, const wxSize& size = wxSize( -1,-1 ), long style = wxDEFAULT_DIALOG_STYLE|wxRESIZE_BORDER );
 		~DlgNewSymbol();
-	
+
 };
 
-#endif //__LIBMNGR_GUI_BASE_H__

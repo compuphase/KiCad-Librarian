@@ -3,7 +3,7 @@
  *  This file contains the code for the main frame, which is almost all of the
  *  user-interface code.
  *
- *  Copyright (C) 2013-2017 CompuPhase
+ *  Copyright (C) 2013-2018 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -17,7 +17,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: libmngr_frame.cpp 5784 2017-12-26 14:12:22Z thiadmer $
+ *  $Id: libmngr_frame.cpp 5907 2018-12-14 22:05:40Z thiadmer $
  */
 #include "librarymanager.h"
 #include "libmngr_frame.h"
@@ -78,6 +78,7 @@ extern "C" {
 #define SCALE_MIN       0.8
 #define SCALE_DEFAULT   8
 #define SCALE_MAX       80
+#define SCALE_FACTOR    1.189207  /* pow(2, 0.25) */
 #if defined _WIN32
     #define PANEL_WIDTH 200 /* default width of the sidebar, in pixels */
     #define EDITF_WIDTH 150
@@ -97,9 +98,9 @@ extern "C" {
 #define RIGHTPANEL      1
 #define BOTHPANELS      0
 
-#define PROTECTED   wxColour(224,224,224)
-#define ENABLED     *wxWHITE
-#define CHANGED     wxColour(255,192,192)
+const wxColour ENABLED(*wxWHITE);
+const wxColour PROTECTED(224,224,224);
+const wxColour CHANGED(255,192,192);
 
 
 libmngrFrame::libmngrFrame(wxWindow* parent)
@@ -279,7 +280,7 @@ void libmngrFrame::OnTimer(wxTimerEvent& /*event*/)
     if (ok_count == 2) {
         /* all sashes already at the good position, wait a while and check whether to clear the timer */
         if (busy == NULL)
-            busy = new wxBusyInfo("Initializeing lay-out. Please wait...");
+            busy = new wxBusyInfo("Initializing lay-out. Please wait...");
         if (++idle_count >= 3) {    /* position has stayed good for 1.5 seconds */
             m_Timer->Stop();
             delete busy;
@@ -709,6 +710,7 @@ void libmngrFrame::OnNewFootprint(wxCommandEvent& /*event*/)
         LoadPart(idx, list, 0, 0);
         UpdateDetails(0);
         Update3DModel(PartData[0]);
+        AutoZoom(0);
         m_panelView->Refresh();
         m_statusBar->SetStatusText(wxT("New footprint"));
         /* toggle the details panel on, if it was off */
@@ -923,11 +925,12 @@ void libmngrFrame::OnFootprintReport(wxCommandEvent& /*event*/)
     long opt_labels = config->Read(wxT("report/drawlabels"), 0L);
     long opt_description = config->Read(wxT("report/includedescription"), 1L);
     long opt_padinfo = config->Read(wxT("report/includepadinfo"), 1L);
+    long opt_index = config->Read(wxT("report/index"), 1L);
     long fontsize = config->Read(wxT("report/fontsize"), 8L);
     delete config;
     PdfReport report;
     report.SetPage(format, (landscape != 0));
-    report.FootprintOptions(opt_description != 0, opt_padinfo != 0, opt_labels != 0);
+    report.FootprintOptions(opt_description != 0, opt_index != 0, opt_padinfo != 0, opt_labels != 0);
     report.SetFont(fontsize);
     report.FootprintReport(this, library, modules, reportfile);
     m_statusBar->SetStatusText(wxT("Finished report"));
@@ -961,11 +964,12 @@ void libmngrFrame::OnSymbolReport(wxCommandEvent& /*event*/)
     long landscape = config->Read(wxT("report/layout"), 0L);
     long fontsize = config->Read(wxT("report/fontsize"), 8L);
     long opt_description = config->Read(wxT("report/includedescription"), 1L);
+    long opt_index = config->Read(wxT("report/index"), 1L);
     long opt_fplist = config->Read(wxT("report/fplist"), 1L);
     delete config;
     PdfReport report;
     report.SetPage(format, (landscape != 0));
-    report.SymbolOptions(opt_description != 0, opt_fplist != 0);
+    report.SymbolOptions(opt_description != 0, opt_index != 0, opt_fplist != 0);
     report.SetFont(fontsize);
     report.SymbolReport(this, library, symbols, reportfile);
     m_statusBar->SetStatusText(wxT("Finished report"));
@@ -1360,7 +1364,7 @@ void libmngrFrame::OnAbout(wxCommandEvent& /*event*/)
     info.SetName(wxT("KiCad Librarian"));
     info.SetVersion(wxT(SVN_REVSTR));
     info.SetDescription(description);
-    info.SetCopyright(wxT("(C) 2013-2017 ITB CompuPhase"));
+    info.SetCopyright(wxT("(C) 2013-2018 ITB CompuPhase"));
     info.SetIcon(icon);
     info.SetWebSite(wxT("http://www.compuphase.com/"));
     info.AddArtist(wxT("The logo of KiCad Librarian is designed by http://icons8.com/"));
@@ -1711,6 +1715,7 @@ void libmngrFrame::OnDeletePart(wxCommandEvent& /*event*/)
             result = RemoveSymbol(filename, modname);
         else
             result = RemoveFootprint(filename, modname);
+        PartEdited = false;
         if (result) {
             PartData[0].Clear();
             PartData[1].Clear();    /* should already be clear (delete operation is inactive in compare mode) */
@@ -2026,6 +2031,7 @@ void libmngrFrame::OnLeftModSelect(wxListEvent& event)
     m_radioViewRight->SetValue(false);
     UpdateDetails(0);
     Update3DModel(PartData[0]);
+    AutoZoom(0);
     m_panelView->Refresh();
 }
 
@@ -2049,6 +2055,7 @@ void libmngrFrame::OnRightModSelect(wxListEvent& event)
     m_radioViewRight->SetValue(true);
     UpdateDetails(CompareMode ? 1 : 0);
     Update3DModel(PartData[0]);
+    AutoZoom(0);
     m_panelView->Refresh();
 }
 
@@ -2183,17 +2190,8 @@ wxString libmngrFrame::ExportFootprintBitmap(const wxString& modname, bool blues
     int ImgWidth = IMG_WIDTH_FP;
     int ImgHeight = IMG_HEIGHT_FP;
 
-    double padsize = Footprint[0].PadSize[0].GetX() <= Footprint[0].PadSize[0].GetY() ? Footprint[0].PadSize[0].GetX() : Footprint[0].PadSize[0].GetY();
-    double hsize = BodySize[0].BodyWidth;
-    double vsize = BodySize[0].BodyLength;
-    if (hsize < Footprint[0].Pitch + padsize)
-        hsize = Footprint[0].Pitch + padsize;
-    if (hsize < Footprint[0].SpanHor + padsize)
-        hsize = Footprint[0].SpanHor + padsize;
-    if (vsize < Footprint[0].Pitch + padsize)
-        vsize = Footprint[0].Pitch + padsize;
-    if (vsize < Footprint[0].SpanVer + padsize)
-        vsize = Footprint[0].SpanVer + padsize;
+    double hsize, vsize;
+    EstimateFootprintSize(&hsize, &vsize, Footprint[0], BodySize[0]);
     if (dpi == 0) {
         /* estimate scale from body size */
         if (hsize > vsize)
@@ -2301,6 +2299,31 @@ void libmngrFrame::DrawStrokeText(wxGraphicsContext *gc, float x, float y, const
     }
 }
 
+void libmngrFrame::EstimateSymbolSize(double *cx, double *cy, const BodyInfo& Body)
+{
+    const int PINLENGTH = 6;    /* assume pins are 6 mm long */
+    const double SCALEFACTOR = 0.25;
+    wxASSERT(cx != NULL && cy != NULL);
+    *cx = (Body.BodyWidth + 2 * PINLENGTH) * SCALEFACTOR;
+    *cy = (Body.BodyLength + 2 * PINLENGTH) * SCALEFACTOR;
+}
+
+void libmngrFrame::EstimateFootprintSize(double *cx, double *cy, const FootprintInfo& Footprint, const BodyInfo& Body)
+{
+    wxASSERT(cx != NULL && cy != NULL);
+    *cx = Body.BodyWidth;
+    *cy = Body.BodyLength;
+    double padsize = Footprint.PadSize[0].GetX() <= Footprint.PadSize[0].GetY() ? Footprint.PadSize[0].GetX() : Footprint.PadSize[0].GetY();
+    if (*cx < Footprint.Pitch + padsize)
+        *cx = Footprint.Pitch + padsize;
+    if (*cx < Footprint.SpanHor + padsize)
+        *cx = Footprint.SpanHor + padsize;
+    if (*cy < Footprint.Pitch + padsize)
+        *cy = Footprint.Pitch + padsize;
+    if (*cy < Footprint.SpanVer + padsize)
+        *cy = Footprint.SpanVer + padsize;
+}
+
 void libmngrFrame::UpdateBoundingBox(CoordSize* bbox, double x, double y)
 {
     wxASSERT(bbox);
@@ -2312,6 +2335,39 @@ void libmngrFrame::UpdateBoundingBox(CoordSize* bbox, double x, double y)
         bbox->SetTop(y);
     else if (y > bbox->GetBottom())
         bbox->SetBottom(y);
+}
+
+void libmngrFrame::AutoZoom(int part)
+{
+    /* estimate footprint size */
+    wxASSERT(part == 0 || part == 1);
+    double cx, cy;
+    if (SymbolMode)
+        EstimateSymbolSize(&cx, &cy, BodySize[part]);
+    else
+        EstimateFootprintSize(&cx, &cy, Footprint[part], BodySize[part]);
+
+    /* get viewport size */
+    wxSize size = m_panelView->GetSize();
+
+    /* check whether the shape is too large to fit in the viewport */
+    if (cx * Scale > size.GetWidth() * 0.8)
+        Scale = size.GetWidth() * 0.8 / cx;
+    if (cy * Scale > size.GetHeight() * 0.8)
+        Scale = size.GetHeight() * 0.8 / cy;
+
+    /* check whether the shape is very small in the viewport */
+    if (cx * Scale < size.GetWidth() / 4 && cy * Scale < size.GetHeight() /4) {
+        Scale = size.GetWidth() * 0.8 / cx;
+        if (cy * Scale > size.GetHeight() * 0.8)
+            Scale = size.GetHeight() * 0.8 / cy;
+    }
+
+    /* check the bounds */
+    if (Scale > SCALE_MAX)
+        Scale = SCALE_MAX;
+    else if (Scale < SCALE_MIN)
+        Scale = SCALE_MIN;
 }
 
 void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const int transp[])
@@ -2757,10 +2813,172 @@ void libmngrFrame::DrawSymbols(wxGraphicsContext *gc, int midx, int midy, const 
     }
 }
 
+void libmngrFrame::DrawPad(wxGraphicsContext *gc, double midx, double midy,
+                           const wxString& padshape, const wxString& padpin,
+                           double padx, double pady, double padwidth, double padheight,
+                           double padrratio, double paddeltax, double paddeltay,
+                           double pasteratio, double padrot,
+                           double drillx, double drilly, double drillwidth, double drillheight,
+                           const wxPen& penPad, const wxBrush& brushPad, const wxBrush& brushHole,
+                           CoordSize *bbox)
+{
+    /* make the pad smaller in outline mode */
+    if (OutlineMode) {
+        if (padwidth > 0.3)
+            padwidth -= 0.15;
+        if (padheight > 0.3)
+            padheight -= 0.15;
+    }
+
+    /* draw the pad */
+    wxPoint2DDouble points[5];
+    points[0].m_x = -padwidth/2 * Scale;
+    points[0].m_y = -padheight/2 * Scale;
+    points[1].m_x =  padwidth/2 * Scale;
+    points[1].m_y = -padheight/2 * Scale;
+    points[2].m_x =  padwidth/2 * Scale;
+    points[2].m_y =  padheight/2 * Scale;
+    points[3].m_x = -padwidth/2 * Scale;
+    points[3].m_y =  padheight/2 * Scale;
+    if (padshape.CmpNoCase(wxT("T")) == 0 || padshape.Cmp(wxT("trapezoid")) == 0) {
+        if (!Equal(paddeltax, 0.0)) {
+            points[0].m_y -= paddeltax * Scale / 2;
+            points[1].m_y += paddeltax * Scale / 2;
+            points[2].m_y -= paddeltax * Scale / 2;
+            points[3].m_y += paddeltax * Scale / 2;
+        }
+        if (!Equal(paddeltay, 0.0)) {
+            points[0].m_x += paddeltay * Scale / 2;
+            points[1].m_x -= paddeltay * Scale / 2;
+            points[2].m_x += paddeltay * Scale / 2;
+            points[3].m_x -= paddeltay * Scale / 2;
+        }
+    }
+    points[4] = points[0];
+
+    /* make scaled pad for paste */
+    wxPoint2DDouble pastepoints[5];
+    memcpy(pastepoints, points, sizeof pastepoints);
+    if (pasteratio < -EPSILON && pasteratio > -0.5 && !OutlineMode) {
+        double d;
+        d = points[1].m_x - points[0].m_x;
+        pastepoints[0].m_x = points[0].m_x - d * pasteratio;
+        pastepoints[1].m_x = points[1].m_x + d * pasteratio;
+        d = points[2].m_x - points[3].m_x;
+        pastepoints[2].m_x = points[2].m_x + d * pasteratio;
+        pastepoints[3].m_x = points[3].m_x - d * pasteratio;
+        d = points[3].m_y - points[0].m_y;
+        pastepoints[0].m_y = points[0].m_y - d * pasteratio;
+        pastepoints[3].m_y = points[3].m_y + d * pasteratio;
+        d = points[2].m_y - points[1].m_y;
+        pastepoints[1].m_y = points[1].m_y - d * pasteratio;
+        pastepoints[2].m_y = points[2].m_y + d * pasteratio;
+        pastepoints[4] = pastepoints[0];
+    }
+
+    /* apply rotation */
+    if (padrot > EPSILON) {
+        double angle = (padrot * M_PI / 180.0);
+        for (int idx = 0; idx < 5; idx++) {
+            wxDouble nx = points[idx].m_x * cos(angle) - points[idx].m_y * sin(angle);
+            wxDouble ny = points[idx].m_x * sin(angle) + points[idx].m_y * cos(angle);
+            points[idx].m_x = nx;
+            points[idx].m_y = ny;
+            /* same for paste aperture */
+            nx = pastepoints[idx].m_x * cos(angle) - pastepoints[idx].m_y * sin(angle);
+            ny = pastepoints[idx].m_x * sin(angle) + pastepoints[idx].m_y * cos(angle);
+            pastepoints[idx].m_x = nx;
+            pastepoints[idx].m_y = ny;
+        }
+    }
+
+    /* move pad relative to footprint origin */
+    for (int idx = 0; idx < 5; idx++) {
+        points[idx].m_x += padx * Scale + midx;
+        points[idx].m_y += pady * Scale + midy;
+        UpdateBoundingBox(bbox, padx, pady);
+        pastepoints[idx].m_x += padx * Scale + midx;
+        pastepoints[idx].m_y += pady * Scale + midy;
+    }
+
+    gc->SetBrush(brushPad);
+    gc->SetPen(penPad);
+
+    /* avoid negative width/height for ellipses or obrounds */
+    CoordSize cs(points[0].m_x, points[0].m_y, points[2].m_x - points[0].m_x, points[2].m_y - points[0].m_y);
+    if (padshape.CmpNoCase(wxT("C")) == 0 || padshape.Cmp(wxT("circle")) == 0) {
+        gc->DrawEllipse(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight());
+    } else if (padshape.CmpNoCase(wxT("O")) == 0 || padshape.Cmp(wxT("oval")) == 0) {
+        double dim = (cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight();
+        gc->DrawRoundedRectangle(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight(), dim / 2);
+    } else if (padshape.CmpNoCase(wxT("D")) == 0 || padshape.Cmp(wxT("roundrect")) == 0) {
+        wxASSERT(padrratio >= 0 && padrratio <= 0.5);
+        double dim = (cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight();
+        gc->DrawRoundedRectangle(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight(), dim * padrratio);
+    } else {
+        gc->DrawLines(5, points);
+    }
+
+    /* draw solder paste ratio, if set */
+    if (pasteratio < -EPSILON && pasteratio > -0.5 && !OutlineMode) {
+        wxPen pastepen(wxColour(160,160,80), 1, wxPENSTYLE_DOT);
+        gc->SetPen(pastepen);
+        wxBrush pastebrush(wxColour(160,160,80), wxBRUSHSTYLE_FDIAGONAL_HATCH);
+        gc->SetBrush(pastebrush);
+        /* avoid negative width/height for ellipses or obrounds */
+        cs.Set(pastepoints[0].m_x, pastepoints[0].m_y, pastepoints[2].m_x - pastepoints[0].m_x, pastepoints[2].m_y - pastepoints[0].m_y);
+        if (padshape.CmpNoCase(wxT("C")) == 0 || padshape.Cmp(wxT("circle")) == 0) {
+            gc->DrawEllipse(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight());
+        } else if (padshape.CmpNoCase(wxT("O")) == 0 || padshape.Cmp(wxT("oval")) == 0) {
+            double dim = (cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight();
+            gc->DrawRoundedRectangle(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight(), dim / 2);
+        } else if (padshape.CmpNoCase(wxT("D")) == 0 || padshape.Cmp(wxT("roundrect")) == 0) {
+            wxASSERT(padrratio >= 0 && padrratio <= 0.5);
+            double dim = (cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight();
+            gc->DrawRoundedRectangle(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight(), dim * padrratio);
+        } else {
+            gc->DrawLines(5, pastepoints);
+        }
+        gc->SetPen(penPad);
+        gc->SetBrush(brushPad);
+    }
+
+    /* optionally the hole in the pad */
+    if (drillwidth > EPSILON) {
+        if ((padshape == wxT('C') || padshape.Cmp(wxT("circle")) == 0) && padwidth - drillwidth < 0.05)
+            gc->SetBrush(brushHole);
+        else
+            gc->SetBrush(*wxBLACK_BRUSH);
+        if (drillheight > EPSILON) {
+            if ((padrot > 45 && padrot < 135) || (padrot > 225 && padrot < 315)) {
+                double t = drillwidth;
+                drillwidth = drillheight;
+                drillheight = t;
+            }
+            cs.Set((padx + drillx - drillwidth/2) * Scale + midx,
+                   (pady + drilly - drillheight/2) * Scale + midy,
+                   drillwidth * Scale, drillheight * Scale);
+            gc->DrawRoundedRectangle(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight(),
+                                     ((cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight()) / 2);
+        } else {
+            gc->DrawEllipse((padx + drillx - drillwidth/2) * Scale + midx,
+                            (pady + drilly - drillwidth/2) * Scale + midy,
+                            drillwidth * Scale, drillwidth * Scale);
+        }
+    }
+
+    /* draw the pin name inside the pad */
+    if (ShowPinNumbers) {
+        wxDouble tw, th, td, tex;
+        gc->GetTextExtent(padpin, &tw, &th, &td, &tex);
+        gc->DrawText(padpin, padx * Scale + midx - tw/2, pady * Scale + midy - th/2);
+    }
+}
+
 void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, const int transp[])
 {
     CoordSize bbox;
-    wxColour clrBody, clrPad, clrPadFill, clrText, clrHiddenText;
+    wxColour clrBody, clrText, clrHiddenText, clrPad, clrPadFill, clrPadRev, clrPadRevFill;
     wxPoint2DDouble points[5];
     wxPen pen;
 
@@ -2789,12 +3007,16 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
             clrBody.Set(192, 192, 96, transp[fp]);
             clrPad.Set(160, 0, 0, transp[fp]);
             clrPadFill.Set(160, 48, 48, transp[fp]);
+            clrPadRev.Set(160, 0, 128, transp[fp]);
+            clrPadRevFill.Set(160, 48, 128, transp[fp]);
             clrText.Set(240, 240, 64, transp[fp]);
             clrHiddenText.Set(160, 160, 50, transp[fp]);
         } else {
             clrBody.Set(192, 96, 192, transp[fp]);
             clrPad.Set(0, 160, 0, transp[fp]);
             clrPadFill.Set(48, 160, 48, transp[fp]);
+            clrPadRev.Set(128, 160, 0, transp[fp]);
+            clrPadRevFill.Set(128, 160, 48, transp[fp]);
             clrText.Set(240, 64, 240, transp[fp]);
             clrHiddenText.Set(160, 50, 160, transp[fp]);
         }
@@ -3131,20 +3353,27 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
         }
 
         /* draw the pads */
-        wxBrush brush;
-        wxPen pen;
+        wxBrush brushStd, brushRev;
+        wxPen penStd, penRev;
         if (OutlineMode) {
-            brush = *wxTRANSPARENT_BRUSH;
-            pen.SetColour(clrPad);
-            pen.SetWidth(0.2 * Scale);
+            brushStd = *wxTRANSPARENT_BRUSH;
+            brushRev = *wxTRANSPARENT_BRUSH;
+            penStd.SetColour(clrPad);
+            penStd.SetWidth(0.2 * Scale);
+            penRev.SetColour(clrPadRev);
+            penRev.SetWidth(0.2 * Scale);
         } else {
-            brush.SetColour(clrPadFill);
-            brush.SetStyle(wxBRUSHSTYLE_SOLID);
-            pen.SetColour(clrPad);
-            pen.SetWidth(1);
+            brushStd.SetColour(clrPadFill);
+            brushStd.SetStyle(wxBRUSHSTYLE_SOLID);
+            brushRev.SetColour(clrPadRevFill);
+            brushRev.SetStyle(wxBRUSHSTYLE_SOLID);
+            penStd.SetColour(clrPad);
+            penStd.SetWidth(1);
+            penRev.SetColour(clrPadRev);
+            penRev.SetWidth(1);
         }
-        gc->SetBrush(brush);
-        gc->SetPen(pen);
+        gc->SetBrush(brushStd);
+        gc->SetPen(penStd);
 
         wxBrush brushHole;
         brushHole.SetColour(wxColour(224, 224, 0, transp[fp]));
@@ -3158,6 +3387,8 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
         double paddeltax = 0, paddeltay = 0;
         double drillx = 0, drilly = 0, drillwidth = 0, drillheight = 0;
         double pasteratio = 0.0;
+        double padrratio = 0.5;
+        bool padsmd = false, padbottomside = false;
         wxPoint2DDouble pastepoints[5];
         wxString padpin, padshape;
         for (int idx = 0; idx < (int)PartData[fp].Count(); idx++) {
@@ -3168,143 +3399,21 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
                     drillwidth = drillheight = 0;
                     pasteratio = 0.0;
                 } else if (line.CmpNoCase(wxT("$EndPAD")) == 0) {
-                    /* make the pad smaller in outline mode */
-                    if (OutlineMode) {
-                        if (padwidth > 0.3)
-                            padwidth -= 0.15;
-                        if (padheight > 0.3)
-                            padheight -= 0.15;
-                    }
-                    /* draw the pad */
-                    points[0].m_x = -padwidth/2 * Scale;
-                    points[0].m_y = -padheight/2 * Scale;
-                    points[1].m_x =  padwidth/2 * Scale;
-                    points[1].m_y = -padheight/2 * Scale;
-                    points[2].m_x =  padwidth/2 * Scale;
-                    points[2].m_y =  padheight/2 * Scale;
-                    points[3].m_x = -padwidth/2 * Scale;
-                    points[3].m_y =  padheight/2 * Scale;
-                    points[4] = points[0];
-                    if (padshape.CmpNoCase(wxT("T")) == 0) {
-                        if (!Equal(paddeltax, 0.0)) {
-                            points[0].m_y -= paddeltax * Scale / 2;
-                            points[1].m_y += paddeltax * Scale / 2;
-                            points[2].m_y -= paddeltax * Scale / 2;
-                            points[3].m_y += paddeltax * Scale / 2;
-                        }
-                        if (!Equal(paddeltay, 0.0)) {
-                            points[0].m_x += paddeltay * Scale / 2;
-                            points[1].m_x -= paddeltay * Scale / 2;
-                            points[2].m_x += paddeltay * Scale / 2;
-                            points[3].m_x -= paddeltay * Scale / 2;
-                        }
-                    }
-                    points[4] = points[0];
-                    /* make scaled pad for paste */
-                    memcpy(pastepoints, points, sizeof pastepoints);
-                    if (pasteratio < -EPSILON && pasteratio > -0.5 && !OutlineMode) {
-                        double d;
-                        d = points[1].m_x - points[0].m_x;
-                        pastepoints[0].m_x = points[0].m_x - d * pasteratio;
-                        pastepoints[1].m_x = points[1].m_x + d * pasteratio;
-                        d = points[2].m_x - points[3].m_x;
-                        pastepoints[2].m_x = points[2].m_x + d * pasteratio;
-                        pastepoints[3].m_x = points[3].m_x - d * pasteratio;
-                        d = points[3].m_y - points[0].m_y;
-                        pastepoints[0].m_y = points[0].m_y - d * pasteratio;
-                        pastepoints[3].m_y = points[3].m_y + d * pasteratio;
-                        d = points[2].m_y - points[1].m_y;
-                        pastepoints[1].m_y = points[1].m_y - d * pasteratio;
-                        pastepoints[2].m_y = points[2].m_y + d * pasteratio;
-                        pastepoints[4] = pastepoints[0];
-                    }
-                    /* apply rotation */
-                    if (padrot > EPSILON) {
-                        double angle = (padrot * M_PI / 180.0);
-                        for (int idx = 0; idx < 5; idx++) {
-                            wxDouble nx = points[idx].m_x * cos(angle) - points[idx].m_y * sin(angle);
-                            wxDouble ny = points[idx].m_x * sin(angle) + points[idx].m_y * cos(angle);
-                            points[idx].m_x = nx;
-                            points[idx].m_y = ny;
-                            /* same for paste aperture */
-                            nx = pastepoints[idx].m_x * cos(angle) - pastepoints[idx].m_y * sin(angle);
-                            ny = pastepoints[idx].m_x * sin(angle) + pastepoints[idx].m_y * cos(angle);
-                            pastepoints[idx].m_x = nx;
-                            pastepoints[idx].m_y = ny;
-                        }
-                    }
-                    /* move pad relative to footprint origin */
-                    for (int idx = 0; idx < 5; idx++) {
-                        points[idx].m_x += padx * Scale + midx;
-                        points[idx].m_y += pady * Scale + midy;
-                        UpdateBoundingBox(&bbox, padx, pady);
-                        pastepoints[idx].m_x += padx * Scale + midx;
-                        pastepoints[idx].m_y += pady * Scale + midy;
-                    }
-                    gc->SetBrush(brush);
-                    /* avoid negative width/height for ellipses or obrounds */
-                    CoordSize cs(points[0].m_x, points[0].m_y, points[2].m_x - points[0].m_x, points[2].m_y - points[0].m_y);
-                    if (padshape.CmpNoCase(wxT("C")) == 0)
-                        gc->DrawEllipse(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight());
-                    else if (padshape.CmpNoCase(wxT("O")) == 0)
-                        gc->DrawRoundedRectangle(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight(),
-                                                 ((cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight()) / 2);
-                    else
-                        gc->DrawLines(5, points);
-                    /* draw solder paste ratio, if set */
-                    if (pasteratio < -EPSILON && pasteratio > -0.5 && !OutlineMode) {
-                        wxPen pastepen(wxColour(160,160,80), 1, wxPENSTYLE_DOT);
-                        gc->SetPen(pastepen);
-                        wxBrush pastebrush(wxColour(160,160,80), wxBRUSHSTYLE_FDIAGONAL_HATCH);
-                        gc->SetBrush(pastebrush);
-                        /* avoid negative width/height for ellipses or obrounds */
-                        cs.Set(pastepoints[0].m_x, pastepoints[0].m_y, pastepoints[2].m_x - pastepoints[0].m_x, pastepoints[2].m_y - pastepoints[0].m_y);
-                        if (padshape.CmpNoCase(wxT("C")) == 0)
-                            gc->DrawEllipse(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight());
-                        else if (padshape.CmpNoCase(wxT("O")) == 0)
-                            gc->DrawRoundedRectangle(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight(),
-                                                     ((cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight()) / 2);
-                        else
-                            gc->DrawLines(5, pastepoints);
-                        gc->SetPen(pen);
-                        gc->SetBrush(brush);
-                    }
-                    /* optionally the hole in the pad */
-                    if (drillwidth > EPSILON) {
-                        if (padshape == wxT('C') && padwidth - drillwidth < 0.05)
-                            gc->SetBrush(brushHole);
-                        else
-                            gc->SetBrush(*wxBLACK_BRUSH);
-                        if (drillheight > EPSILON) {
-                            if ((padrot > 45 && padrot < 135) || (padrot > 225 && padrot < 315)) {
-                                double t = drillwidth;
-                                drillwidth = drillheight;
-                                drillheight = t;
-                            }
-                            cs.Set((padx + drillx - drillwidth/2) * Scale + midx,
-                                   (pady + drilly - drillheight/2) * Scale + midy,
-                                   drillwidth * Scale, drillheight * Scale);
-                            gc->DrawRoundedRectangle(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight(),
-                                                     ((cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight()) / 2);
-                        } else {
-                            gc->DrawEllipse((padx + drillx - drillwidth/2) * Scale + midx,
-                                            (pady + drilly - drillwidth/2) * Scale + midy,
-                                            drillwidth * Scale, drillwidth * Scale);
-                        }
-                    }
-                    /* draw the pin name inside the pad */
-                    if (ShowPinNumbers) {
-                        wxDouble tw, th, td, tex;
-                        gc->GetTextExtent(padpin, &tw, &th, &td, &tex);
-                        gc->DrawText(padpin, padx * Scale + midx - tw/2, pady * Scale + midy - th/2);
-                    }
+                    wxBrush *brushPad = padbottomside ? &brushRev : &brushStd;
+                    wxPen *penPad = padbottomside ? &penRev : &penStd;
+                    DrawPad(gc, midx, midy, padshape, padpin,
+                            padx, pady, padwidth, padheight, padrratio,
+                            paddeltax, paddeltay, pasteratio, padrot,
+                            drillx, drilly, drillwidth, drillheight,
+                            *penPad, *brushPad, brushHole, &bbox);
                     inpad = false;
                 }
                 continue;
             } else if (line[0] == wxT('(') && line.Left(4).Cmp(wxT("(pad")) == 0) {
                 GetToken(&line);    /* ignore "(pad" */
                 padpin = GetToken(&line);
-                GetToken(&line);    /* ignore smd/thru_hole/np_thru_hole type */
+                wxString tmp = GetToken(&line);
+                padsmd = (tmp.CmpNoCase(wxT("smd")) == 0);
                 padshape = GetToken(&line);
                 padrot = 0;         /* preset pad rotation (frequently omitted) */
                 wxString section = GetSection(line, wxT("at"));
@@ -3341,138 +3450,32 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
                     pasteratio = GetTokenDouble(&section);
                 else
                     pasteratio = 0.0;
-                if (OutlineMode) {
-                    if (padwidth > 0.3)
-                        padwidth -= 0.15;
-                    if (padheight > 0.3)
-                        padheight -= 0.15;
+                if (padsmd) {
+                    /* for SMD pads, check the side (for through-hole, don't
+                       care because these go through all sides) */
+                    section = GetSection(line, wxT("layers"));
+                    if (section.length() > 0 && section.Find(wxT("B.Cu")) >= 0 && section.Find(wxT("F.Cu")) < 0)
+                        padbottomside = true;
                 }
-                /* draw the pad */
-                points[0].m_x = -padwidth/2 * Scale;
-                points[0].m_y = -padheight/2 * Scale;
-                points[1].m_x =  padwidth/2 * Scale;
-                points[1].m_y = -padheight/2 * Scale;
-                points[2].m_x =  padwidth/2 * Scale;
-                points[2].m_y =  padheight/2 * Scale;
-                points[3].m_x = -padwidth/2 * Scale;
-                points[3].m_y =  padheight/2 * Scale;
                 if (padshape.Cmp(wxT("trapezoid")) == 0) {
                     section = GetSection(line, wxT("rect_delta"));
                     if (section.length() > 0) {
                         paddeltax = GetTokenDim(&section, true);
                         paddeltay = GetTokenDim(&section, true);
-                        if (!Equal(paddeltax, 0.0)) {
-                            points[0].m_y -= paddeltax * Scale / 2;
-                            points[1].m_y += paddeltax * Scale / 2;
-                            points[2].m_y -= paddeltax * Scale / 2;
-                            points[3].m_y += paddeltax * Scale / 2;
-                        }
-                        if (!Equal(paddeltay, 0.0)) {
-                            points[0].m_x += paddeltay * Scale / 2;
-                            points[1].m_x -= paddeltay * Scale / 2;
-                            points[2].m_x += paddeltay * Scale / 2;
-                            points[3].m_x -= paddeltay * Scale / 2;
-                        }
                     }
+                } else if (padshape.Cmp(wxT("roundrect")) == 0) {
+                    section = GetSection(line, wxT("roundrect_rratio"));
+                    if (section.length() > 0)
+                        padrratio = GetTokenDouble(&section);
                 }
-                points[4] = points[0];
-                /* make scaled pad for paste */
-                memcpy(pastepoints, points, sizeof pastepoints);
-                if (pasteratio < -EPSILON && pasteratio > -0.5 && !OutlineMode) {
-                    double d;
-                    d = points[1].m_x - points[0].m_x;
-                    pastepoints[0].m_x = points[0].m_x - d * pasteratio;
-                    pastepoints[1].m_x = points[1].m_x + d * pasteratio;
-                    d = points[2].m_x - points[3].m_x;
-                    pastepoints[2].m_x = points[2].m_x + d * pasteratio;
-                    pastepoints[3].m_x = points[3].m_x - d * pasteratio;
-                    d = points[3].m_y - points[0].m_y;
-                    pastepoints[0].m_y = points[0].m_y - d * pasteratio;
-                    pastepoints[3].m_y = points[3].m_y + d * pasteratio;
-                    d = points[2].m_y - points[1].m_y;
-                    pastepoints[1].m_y = points[1].m_y - d * pasteratio;
-                    pastepoints[2].m_y = points[2].m_y + d * pasteratio;
-                    pastepoints[4] = pastepoints[0];
-                }
-                /* apply rotation */
-                if (padrot != 0) {
-                    double angle = (padrot * M_PI / 180.0);
-                    for (int idx = 0; idx < 5; idx++) {
-                        wxDouble nx = points[idx].m_x * cos(angle) - points[idx].m_y * sin(angle);
-                        wxDouble ny = points[idx].m_x * sin(angle) + points[idx].m_y * cos(angle);
-                        points[idx].m_x = nx;
-                        points[idx].m_y = ny;
-                        /* same for paste aperture */
-                        nx = pastepoints[idx].m_x * cos(angle) - pastepoints[idx].m_y * sin(angle);
-                        ny = pastepoints[idx].m_x * sin(angle) + pastepoints[idx].m_y * cos(angle);
-                        pastepoints[idx].m_x = nx;
-                        pastepoints[idx].m_y = ny;
-                    }
-                }
-                /* move pad relative to footprint origin */
-                for (int idx = 0; idx < 5; idx++) {
-                    points[idx].m_x += padx * Scale + midx;
-                    points[idx].m_y += pady * Scale + midy;
-                    UpdateBoundingBox(&bbox, padx, pady);
-                    pastepoints[idx].m_x += padx * Scale + midx;
-                    pastepoints[idx].m_y += pady * Scale + midy;
-                }
-                gc->SetBrush(brush);
-                CoordSize cs(points[0].m_x, points[0].m_y, points[2].m_x - points[0].m_x, points[2].m_y - points[0].m_y);
-                if (padshape.Cmp(wxT("circle")) == 0)
-                    gc->DrawEllipse(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight());
-                else if (padshape.Cmp(wxT("oval")) == 0)
-                    gc->DrawRoundedRectangle(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight(),
-                                             ((cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight()) / 2);
-                else
-                    gc->DrawLines(5, points);
-                /* draw solder paste ratio, if set */
-                if (pasteratio < -EPSILON && pasteratio > -0.5 && !OutlineMode) {
-                    wxPen pastepen(wxColour(160,160,80), 1, wxPENSTYLE_DOT);
-                    gc->SetPen(pastepen);
-                    wxBrush pastebrush(wxColour(160,160,80), wxBRUSHSTYLE_FDIAGONAL_HATCH);
-                    gc->SetBrush(pastebrush);
-                    /* avoid negative width/height for ellipses or obrounds */
-                    cs.Set(pastepoints[0].m_x, pastepoints[0].m_y, pastepoints[2].m_x - pastepoints[0].m_x, pastepoints[2].m_y - pastepoints[0].m_y);
-                    if (padshape.CmpNoCase(wxT("C")) == 0)
-                        gc->DrawEllipse(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight());
-                    else if (padshape.CmpNoCase(wxT("O")) == 0)
-                        gc->DrawRoundedRectangle(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight(),
-                                                    ((cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight()) / 2);
-                    else
-                        gc->DrawLines(5, pastepoints);
-                    gc->SetPen(pen);
-                    gc->SetBrush(brush);
-                }
-                /* optionally the hole in the pad */
-                if (drillwidth > EPSILON) {
-                    if (padshape.Cmp(wxT("circle")) == 0 && padwidth - drillwidth < 0.05)
-                        gc->SetBrush(brushHole);
-                    else
-                        gc->SetBrush(*wxBLACK_BRUSH);
-                    if (drillheight > EPSILON) {
-                        if ((padrot > 45 && padrot < 135) || (padrot > 225 && padrot < 315)) {
-                            double t = drillwidth;
-                            drillwidth = drillheight;
-                            drillheight = t;
-                        }
-                        cs.Set((padx + drillx - drillwidth/2) * Scale + midx,
-                               (pady + drilly - drillheight/2) * Scale + midy,
-                               drillwidth * Scale, drillheight * Scale);
-                        gc->DrawRoundedRectangle(cs.GetX(), cs.GetY(), cs.GetWidth(), cs.GetHeight(),
-                                                 ((cs.GetWidth() < cs.GetHeight()) ? cs.GetWidth() : cs.GetHeight()) / 2);
-                    } else {
-                        gc->DrawEllipse((padx + drillx - drillwidth/2) * Scale + midx,
-                                        (pady + drilly -drillwidth/2) * Scale + midy,
-                                        drillwidth * Scale, drillwidth * Scale);
-                    }
-                }
-                /* draw the pin name inside the pad */
-                if (ShowPinNumbers) {
-                    wxDouble tw, th, td, tex;
-                    gc->GetTextExtent(padpin, &tw, &th, &td, &tex);
-                    gc->DrawText(padpin, padx * Scale + midx - tw/2, pady * Scale + midy - th/2);
-                }
+                /* draw the pad */
+                wxBrush *brushPad = padbottomside ? &brushRev : &brushStd;
+                wxPen *penPad = padbottomside ? &penRev : &penStd;
+                DrawPad(gc, midx, midy, padshape, padpin,
+                        padx, pady, padwidth, padheight, padrratio,
+                        paddeltax, paddeltay, pasteratio, padrot,
+                        drillx, drilly, drillwidth, drillheight,
+                        *penPad, *brushPad, brushHole, &bbox);
                 continue;
             }
             if (!inpad)
@@ -3489,6 +3492,17 @@ void libmngrFrame::DrawFootprints(wxGraphicsContext *gc, int midx, int midy, con
                 paddeltax = GetTokenDim(&line, unit_mm);
                 paddeltay = GetTokenDim(&line, unit_mm);
                 padrot = NormalizeAngle(GetTokenLong(&line) / 10.0 - module_angle);
+                padrratio = (line.Length() > 0) ? GetTokenDouble(&line) : 0;
+                if (padshape == 'R' && padrratio > EPSILON)
+                    padshape = 'D';
+            } else if (token.CmpNoCase(wxT("At")) == 0) {
+                token = GetToken(&line);
+                padsmd = (token.CmpNoCase(wxT("SMD")) == 0);
+                GetToken(&line);    /* ignore legacy field */
+                token = GetToken(&line);
+                long mask;
+                if (token.ToLong(&mask, 16) && (mask & 0xffff) == 1 && padsmd)
+                    padbottomside = true;
             } else if (token.CmpNoCase(wxT("Dr")) == 0) {
                 drillwidth = GetTokenDim(&line, unit_mm);
                 drillx = GetTokenDim(&line, unit_mm);   /* this is relative to the pad position */
@@ -3884,7 +3898,7 @@ void libmngrFrame::OnSizeViewport(wxSizeEvent& /*event*/)
 void libmngrFrame::OnZoomIn(wxCommandEvent& /*event*/)
 {
     if (Scale < SCALE_MAX) {
-        Scale *= 1.1892;
+        Scale *= SCALE_FACTOR;
         if (ModelMode)
             ResizeModelViewport();
         m_panelView->Refresh();
@@ -3896,7 +3910,7 @@ void libmngrFrame::OnZoomIn(wxCommandEvent& /*event*/)
 void libmngrFrame::OnZoomOut(wxCommandEvent& /*event*/)
 {
     if (Scale > SCALE_MIN) {
-        Scale /= 1.1892;
+        Scale /= SCALE_FACTOR;
         if (ModelMode)
             ResizeModelViewport();
         m_panelView->Refresh();
@@ -4182,18 +4196,39 @@ void libmngrFrame::CollectLibraries(const wxString &path, wxArrayString *list)
     }
 }
 
+class wxDirTraverserTree : public wxDirTraverser
+{
+public:
+    wxDirTraverserTree(wxArrayString* pathlist) : m_pathlist(pathlist) { }
+
+    virtual wxDirTraverseResult OnFile(const wxString& /*filename*/) wxOVERRIDE {
+        return wxDIR_CONTINUE;
+    }
+    virtual wxDirTraverseResult OnDir(const wxString& dirname) wxOVERRIDE {
+        m_pathlist->Add(dirname);
+        return wxDIR_CONTINUE;
+    }
+private:
+    wxArrayString* m_pathlist;
+    wxDECLARE_NO_COPY_CLASS(wxDirTraverserTree);
+};
+
 void libmngrFrame::CollectAllLibraries(bool eraselists)
 {
     #if defined _MSC_VER
         _CrtCheckMemory();
     #endif
 
-    wxArrayString list;
-
     wxFileConfig *config = new wxFileConfig(APP_NAME, VENDOR_NAME, theApp->GetINIPath());
+
+    bool recurse = false;
+    config->Read(wxT("path/recurse"), &recurse);
+
+    /* get the list of paths (straightforward without recursion) */
+    wxArrayString pathlist;
     wxString path;
     wxString key;
-    int idx = 1;
+    unsigned idx = 1;
     for ( ;; ) {
         if (SymbolMode)
             key = wxString::Format(wxT("paths/symbols%d"), idx);
@@ -4201,31 +4236,43 @@ void libmngrFrame::CollectAllLibraries(bool eraselists)
             key = wxString::Format(wxT("paths/footprints%d"), idx);
         if (!config->Read(key, &path))
             break;
-        CollectLibraries(path, &list);
+        pathlist.Add(path);
+        if (recurse) {
+            wxDir dir(path);
+            if (dir.IsOpened()) {
+                wxDirTraverserTree traverser(&pathlist);
+                dir.Traverse(traverser, wxEmptyString,  wxDIR_DIRS);
+            }
+        }
         idx++;
     }
     delete config;
 
-    list.Sort(CompareStringNoCase);
+    /* get the library list */
+    wxArrayString liblist;
+    for (idx = 0; idx < pathlist.Count(); idx++)
+        CollectLibraries(pathlist[idx], &liblist);
+
+    liblist.Sort(CompareStringNoCase);
     m_choiceModuleLeft->Clear();
     m_choiceModuleLeft->Append(LIB_NONE);
-    if (list.Count() > 0)
+    if (liblist.Count() > 0)
         m_choiceModuleLeft->Append(LIB_ALL);
     #if !defined NO_CURL
         m_choiceModuleLeft->Append(LIB_REPOS);
     #endif
-    if (list.Count() > 0)
-        m_choiceModuleLeft->Append(list);
+    if (liblist.Count() > 0)
+        m_choiceModuleLeft->Append(liblist);
     m_choiceModuleLeft->SetSelection(0);
     m_choiceModuleRight->Clear();
     m_choiceModuleRight->Append(LIB_NONE);
-    if (list.Count() > 0)
+    if (liblist.Count() > 0)
         m_choiceModuleRight->Append(LIB_ALL);
     #if !defined NO_CURL
         m_choiceModuleRight->Append(LIB_REPOS);
     #endif
-    if (list.Count() > 0)
-        m_choiceModuleRight->Append(list);
+    if (liblist.Count() > 0)
+        m_choiceModuleRight->Append(liblist);
     m_choiceModuleRight->SetSelection(0);
 
     if (eraselists) {
@@ -4457,12 +4504,14 @@ void libmngrFrame::HandleLibrarySelect(wxChoice* choice, wxListCtrl* list, int s
         LoadPart(SelectedPartLeft, m_listModulesLeft, m_choiceModuleLeft, 0);
         UpdateDetails(0);
         Update3DModel(PartData[0]);
+        AutoZoom(0);
         m_panelView->Refresh();
     } else if (side == LEFTPANEL && SelectedPartRight >= 0) {
         LoadPart(SelectedPartRight, m_listModulesRight, m_choiceModuleRight, CompareMode ? 1 : 0);
         UpdateDetails(CompareMode ? 1 : 0);
         if (!CompareMode)
             Update3DModel(PartData[0]);
+        AutoZoom(0);
         m_panelView->Refresh();
     }
 }
@@ -5690,6 +5739,16 @@ void libmngrFrame::ChangePadInfo(wxControl* ctrl)
             adjusted.PadShape = 'S';
         else if (field.CmpNoCase(wxT("Trapezoid")) == 0)
             adjusted.PadShape = 'T';
+        else if (field.CmpNoCase(wxT("Rounded rectangle")) == 0)
+            adjusted.PadShape = 'D';
+
+        /* some fields are disabled depending on the pad shape */
+        SetTextField(m_txtPadLength, m_txtPadLength->GetValue(), (adjusted.PadShape == 'C' || adjusted.PadShape == 'S') ? PROTECTED : ENABLED);
+        field = m_txtPadRadius->GetValue();
+        if (adjusted.PadShape == 'D' && field.Length() == 0)
+            SetTextField(m_txtPadRadius, wxT("25"), CHANGED);
+        else
+            SetTextField(m_txtPadRadius, field, (adjusted.PadShape == 'D') ? ENABLED : PROTECTED);
 
         /* for circular and square+round pads, the width & length should be the same */
         if (adjusted.PadShape == 'C' || adjusted.PadShape == 'S') {
@@ -5714,6 +5773,16 @@ void libmngrFrame::ChangePadInfo(wxControl* ctrl)
             else
                 dim = adjusted.PadSize[0].GetY();
             adjusted.PadSize[0].Set(dim, dim);
+        }
+        /* if the pad is rounded rectangle, read the relevant field; otherwise
+           force the rounding to be zero */
+        if (adjusted.PadShape == 'D') {
+            long percent;
+            field = m_txtPadRadius->GetValue();
+            if (field.length() > 0 && field.ToLong(&percent))
+                adjusted.PadRRatio = percent;
+        } else {
+            adjusted.PadRRatio = 0;
         }
 
         field = m_txtAuxPadWidth->GetValue();
@@ -6187,6 +6256,13 @@ bool libmngrFrame::CacheMetadata(const wxString& libname, const wxString& symnam
         data += wxString::Format(wxT("pad%d=%f %f\n"), pinnr + 1, pad.GetMidX(), pad.GetMidY());
     }
 
+    CoordPair stdpad = footprint.PadSize[0];
+    if (stdpad.GetX() > EPSILON) {
+        if (footprint.PadRightAngle[0])
+            stdpad.Set(stdpad.GetY(), stdpad.GetX());
+        data += wxString::Format(wxT("padsize=%f %f\n"), stdpad.GetX(), stdpad.GetY());
+    }
+
     if (xmax - xmin > EPSILON && ymax - ymin > EPSILON)
         data += wxString::Format(wxT("courtyard=%f %f\n"), xmax - xmin, ymax - ymin);
 
@@ -6381,6 +6457,14 @@ void libmngrFrame::OnRevertPart(wxCommandEvent& /*event*/)
     m_statusBar->SetStatusText(wxT("Changes reverted"));
 }
 
+void libmngrFrame::SetTextField(wxTextCtrl* ctrl, const wxString& value, const wxColour& status)
+{
+    wxASSERT(ctrl != NULL);
+    ctrl->SetValue(value);
+    ctrl->SetEditable(status != PROTECTED);
+    ctrl->SetBackgroundColour(status);
+}
+
 bool libmngrFrame::CheckTemplateVar(const wxString& varname)
 {
     wxASSERT(PartData[0].Count() > 0);
@@ -6410,6 +6494,13 @@ bool libmngrFrame::SetVarDefaults(RPNexpression *rpn, const wxString& templatena
         if (err != RPN_EMPTY && !silent)
             wxMessageBox(wxT("The '#param' line in the template has an error."));
     }
+    /* copy PSH and PRR in #param to $PSH and $PRR */
+    rpn->Set("PSH");
+    const char* shape = (rpn->Parse() == RPN_OK) ? rpn->Value().Text() : "";
+    rpn->SetVariable(RPNvariable("$PSH", shape));
+    rpn->Set("PRR");
+    double rratio = (rpn->Parse() == RPN_OK) ? rpn->Value().Double() : 0.25;
+    rpn->SetVariable(RPNvariable("$PRR", rratio));
 
     /* then set the defaults from the user settings (possibly overriding those
          of the #param line) */
@@ -6472,12 +6563,37 @@ bool libmngrFrame::SetVarsFromFields(RPNexpression *rpn, bool SymbolMode)
     }
 
     if (!SymbolMode) {
+        val = m_choicePadShape->GetSelection();
+        if (val < 0)
+            val = 0;
+        wxString shape = m_choicePadShape->GetString(val);
+        if (shape.CmpNoCase(wxT("Round")) == 0)
+            shape = wxT("circle");
+        else if (shape.CmpNoCase(wxT("Obround")) == 0)
+            shape = wxT("oval");
+        else if (shape.CmpNoCase(wxT("Rectangular")) == 0)
+            shape = wxT("rect");
+        else if (shape.CmpNoCase(wxT("Round + square")) == 0)
+            shape = wxT("sqcircle");
+        else if (shape.CmpNoCase(wxT("Trapezoid")) == 0)
+            shape = wxT("trapezoid");
+        else if (shape.CmpNoCase(wxT("Rounded rectangle")) == 0)
+            shape = wxT("roundrect");
+        rpn->SetVariable(RPNvariable("$PSH", shape));
+        field = m_txtPadRadius->GetValue();
+        if (field.length() > 0 && field.ToLong(&val))
+            rpn->SetVariable(RPNvariable("$PRR", val / 100.0));
         field = m_txtPadWidth->GetValue();
         if (field.length() > 0 && field.ToDouble(&dim) && dim > 0.02)
             rpn->SetVariable(RPNvariable("PW", dim));
-        field = m_txtPadLength->GetValue();
-        if (field.length() > 0 && field.ToDouble(&dim) && dim > 0.02)
+        if (shape.CmpNoCase(wxT("circle")) == 0 || shape.CmpNoCase(wxT("sqcircle")) == 0) {
+            /* for circle and square+circle, set pad length to the same value as the pad width */
             rpn->SetVariable(RPNvariable("PL", dim));
+        } else {
+            field = m_txtPadLength->GetValue();
+            if (field.length() > 0 && field.ToDouble(&dim) && dim > 0.02)
+                rpn->SetVariable(RPNvariable("PL", dim));
+        }
         field = m_txtAuxPadLength->GetValue();
         if (field.length() > 0 && field.ToDouble(&dim) && dim > 0.02)
             rpn->SetVariable(RPNvariable("PLA", dim));
@@ -6658,110 +6774,67 @@ void libmngrFrame::UpdateDetails(int fp)
 {
     /* reset all fields and colours */
     m_txtDescription->SetToolTip(wxEmptyString);
-    m_txtDescription->SetValue(wxEmptyString);
-    m_txtAlias->SetValue(wxEmptyString);
-    m_txtDescription->SetEditable(false);
-    m_txtAlias->SetEditable(false);
-    m_txtDescription->SetBackgroundColour(PROTECTED);
-    m_txtAlias->SetBackgroundColour(PROTECTED);
+    SetTextField(m_txtDescription, wxEmptyString, PROTECTED);
+    SetTextField(m_txtAlias, wxEmptyString, PROTECTED);
     if (SymbolMode) {
         m_spinUnitSelect->SetRange(1,1);
         m_spinUnitSelect->SetValue(1);
-        m_txtFootprintFilter->SetValue(wxEmptyString);
-        m_txtPadCount->SetValue(wxEmptyString);
+        SetTextField(m_txtFootprintFilter, wxEmptyString, PROTECTED);
+        SetTextField(m_txtPadCount, wxEmptyString, PROTECTED);
         m_gridPinNames->ClearGrid();
         m_gridPinNames->SetColLabelSize(0);
         if (m_gridPinNames->GetNumberRows() > 0)
             m_gridPinNames->DeleteRows(0, m_gridPinNames->GetNumberRows());
         wxSizer* sizer = m_gridPinNames->GetContainingSizer();
-        m_txtBodyLength->SetValue(wxEmptyString);
-        m_txtBodyWidth->SetValue(wxEmptyString);
-        m_txtRefLabel->SetValue(wxEmptyString);
+        SetTextField(m_txtBodyLength, wxEmptyString, PROTECTED);
+        SetTextField(m_txtBodyWidth, wxEmptyString, PROTECTED);
+        SetTextField(m_txtRefLabel, wxEmptyString, PROTECTED);
         m_chkRefLabelVisible->SetValue(false);
-        m_txtValueLabel->SetValue(wxEmptyString);
+        SetTextField(m_txtValueLabel, wxEmptyString, PROTECTED);
         m_chkValueLabelVisible->SetValue(false);
         wxASSERT(sizer != 0);
         sizer->Layout();
 
         m_lblUnitSelect->Enable(false);
         m_spinUnitSelect->Enable(false);
-        m_txtFootprintFilter->SetEditable(false);
-        m_txtPadCount->SetEditable(false);
         m_gridPinNames->EnableEditing(false);
-        m_txtBodyLength->SetEditable(false);
-        m_txtBodyWidth->SetEditable(false);
-        m_txtRefLabel->SetEditable(false);
         m_chkRefLabelVisible->Enable(false);
-        m_txtValueLabel->SetEditable(false);
         m_chkValueLabelVisible->Enable(false);
 
-        m_txtFootprintFilter->SetBackgroundColour(PROTECTED);
-        m_txtPadCount->SetBackgroundColour(PROTECTED);
         m_gridPinNames->SetBackgroundColour(PROTECTED);
-        m_txtBodyLength->SetBackgroundColour(PROTECTED);
-        m_txtBodyWidth->SetBackgroundColour(PROTECTED);
-        m_txtRefLabel->SetBackgroundColour(PROTECTED);
         m_chkRefLabelVisible->SetBackgroundColour(wxNullColour);
-        m_txtValueLabel->SetBackgroundColour(PROTECTED);
         m_chkValueLabelVisible->SetBackgroundColour(wxNullColour);
     } else {
         m_choiceShape->Clear();
-        m_txtPadCount->SetValue(wxEmptyString);
+        SetTextField(m_txtPadCount, wxEmptyString, PROTECTED);
         m_choicePadShape->SetSelection(0);
-        m_txtPadWidth->SetValue(wxEmptyString);
-        m_txtPadLength->SetValue(wxEmptyString);
-        m_txtPitch->SetValue(wxEmptyString);
-        m_txtPadSpanX->SetValue(wxEmptyString);
-        m_txtPadSpanY->SetValue(wxEmptyString);
-        m_txtDrillSize->SetValue(wxEmptyString);
-        m_txtAuxPadLength->SetValue(wxEmptyString);
-        m_txtAuxPadWidth->SetValue(wxEmptyString);
-        m_txtBodyLength->SetValue(wxEmptyString);
-        m_txtBodyWidth->SetValue(wxEmptyString);
-        m_txtRefLabel->SetValue(wxEmptyString);
+        SetTextField(m_txtPadWidth, wxEmptyString, PROTECTED);
+        SetTextField(m_txtPadLength, wxEmptyString, PROTECTED);
+        SetTextField(m_txtPadRadius, wxEmptyString, PROTECTED);
+        SetTextField(m_txtPitch, wxEmptyString, PROTECTED);
+        SetTextField(m_txtPadSpanX, wxEmptyString, PROTECTED);
+        SetTextField(m_txtPadSpanY, wxEmptyString, PROTECTED);
+        SetTextField(m_txtDrillSize, wxEmptyString, PROTECTED);
+        SetTextField(m_txtAuxPadLength, wxEmptyString, PROTECTED);
+        SetTextField(m_txtAuxPadWidth, wxEmptyString, PROTECTED);
+        SetTextField(m_txtBodyLength, wxEmptyString, PROTECTED);
+        SetTextField(m_txtBodyWidth, wxEmptyString, PROTECTED);
+        SetTextField(m_txtRefLabel, wxEmptyString, PROTECTED);
         m_chkRefLabelVisible->SetValue(false);
-        m_txtValueLabel->SetValue(wxEmptyString);
+        SetTextField(m_txtValueLabel, wxEmptyString, PROTECTED);
         m_chkValueLabelVisible->SetValue(false);
         m_choiceShape->SetSelection(0);
-        m_txtShapeHeight->SetValue(wxEmptyString);
+        SetTextField(m_txtShapeHeight, wxEmptyString, PROTECTED);
 
-        m_txtPadCount->SetEditable(false);
         m_choicePadShape->Enable(false);
-        m_txtPadWidth->SetEditable(false);
-        m_txtPadLength->SetEditable(false);
-        m_txtPitch->SetEditable(false);
-        m_txtPadSpanX->SetEditable(false);
-        m_txtPadSpanY->SetEditable(false);
-        m_txtDrillSize->SetEditable(false);
-        m_txtAuxPadLength->SetEditable(false);
-        m_txtAuxPadWidth->SetEditable(false);
-        m_txtBodyLength->SetEditable(false);
-        m_txtBodyWidth->SetEditable(false);
-        m_txtRefLabel->SetEditable(false);
         m_chkRefLabelVisible->Enable(false);
-        m_txtValueLabel->SetEditable(false);
         m_chkValueLabelVisible->Enable(false);
         m_choiceShape->Enable(false);
-        m_txtShapeHeight->SetEditable(false);
 
-        m_txtPadCount->SetBackgroundColour(PROTECTED);
         m_choicePadShape->SetBackgroundColour(wxNullColour);
-        m_txtPadWidth->SetBackgroundColour(PROTECTED);
-        m_txtPadLength->SetBackgroundColour(PROTECTED);
-        m_txtPitch->SetBackgroundColour(PROTECTED);
-        m_txtPadSpanX->SetBackgroundColour(PROTECTED);
-        m_txtPadSpanY->SetBackgroundColour(PROTECTED);
-        m_txtDrillSize->SetBackgroundColour(PROTECTED);
-        m_txtAuxPadLength->SetBackgroundColour(PROTECTED);
-        m_txtAuxPadWidth->SetBackgroundColour(PROTECTED);
-        m_txtBodyLength->SetBackgroundColour(PROTECTED);
-        m_txtBodyWidth->SetBackgroundColour(PROTECTED);
-        m_txtRefLabel->SetBackgroundColour(PROTECTED);
         m_chkRefLabelVisible->SetBackgroundColour(wxNullColour);
-        m_txtValueLabel->SetBackgroundColour(PROTECTED);
         m_chkValueLabelVisible->SetBackgroundColour(wxNullColour);
         m_choiceShape->SetBackgroundColour(wxNullColour);
-        m_txtShapeHeight->SetBackgroundColour(PROTECTED);
     }
 
     m_btnSavePart->Enable(false);
@@ -6773,25 +6846,18 @@ void libmngrFrame::UpdateDetails(int fp)
     wxString templatename = GetTemplateName(PartData[fp]);
 
     wxString field = GetDescription(PartData[fp], SymbolMode);
-    m_txtDescription->SetValue(field);
+    SetTextField(m_txtDescription, field, DefEnable ? ENABLED : PROTECTED);
     m_txtDescription->SetToolTip(field);
-    m_txtDescription->SetEditable(DefEnable);
-    m_txtDescription->SetBackgroundColour(DefEnable ? ENABLED : PROTECTED);
 
     if (SymbolMode) {
         /* schematic mode */
 
         field = GetAliases(PartData[fp]);
-        m_txtAlias->SetValue(field);
-        m_txtAlias->SetEditable(DefEnable);
-        m_txtAlias->SetBackgroundColour(DefEnable ? ENABLED : PROTECTED);
+        SetTextField(m_txtAlias, field, DefEnable ? ENABLED : PROTECTED);
 
         field = GetFootprints(PartData[fp]);
-        m_txtFootprintFilter->SetValue(field);
-        m_txtFootprintFilter->SetEditable(DefEnable);
-        m_txtFootprintFilter->SetBackgroundColour(DefEnable ? ENABLED : PROTECTED);
+        SetTextField(m_txtFootprintFilter, field, DefEnable ? ENABLED : PROTECTED);
 
-        m_txtPadCount->SetValue(wxString::Format(wxT("%d"), PinDataCount[fp]));
         bool enable = templatename.length() > 0 && DefEnable;
         if (enable) {
             /* check whether the template allows multiple pin counts (many 2-pin
@@ -6802,8 +6868,7 @@ void libmngrFrame::UpdateDetails(int fp)
                                      trimmed, when more white-space exists, it must be as
                                      a separator */
         }
-        m_txtPadCount->SetEditable(enable);
-        m_txtPadCount->SetBackgroundColour(enable ? ENABLED : PROTECTED);
+        SetTextField(m_txtPadCount, wxString::Format(wxT("%d"), PinDataCount[fp]), enable ? ENABLED : PROTECTED);
 
         int unitcount = GetUnitCount(PartData[fp]);
         enable = unitcount > 1 && DefEnable;
@@ -6872,11 +6937,8 @@ void libmngrFrame::UpdateDetails(int fp)
         /* footprint mode */
 
         field = GetKeywords(PartData[fp], SymbolMode);
-        m_txtAlias->SetValue(field);
-        m_txtAlias->SetEditable(DefEnable);
-        m_txtAlias->SetBackgroundColour(DefEnable ? ENABLED : PROTECTED);
+        SetTextField(m_txtAlias, field, DefEnable ? ENABLED : PROTECTED);
 
-        m_txtPadCount->SetValue(wxString::Format(wxT("%d"), Footprint[fp].PadCount));
         bool enable = templatename.length() > 0 && DefEnable;
         if (enable) {
             /* check whether the template allows multiple pin counts (many 2-pin
@@ -6887,8 +6949,7 @@ void libmngrFrame::UpdateDetails(int fp)
                                      trimmed, when more white-space exists, it must be as
                                      a separator */
         }
-        m_txtPadCount->SetEditable(enable);
-        m_txtPadCount->SetBackgroundColour(enable ? ENABLED : PROTECTED);
+        SetTextField(m_txtPadCount, wxString::Format(wxT("%d"), Footprint[fp].PadCount), enable ? ENABLED : PROTECTED);
 
         enable = DefEnable;
         int idx;
@@ -6908,6 +6969,9 @@ void libmngrFrame::UpdateDetails(int fp)
         case 'T':
             idx = m_choicePadShape->FindString(wxT("Trapezoid"));
             break;
+        case 'D':
+            idx = m_choicePadShape->FindString(wxT("Rounded rectangle"));
+            break;
         default:
             idx = m_choicePadShape->FindString(wxT("(varies)"));
             enable = false;
@@ -6918,54 +6982,34 @@ void libmngrFrame::UpdateDetails(int fp)
         m_choicePadShape->SetBackgroundColour(enable ? ENABLED : PROTECTED);
 
         const CoordPair& padsize = Footprint[fp].PadSize[0];
-        if (padsize.GetX() > EPSILON) {
-            m_txtPadWidth->SetValue(wxString::Format(wxT("%.3f"), padsize.GetX()));
-            m_txtPadWidth->SetEditable(DefEnable);
-            m_txtPadWidth->SetBackgroundColour(DefEnable ? ENABLED : PROTECTED);
-        }
-        if (padsize.GetY() > EPSILON) {
-            m_txtPadLength->SetValue(wxString::Format(wxT("%.3f"), padsize.GetY()));
-            m_txtPadLength->SetEditable(DefEnable);
-            m_txtPadLength->SetBackgroundColour(DefEnable ? ENABLED : PROTECTED);
-        }
+        if (padsize.GetX() > EPSILON)
+            SetTextField(m_txtPadWidth, wxString::Format(wxT("%.3f"), padsize.GetX()), DefEnable ? ENABLED : PROTECTED);
+        if (padsize.GetY() > EPSILON)
+            SetTextField(m_txtPadLength, wxString::Format(wxT("%.3f"), padsize.GetY()), DefEnable ? ENABLED : PROTECTED);
+        int radius = Footprint[fp].PadRRatio;
+        if (radius > 0)
+            SetTextField(m_txtPadRadius, wxString::Format(wxT("%d"), radius), DefEnable ? ENABLED : PROTECTED);
 
         const CoordPair& auxpadsize = Footprint[fp].PadSize[1];
-        if (auxpadsize.GetX() > EPSILON) {
-            m_txtAuxPadWidth->SetValue(wxString::Format(wxT("%.3f"), auxpadsize.GetX()));
-            m_txtAuxPadWidth->SetEditable(DefEnable);
-            m_txtAuxPadWidth->SetBackgroundColour(DefEnable ? ENABLED : PROTECTED);
-        }
-        if (auxpadsize.GetY() > EPSILON) {
-            m_txtAuxPadLength->SetValue(wxString::Format(wxT("%.3f"), auxpadsize.GetY()));
-            m_txtAuxPadLength->SetEditable(DefEnable);
-            m_txtAuxPadLength->SetBackgroundColour(DefEnable ? ENABLED : PROTECTED);
-        }
+        if (auxpadsize.GetX() > EPSILON)
+            SetTextField(m_txtAuxPadWidth, wxString::Format(wxT("%.3f"), auxpadsize.GetX()), DefEnable ? ENABLED : PROTECTED);
+        if (auxpadsize.GetY() > EPSILON)
+            SetTextField(m_txtAuxPadLength, wxString::Format(wxT("%.3f"), auxpadsize.GetY()), DefEnable ? ENABLED : PROTECTED);
 
         if (Footprint[fp].Pitch > EPSILON) {
-            m_txtPitch->SetValue(wxString::Format(wxT("%.3f"), Footprint[fp].Pitch));
             enable = DefEnable && Footprint[fp].RegPadCount > 0
                                && Footprint[fp].PadLines > 0
                                && Footprint[fp].OriginCentred;
-            m_txtPitch->SetEditable(enable);
-            m_txtPitch->SetBackgroundColour(enable ? ENABLED : PROTECTED);
+            SetTextField(m_txtPitch, wxString::Format(wxT("%.3f"), Footprint[fp].Pitch), enable ? ENABLED : PROTECTED);
         }
 
-        if (Footprint[fp].SpanHor > EPSILON) {
-            m_txtPadSpanX->SetValue(wxString::Format(wxT("%.3f"), Footprint[fp].SpanHor));
-            m_txtPadSpanX->SetEditable(DefEnable);
-            m_txtPadSpanX->SetBackgroundColour(DefEnable ? ENABLED : PROTECTED);
-        }
-        if (Footprint[fp].SpanVer > EPSILON) {
-            m_txtPadSpanY->SetValue(wxString::Format(wxT("%.3f"), Footprint[fp].SpanVer));
-            m_txtPadSpanY->SetEditable(DefEnable);
-            m_txtPadSpanY->SetBackgroundColour(DefEnable ? ENABLED : PROTECTED);
-        }
+        if (Footprint[fp].SpanHor > EPSILON)
+            SetTextField(m_txtPadSpanX, wxString::Format(wxT("%.3f"), Footprint[fp].SpanHor), DefEnable ? ENABLED : PROTECTED);
+        if (Footprint[fp].SpanVer > EPSILON)
+            SetTextField(m_txtPadSpanY, wxString::Format(wxT("%.3f"), Footprint[fp].SpanVer), DefEnable ? ENABLED : PROTECTED);
 
-        if (Footprint[fp].DrillSize > EPSILON) {
-            m_txtDrillSize->SetValue(wxString::Format(wxT("%.3f"), Footprint[fp].DrillSize));
-            m_txtDrillSize->SetEditable(DefEnable);
-            m_txtDrillSize->SetBackgroundColour(DefEnable ? ENABLED : PROTECTED);
-        }
+        if (Footprint[fp].DrillSize > EPSILON)
+            SetTextField(m_txtDrillSize, wxString::Format(wxT("%.3f"), Footprint[fp].DrillSize), DefEnable ? ENABLED : PROTECTED);
 
         if (templatename.length() > 0) {
             /* fill the 3D model list */
@@ -6986,20 +7030,20 @@ void libmngrFrame::UpdateDetails(int fp)
             /* check what model was used */
             wxString vrmlpath = GetVRMLPath(library, PartData[fp]);
             if (vrmlpath.length() > 0) {
-                field = GetFileHeaderField(vrmlpath, wxT("model"));
-                wxString modelname = field.BeforeFirst(wxT('{'));
+                field = wxEmptyString;
+                wxString spec = GetFileHeaderField(vrmlpath, wxT("model"));
+                wxString modelname = spec.BeforeFirst(wxT('{'));
                 modelname.Trim(true);
                 idx = m_choiceShape->FindString(modelname);
-                field = field.AfterFirst(wxT('{')).BeforeFirst(wxT('}'));
-                field.Trim(true);
-                if (field.length() > 0) {
-                    field.Trim(false);
-                    wxArrayString params = wxSplit(field, wxT(' '));
+                spec = spec.AfterFirst(wxT('{')).BeforeFirst(wxT('}'));
+                spec.Trim(true);
+                if (spec.length() > 0) {
+                    spec.Trim(false);
+                    wxArrayString params = wxSplit(spec, wxT(' '));
                     if (params.Count() >= 2)
-                        m_txtShapeHeight->SetValue(params[1]);
+                        field = params[1];
                 }
-                m_txtShapeHeight->SetEditable(DefEnable);
-                m_txtShapeHeight->SetBackgroundColour(DefEnable ? ENABLED : PROTECTED);
+                SetTextField(m_txtShapeHeight, field, DefEnable ? ENABLED : PROTECTED);
             }
             m_choiceShape->SetSelection(idx);
             enable = (DefEnable && models.Count() > 1);
@@ -7018,27 +7062,19 @@ void libmngrFrame::UpdateDetails(int fp)
         setlength = (field.Find(wxT("@BL")) >= 0);
     }
     if (BodySize[fp].BodyLength > EPSILON) {
-        m_txtBodyLength->SetValue(wxString::Format(wxT("%.3f"), BodySize[fp].BodyLength));
         bool enable = setlength && DefEnable;
-        m_txtBodyLength->SetEditable(enable);
-        m_txtBodyLength->SetBackgroundColour(enable ? ENABLED : PROTECTED);
+        SetTextField(m_txtBodyLength, wxString::Format(wxT("%.3f"), BodySize[fp].BodyLength), enable ? ENABLED : PROTECTED);
     }
     if (BodySize[fp].BodyWidth > EPSILON) {
-        m_txtBodyWidth->SetValue(wxString::Format(wxT("%.3f"), BodySize[fp].BodyWidth));
         bool enable = setwidth && DefEnable;
-        m_txtBodyWidth->SetEditable(enable);
-        m_txtBodyWidth->SetBackgroundColour(enable ? ENABLED : PROTECTED);
+        SetTextField(m_txtBodyWidth, wxString::Format(wxT("%.3f"), BodySize[fp].BodyWidth), enable ? ENABLED : PROTECTED);
     }
 
-    m_txtRefLabel->SetValue(wxString::Format(wxT("%.2f"), LabelData[fp].RefLabelSize));
-    m_txtRefLabel->SetEditable(DefEnable);
-    m_txtRefLabel->SetBackgroundColour(DefEnable ? ENABLED : PROTECTED);
+    SetTextField(m_txtRefLabel, wxString::Format(wxT("%.2f"), LabelData[fp].RefLabelSize), DefEnable ? ENABLED : PROTECTED);
     m_chkRefLabelVisible->SetValue(LabelData[fp].RefLabelVisible);
     m_chkRefLabelVisible->Enable(DefEnable);
 
-    m_txtValueLabel->SetValue(wxString::Format(wxT("%.2f"), LabelData[fp].ValueLabelSize));
-    m_txtValueLabel->SetEditable(DefEnable);
-    m_txtValueLabel->SetBackgroundColour(DefEnable ? ENABLED : PROTECTED);
+    SetTextField(m_txtValueLabel, wxString::Format(wxT("%.2f"), LabelData[fp].ValueLabelSize), DefEnable ? ENABLED : PROTECTED);
     m_chkValueLabelVisible->SetValue(LabelData[fp].ValueLabelVisible);
     m_chkValueLabelVisible->Enable(DefEnable);
 

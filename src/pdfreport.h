@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: pdfreport.h 5685 2017-05-23 10:35:40Z thiadmer $
+ *  $Id: pdfreport.h 5907 2018-12-14 22:05:40Z thiadmer $
  */
 #ifndef PDFREPORT_H
 #define PDFREPORT_H
@@ -34,15 +34,17 @@ public:
   void SetFont(int points) { FontSize = points; }
 
   bool FootprintReport(wxWindow* parent, const wxString& library, const wxArrayString& modules, const wxString& reportfile);
-  void FootprintOptions(bool description, bool padinfo, bool labels) {
+  void FootprintOptions(bool description, bool addindex, bool padinfo, bool labels) {
     PrintDescription = description;
+    PrintIndex = addindex;
     PrintPadInfo = padinfo;
     DrawLabels = labels;
   }
 
   bool SymbolReport(wxWindow* parent, const wxString& library, const wxArrayString& symbols, const wxString& reportfile);
-  void SymbolOptions(bool description, bool fp_list) {
+  void SymbolOptions(bool description, bool addindex, bool fp_list) {
     PrintDescription = description;
+    PrintIndex = addindex;
     PrintFPList = fp_list;
   }
 
@@ -65,10 +67,11 @@ private:
   wxString Paper;
   double PageWidth, PageHeight;
   bool PrintDescription;
+  bool PrintIndex;
   bool PrintPadInfo;
   bool DrawLabels;
   bool PrintFPList;
-  double FontSize;	/* in points */
+  double FontSize;  /* in points */
 
   HPDF_PageSizes PaperId;
   HPDF_PageDirection PaperOrientation;

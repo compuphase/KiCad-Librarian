@@ -2,7 +2,9 @@
 #brief Ball Grid Array
 #note Square grid, either full grid or with centre void
 #pins 9 16 24 25 32 36 40 48 49 56 60 64 72 80 81 84 88 96 100 104 108 112 120 121 132 140 144 156 160 169 176 180 192 196 200 208 220 225 256 240
-#param 48 @PT 0.5 @PP 0.23 @PW 0.23 @PL 4.75 @BW 4.75 @BL 0.2 @BP 0.65 @TS 15 @TW
+#param 48 @PT    "circle" @PSH \
+#      0.5 @PP   0.23 @PW   0.23 @PL   0.2 @BP   0.65 @TS   15 @TW \
+#      4.75 @BW  4.75 @BL
 #model BGA
 $MODULE {NAME}
 AR BGA
@@ -50,7 +52,8 @@ $PAD
 {?PN TOP <=}{PN 1 - MTX / floor 1 + @ROW   PN ROW 1 - MTX * - @COL}
 {?PN BOT >}{PN BOT - 1 - MTX / floor 1 + @ROW   PN BOT - ROW 1 - MTX * - @COL   ROW RING + INNER + @ROW}
 {?PN TOP > PN BOT <= &}{PN TOP - 1 - MTX INNER - / floor 1 + @ROW   PN TOP - ROW 1 - MTX INNER - * - @COL   ROW RING + @ROW   COL COL INNER + COL RING <= ? @COL}
-Sh "{ROW gacol}{COL}" C {PW} {PL} 0 0 0
+{?PRR 0 <}Sh "{ROW gacol}{COL}" {PSH} {PW} {PL} 0 0 0
+{?PRR 0 >=}Sh "{ROW gacol}{COL}" {PSH} {PW} {PL} 0 0 0 {PRR}
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""

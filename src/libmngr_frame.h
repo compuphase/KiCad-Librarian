@@ -3,7 +3,7 @@
  *  This file contains the code for the main frame, which is almost all of the
  *  user-interface code.
  *
- *  Copyright (C) 2013-2017 CompuPhase
+ *  Copyright (C) 2013-2018 CompuPhase
  *
  *  Licensed under the Apache License, Version 2.0 (the "License"); you may not
  *  use this file except in compliance with the License. You may obtain a copy
@@ -17,7 +17,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: libmngr_frame.h 5784 2017-12-26 14:12:22Z thiadmer $
+ *  $Id: libmngr_frame.h 5907 2018-12-14 22:05:40Z thiadmer $
  */
 #ifndef __libmngr_frame__
 #define __libmngr_frame__
@@ -94,7 +94,7 @@ protected:
     virtual void OnSizeViewport(wxSizeEvent& event);
     virtual void OnStatusBarDblClk(wxMouseEvent& event);
     virtual void OnUnitSelect(wxSpinEvent& event);
-    
+
             void OnPasteGeneral(wxCommandEvent& event);
             void OnExportGeneral(wxCommandEvent& event);
 
@@ -146,6 +146,18 @@ private:
     void DrawModels(float xangle, float yangle);
     void DrawDimension(wxGraphicsContext *gc, int midx, int midy, int orientation, int stack,
                        double value, const CoordPair pins[2], const CoordSize& bbox);
+    void DrawPad(wxGraphicsContext *gc, double midx, double midy,
+                 const wxString& padshape, const wxString& padpin,
+                 double padx, double pady, double padwidth, double padheight,
+                 double padrratio, double paddeltax, double paddeltay,
+                 double pasteratio, double padrot,
+                 double drillx, double drilly, double drillwidth, double drillheight,
+                 const wxPen& penPad, const wxBrush& brushPad, const wxBrush& brushHole,
+                 CoordSize *bbox);
+
+    void EstimateSymbolSize(double *cx, double *cy, const BodyInfo& Body);
+    void EstimateFootprintSize(double *cx, double *cy, const FootprintInfo& Footprint, const BodyInfo& Body);
+    void AutoZoom(int part);
     void UpdateBoundingBox(CoordSize* bbox, double x, double y);
     void UpdateBoundingBox(CoordSize* bbox, double x, double y, double width, double height) {
         UpdateBoundingBox(bbox, x, y);
@@ -192,6 +204,7 @@ private:
     void UpdateDetails(int fp);
 
     bool CacheMetadata(const wxString& libname, const wxString& symname, bool force_export, const wxArrayString& module, const FootprintInfo& footprint);
+    void SetTextField(wxTextCtrl* ctrl, const wxString& value, const wxColour& status);
     bool SavePart(int index, wxListCtrl* list);
     bool CheckSavePart();
 

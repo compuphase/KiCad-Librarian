@@ -16,7 +16,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  *
- *  $Id: vrmlsupport.h 5405 2015-11-20 09:40:55Z  $
+ *  $Id: vrmlsupport.h 5686 2017-05-24 13:56:46Z thiadmer $
  */
 #ifndef VRMLSUPPORT_H
 #define VRMLSUPPORT_H
@@ -27,9 +27,9 @@
 #include <cybergarage/x3d/CyberX3D.h>
 
 enum {
-	OGL_RENDERING_WIRE,
-	OGL_RENDERING_SHADE,
-	OGL_RENDERING_TEXTURE,
+  OGL_RENDERING_WIRE,
+  OGL_RENDERING_SHADE,
+  OGL_RENDERING_TEXTURE,
 };
 void DrawSceneGraph(CyberX3D::SceneGraph* sceneGraph, int drawMode, float AngleX, float AngleZ);
 

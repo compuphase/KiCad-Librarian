@@ -1,10 +1,13 @@
 #version 1
 #brief Small Outline, No pins, Exposed pad
-#note Suitable for SON, WSON and some DFN parts. With exposed pad.
+#note Suitable for SON, WSON and some DFN parts. With exposed pad; the pad is numbered, so the number of pins must be odd.
 #pins 7 9 ...
 #flags aux-pad(flag,*) rebuild
-#param 9 @?PT 0.65 @PP 2.75 @SH 0.7 @PW 0.35 @PL 1.4 @PWA 2.0 @PLA 0.2 @BP 0.65 @TS 15 @TW \
-#      2.85 @BW  PT 1 - 2 / floor 1 - PP * 1.15 + @BL  0.2 @STP 25 @PSRA  1.5 @EPDOT
+#param 9 @?PT   "oval" @PSH \
+#      0.65 @PP  0.7 @PW   0.35 @PL   2.75 @SH   0.2 @STP \
+#      1.4 @PWA  2.0 @PLA  25 @PSRA   1.5 @EPDOT \
+#      0.2 @BP   0.65 @TS  15 @TW \
+#      2.85 @BW  PT 1 - 2 / floor 1 - PP * 1.15 + @BL
 #model SON
 $MODULE {NAME}
 AR SONX
@@ -31,7 +34,8 @@ DS {X2} {Y2} {X2} {Y2 SEGM -} {BP} 21
 {PT 1 - @PINS}
 $PAD
 {?:STDPAD PN PINS <=} #standard pad
-Sh "{PN}" O {PW} {PL} 0 0 0
+{?PRR 0 <}Sh "{PN}" {PSH} {PW} {PL} 0 0 0
+{?PRR 0 >=}Sh "{PN}" {PSH} {PW} {PL} 0 0 0 {PRR}
 Dr 0 0 0
 At SMD N 00888000
 Ne 0 ""

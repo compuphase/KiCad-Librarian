@@ -4207,7 +4207,10 @@ public:
         return wxDIR_CONTINUE;
     }
     virtual wxDirTraverseResult OnDir(const wxString& dirname) wxOVERRIDE {
-        m_pathlist->Add(dirname);
+        /* do not add directories ending with ".pretty" because they are
+           actually libraries */
+        if (dirname.AfterLast('.').CmpNoCase(wxT("pretty")) != 0)
+            m_pathlist->Add(dirname);
         return wxDIR_CONTINUE;
     }
 private:

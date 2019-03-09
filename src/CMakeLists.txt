@@ -11,9 +11,9 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 SET(KiCadLibrarian_USE_CURL "TRUE" CACHE BOOL "Whether to include the remote repository functions, which require CURL")
 SET(KiCadLibrarian_USE_CX3D "TRUE" CACHE BOOL "Whether to include the 3D/VRML support, based on CyberX3D")
 
-FIND_PACKAGE(wxWidgets COMPONENTS base core adv aui gl QUIET)
+FIND_PACKAGE(wxWidgets COMPONENTS base core adv aui gl QUIET 3.1 REQUIRED)
 IF(NOT wxWidgets_FOUND)
-    FIND_PACKAGE(wxWidgets COMPONENTS mono REQUIRED)
+    FIND_PACKAGE(wxWidgets COMPONENTS mono 3.1 REQUIRED)
 ENDIF(NOT wxWidgets_FOUND)
 INCLUDE("${wxWidgets_USE_FILE}")
 

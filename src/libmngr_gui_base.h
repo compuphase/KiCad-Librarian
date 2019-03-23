@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Oct 26 2018)
+// C++ code generated with wxFormBuilder (version Mar 22 2019)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO *NOT* EDIT THIS FILE!
@@ -56,30 +56,32 @@
 #define IDM_DETAILSPANEL 1008
 #define IDM_SYNCMODE 1009
 #define IDM_FILTER 1010
-#define IDM_DLGREMOTE 1011
-#define IDM_DLGREPORT 1012
-#define IDM_TEMPLATEOPTIONS 1013
-#define IDM_DLGOPTIONS 1014
-#define IDM_LEFT_LIB 1015
-#define IDM_LEFT_MOD 1016
-#define IDM_MOVEMODULE 1017
-#define IDM_COPYMODULE 1018
-#define IDM_DELETEMODULE 1019
-#define IDM_RENAMEMODULE 1020
-#define IDM_RIGHT_LIB 1021
-#define IDM_RIGHT_MOD 1022
-#define IDT_ZOOMIN 1023
-#define IDT_ZOOMOUT 1024
-#define IDT_3DVIEW 1025
-#define IDT_MEASUREMENTS 1026
-#define IDT_DETAILSPANEL 1027
-#define IDT_LEFTFOOTPRINT 1028
-#define IDT_RIGHTFOOTPRINT 1029
-#define IDM_PANELVIEW 1030
-#define IDC_PADSHAPE 1031
-#define IDC_BODYSHAPE 1032
-#define IDT_SAVE 1033
-#define IDT_REVERT 1034
+#define IDM_PREFERENCES 1011
+#define IDM_DLGREMOTE 1012
+#define IDM_DLGREPORT 1013
+#define IDM_TEMPLATEOPTIONS 1014
+#define IDM_DLGOPTIONS 1015
+#define IDM_ABOUT 1016
+#define IDM_LEFT_LIB 1017
+#define IDM_LEFT_MOD 1018
+#define IDM_MOVEMODULE 1019
+#define IDM_COPYMODULE 1020
+#define IDM_DELETEMODULE 1021
+#define IDM_RENAMEMODULE 1022
+#define IDM_RIGHT_LIB 1023
+#define IDM_RIGHT_MOD 1024
+#define IDT_ZOOMIN 1025
+#define IDT_ZOOMOUT 1026
+#define IDT_3DVIEW 1027
+#define IDT_MEASUREMENTS 1028
+#define IDT_DETAILSPANEL 1029
+#define IDT_LEFTFOOTPRINT 1030
+#define IDT_RIGHTFOOTPRINT 1031
+#define IDM_PANELVIEW 1032
+#define IDC_PADSHAPE 1033
+#define IDC_BODYSHAPE 1034
+#define IDT_SAVE 1035
+#define IDT_REVERT 1036
 
 ///////////////////////////////////////////////////////////////////////////////
 /// Class AppFrame

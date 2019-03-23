@@ -1,5 +1,5 @@
 ///////////////////////////////////////////////////////////////////////////
-// C++ code generated with wxFormBuilder (version Oct 26 2018)
+// C++ code generated with wxFormBuilder (version Mar 22 2019)
 // http://www.wxformbuilder.org/
 //
 // PLEASE DO *NOT* EDIT THIS FILE!
@@ -94,7 +94,7 @@ AppFrame::AppFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 
 	m_mnuPreferences = new wxMenu();
 	wxMenuItem* m_mnuSearchPaths;
-	m_mnuSearchPaths = new wxMenuItem( m_mnuPreferences, wxID_PREFERENCES, wxString( wxT("Search &Paths...") ) , wxT("Add or remove paths to search for footprint or symbol libraries"), wxITEM_NORMAL );
+	m_mnuSearchPaths = new wxMenuItem( m_mnuPreferences, IDM_PREFERENCES, wxString( wxT("Search &Paths...") ) , wxT("Add or remove paths to search for footprint or symbol libraries"), wxITEM_NORMAL );
 	m_mnuPreferences->Append( m_mnuSearchPaths );
 
 	wxMenuItem* m_mnuRemoteLink;
@@ -123,7 +123,7 @@ AppFrame::AppFrame( wxWindow* parent, wxWindowID id, const wxString& title, cons
 	m_mnuHelp->Append( m_mnuHelpManual );
 
 	wxMenuItem* m_mnuAbout;
-	m_mnuAbout = new wxMenuItem( m_mnuHelp, wxID_ABOUT, wxString( wxT("&About") ) , wxEmptyString, wxITEM_NORMAL );
+	m_mnuAbout = new wxMenuItem( m_mnuHelp, IDM_ABOUT, wxString( wxT("&About") ) , wxEmptyString, wxITEM_NORMAL );
 	m_mnuHelp->Append( m_mnuAbout );
 
 	m_menubar->Append( m_mnuHelp, wxT("&Help") );

@@ -1,15 +1,14 @@
-/* This file was automatically generated.  Do not edit (Except for compile time directives)! */
+/* This file was automatically generated.  Do not edit (Except for compile time directives)! */ 
 #ifndef _UNQLITE_H_
 #define _UNQLITE_H_
 /* Make sure we can call this stuff from C++ */
 #ifdef __cplusplus
-extern "C" {
-#endif
+ extern "C" {
+#endif 
 /*
- * Symisc UnQLite-KV: A Transactional Key/Value Database Engine.
- * Copyright (C) 2016, Symisc Systems http://unqlite.org/
- * Copyright (C) 2014, Yuras Shumovich <shumovichy@gmail.com>
- * Version 1.1.2
+ * Symisc UnQLite: An Embeddable NoSQL (Post Modern) Database Engine.
+ * Copyright (C) 2012-2018, Symisc Systems http://unqlite.org/
+ * Version 1.1.9
  * For information on licensing, redistribution of this file, and for a DISCLAIMER OF ALL WARRANTIES
  * please contact Symisc Systems via:
  *       legal@symisc.net
@@ -38,12 +37,12 @@ extern "C" {
  * BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
  * CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
  * SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR
- * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY,
+ * BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, 
  * WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE
  * OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
  * IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
- /* $SymiscID: unqlite.h v1.2 Win10 2108-01-21 23:59:12 stable <chm@symisc.net>  $ */
+ /* $SymiscID: unqlite.h v1.3 Win10 2108-04-27 02:35:11 stable <chm@symisc.net>  $ */
 #include <stdarg.h> /* needed for the definition of va_list */
 /*
  * Compile time engine version, signature, identification in the symisc source tree
@@ -59,13 +58,13 @@ extern "C" {
  * version number and Y is the minor version number and Z is the release
  * number.
  */
-#define UNQLITE_VERSION "1.1.2"
+#define UNQLITE_VERSION "1.1.9"
 /*
  * The UNQLITE_VERSION_NUMBER C preprocessor macro resolves to an integer
  * with the value (X*1000000 + Y*1000 + Z) where X, Y, and Z are the same
  * numbers used in [UNQLITE_VERSION].
  */
-#define UNQLITE_VERSION_NUMBER 1001002
+#define UNQLITE_VERSION_NUMBER 1001009
 /*
  * The UNQLITE_SIG C preprocessor macro evaluates to a string
  * literal which is the public signature of the unqlite engine.
@@ -73,14 +72,14 @@ extern "C" {
  * generated Server MIME header as follows:
  *   Server: YourWebServer/x.x unqlite/x.x.x \r\n
  */
-#define UNQLITE_SIG "unqlite/1.1.2"
+#define UNQLITE_SIG "unqlite/1.1.9"
 /*
  * UnQLite identification in the Symisc source tree:
  * Each particular check-in of a particular software released
  * by symisc systems have an unique identifier associated with it.
  * This macro hold the one associated with unqlite.
  */
-#define UNQLITE_IDENT "unqlite:c12ef78a5263baff9673264cdae36"
+#define UNQLITE_IDENT "unqlite:b172a1e2c3f62fb35c8e1fb2795121f82356cad6"
 /*
  * Copyright notice.
  * If you have any questions about the licensing situation, please
@@ -96,6 +95,9 @@ extern "C" {
 typedef struct unqlite_io_methods unqlite_io_methods;
 typedef struct unqlite_kv_methods unqlite_kv_methods;
 typedef struct unqlite_kv_engine unqlite_kv_engine;
+typedef struct jx9_io_stream unqlite_io_stream;
+typedef struct jx9_context unqlite_context;
+typedef struct jx9_value unqlite_value;
 typedef struct unqlite_vfs unqlite_vfs;
 typedef struct unqlite_vm unqlite_vm;
 typedef struct unqlite unqlite;
@@ -122,10 +124,40 @@ typedef struct unqlite unqlite;
  * at run-time using the unqlite_lib_config() interface together with one of these verbs:
  *    UNQLITE_LIB_CONFIG_THREAD_LEVEL_SINGLE
  *    UNQLITE_LIB_CONFIG_THREAD_LEVEL_MULTI
- *  Platforms others than Windows and UNIX systems must install their own mutex subsystem via
+ *  Platforms others than Windows and UNIX systems must install their own mutex subsystem via 
  *  unqlite_lib_config() with a configuration verb set to UNQLITE_LIB_CONFIG_USER_MUTEX.
  *  Otherwise the library is not threadsafe.
  *  Note that you must link UnQLite with the POSIX threads library under UNIX systems (i.e: -lpthread).
+ *
+ * Options To Omit/Enable Features
+ *
+ * The following options can be used to reduce the size of the compiled library by omitting optional
+ * features. This is probably only useful in embedded systems where space is especially tight, as even
+ * with all features included the UnQLite library is relatively small. Don't forget to tell your
+ * compiler to optimize for binary size! (the -Os option if using GCC). Telling your compiler
+ * to optimize for size usually has a much larger impact on library footprint than employing
+ * any of these compile-time options.
+ *
+ * JX9_DISABLE_BUILTIN_FUNC
+ *  Jx9 is shipped with more than 312 built-in functions suitable for most purposes like 
+ *  string and INI processing, ZIP extracting, Base64 encoding/decoding, JSON encoding/decoding
+ *  and so forth.
+ *  If this directive is enabled, then all built-in Jx9 functions are omitted from the build.
+ *  Note that special functions such as db_create(), db_store(), db_fetch(), etc. are not omitted
+ *  from the build and are not affected by this directive.
+ *
+ * JX9_ENABLE_MATH_FUNC
+ *  If this directive is enabled, built-in math functions such as sqrt(), abs(), log(), ceil(), etc.
+ *  are included in the build. Note that you may need to link UnQLite with the math library in same
+ *  Linux/BSD flavor (i.e: -lm).
+ *
+ * JX9_DISABLE_DISK_IO
+ *  If this directive is enabled, built-in VFS functions such as chdir(), mkdir(), chroot(), unlink(),
+ *  sleep(), etc. are omitted from the build.
+ *
+ * UNQLITE_ENABLE_JX9_HASH_IO
+ * If this directive is enabled, built-in hash functions such as md5(), sha1(), md5_file(), crc32(), etc.
+ * are included in the build.
  */
 /* Symisc public definitions */
 #if !defined(SYMISC_STANDARD_DEFS)
@@ -134,7 +166,7 @@ typedef struct unqlite unqlite;
 /* Windows Systems */
 #if !defined(__WINNT__)
 #define __WINNT__
-#endif
+#endif 
 /*
  * Determine if we are dealing with WindowsCE - which has a much
  * reduced API.
@@ -233,7 +265,7 @@ struct Sytm
 	 (pSYTM)->tm_zone = 0;
 
 /* Dynamic memory allocation methods. */
-struct SyMemMethods
+struct SyMemMethods 
 {
 	void * (*xAlloc)(unsigned int);          /* [Required:] Allocate a memory chunk */
 	void * (*xRealloc)(void *, unsigned int); /* [Required:] Re-allocate a memory chunk */
@@ -246,7 +278,7 @@ struct SyMemMethods
 /* Out of memory callback signature. */
 typedef int (*ProcMemError)(void *);
 /* Mutex methods. */
-struct SyMutexMethods
+struct SyMutexMethods 
 {
 	int (*xGlobalInit)(void);		/* [Optional:] Global mutex initialization */
 	void  (*xGlobalRelease)(void);	/* [Optional:] Global Release callback () */
@@ -264,7 +296,7 @@ struct SyMutexMethods
 #define	SX_APIEXPORT
 #endif
 /* Standard return values from Symisc public interfaces */
-#define SXRET_OK       0      /* Not an error */
+#define SXRET_OK       0      /* Not an error */	
 #define SXERR_MEM      (-1)   /* Out of memory */
 #define SXERR_IO       (-2)   /* IO error */
 #define SXERR_EMPTY    (-3)   /* Empty field */
@@ -284,7 +316,7 @@ struct SyMutexMethods
 #define SXERR_NOTIMPLEMENTED  (-17) /* Operation not implemented */
 #define SXERR_EOF      (-18) /* End of input */
 #define SXERR_PERM     (-19) /* Permission error */
-#define SXERR_NOOP     (-20) /* No-op */
+#define SXERR_NOOP     (-20) /* No-op */	
 #define SXERR_FORMAT   (-21) /* Invalid format */
 #define SXERR_NEXT     (-22) /* Not an error */
 #define SXERR_OS       (-23) /* System call return an error */
@@ -300,8 +332,8 @@ struct SyMutexMethods
 #define SXERR_RETRY    (-33) /* Retry your call */
 #define SXERR_IGNORE   (-63) /* Ignore */
 #endif /* SYMISC_PUBLIC_DEFS */
-/*
- * Marker for exported interfaces.
+/* 
+ * Marker for exported interfaces. 
  */
 #define UNQLITE_APIEXPORT SX_APIEXPORT
 /*
@@ -321,7 +353,7 @@ typedef sxi64 unqlite_int64;
 #define UNQLITE_ABORT    SXERR_ABORT   /* Another thread have released this instance */
 #define UNQLITE_IOERR    SXERR_IO      /* IO error */
 #define UNQLITE_CORRUPT  SXERR_CORRUPT /* Corrupt pointer */
-#define UNQLITE_LOCKED   SXERR_LOCKED  /* Forbidden Operation */
+#define UNQLITE_LOCKED   SXERR_LOCKED  /* Forbidden Operation */ 
 #define UNQLITE_BUSY	 SXERR_BUSY    /* The database file is locked */
 #define UNQLITE_DONE	 SXERR_DONE    /* Operation done */
 #define UNQLITE_PERM     SXERR_PERM    /* Permission error */
@@ -351,15 +383,46 @@ typedef sxi64 unqlite_int64;
  * Each options require a variable number of arguments.
  * The [unqlite_config()] interface will return UNQLITE_OK on success, any other
  * return value indicates failure.
- * For a full discussion on the configuration verbs and their expected
+ * For a full discussion on the configuration verbs and their expected 
  * parameters, please refer to this page:
  *      http://unqlite.org/c_api/unqlite_config.html
  */
+#define UNQLITE_CONFIG_JX9_ERR_LOG         1  /* TWO ARGUMENTS: const char **pzBuf, int *pLen */
 #define UNQLITE_CONFIG_MAX_PAGE_CACHE      2  /* ONE ARGUMENT: int nMaxPage */
 #define UNQLITE_CONFIG_ERR_LOG             3  /* TWO ARGUMENTS: const char **pzBuf, int *pLen */
 #define UNQLITE_CONFIG_KV_ENGINE           4  /* ONE ARGUMENT: const char *zKvName */
 #define UNQLITE_CONFIG_DISABLE_AUTO_COMMIT 5  /* NO ARGUMENTS */
 #define UNQLITE_CONFIG_GET_KV_NAME         6  /* ONE ARGUMENT: const char **pzPtr */
+/*
+ * UnQLite/Jx9 Virtual Machine Configuration Commands.
+ *
+ * The following set of constants are the available configuration verbs that can
+ * be used by the host-application to configure the Jx9 (Via UnQLite) Virtual machine.
+ * These constants must be passed as the second argument to the [unqlite_vm_config()] 
+ * interface.
+ * Each options require a variable number of arguments.
+ * The [unqlite_vm_config()] interface will return UNQLITE_OK on success, any other return
+ * value indicates failure.
+ * There are many options but the most importants are: UNQLITE_VM_CONFIG_OUTPUT which install
+ * a VM output consumer callback, UNQLITE_VM_CONFIG_HTTP_REQUEST which parse and register
+ * a HTTP request and UNQLITE_VM_CONFIG_ARGV_ENTRY which populate the $argv array.
+ * For a full discussion on the configuration verbs and their expected parameters, please
+ * refer to this page:
+ *      http://unqlite.org/c_api/unqlite_vm_config.html
+ */
+#define UNQLITE_VM_CONFIG_OUTPUT           1  /* TWO ARGUMENTS: int (*xConsumer)(const void *pOut, unsigned int nLen, void *pUserData), void *pUserData */
+#define UNQLITE_VM_CONFIG_IMPORT_PATH      2  /* ONE ARGUMENT: const char *zIncludePath */
+#define UNQLITE_VM_CONFIG_ERR_REPORT       3  /* NO ARGUMENTS: Report all run-time errors in the VM output */
+#define UNQLITE_VM_CONFIG_RECURSION_DEPTH  4  /* ONE ARGUMENT: int nMaxDepth */
+#define UNQLITE_VM_OUTPUT_LENGTH           5  /* ONE ARGUMENT: unsigned int *pLength */
+#define UNQLITE_VM_CONFIG_CREATE_VAR       6  /* TWO ARGUMENTS: const char *zName, unqlite_value *pValue */
+#define UNQLITE_VM_CONFIG_HTTP_REQUEST     7  /* TWO ARGUMENTS: const char *zRawRequest, int nRequestLength */
+#define UNQLITE_VM_CONFIG_SERVER_ATTR      8  /* THREE ARGUMENTS: const char *zKey, const char *zValue, int nLen */
+#define UNQLITE_VM_CONFIG_ENV_ATTR         9  /* THREE ARGUMENTS: const char *zKey, const char *zValue, int nLen */
+#define UNQLITE_VM_CONFIG_EXEC_VALUE      10  /* ONE ARGUMENT: unqlite_value **ppValue */
+#define UNQLITE_VM_CONFIG_IO_STREAM       11  /* ONE ARGUMENT: const unqlite_io_stream *pStream */
+#define UNQLITE_VM_CONFIG_ARGV_ENTRY      12  /* ONE ARGUMENT: const char *zValue */
+#define UNQLITE_VM_CONFIG_EXTRACT_OUTPUT  13  /* TWO ARGUMENTS: const void **ppOut, unsigned int *pOutputLen */
 /*
  * Storage engine configuration commands.
  *
@@ -387,8 +450,8 @@ typedef sxi64 unqlite_int64;
  * value indicates failure.
  * Notes:
  * The default configuration is recommended for most applications and so the call to
- * [unqlite_lib_config()] is usually not necessary. It is provided to support rare
- * applications with unusual needs.
+ * [unqlite_lib_config()] is usually not necessary. It is provided to support rare 
+ * applications with unusual needs. 
  * The [unqlite_lib_config()] interface is not threadsafe. The application must insure that
  * no other [unqlite_*()] interfaces are invoked by other threads while [unqlite_lib_config()]
  * is running. Furthermore, [unqlite_lib_config()] may only be invoked prior to library
@@ -399,11 +462,11 @@ typedef sxi64 unqlite_int64;
  * refer to this page:
  *      http://unqlite.org/c_api/unqlite_lib.html
  */
-#define UNQLITE_LIB_CONFIG_USER_MALLOC            1 /* ONE ARGUMENT: const SyMemMethods *pMemMethods */
+#define UNQLITE_LIB_CONFIG_USER_MALLOC            1 /* ONE ARGUMENT: const SyMemMethods *pMemMethods */ 
 #define UNQLITE_LIB_CONFIG_MEM_ERR_CALLBACK       2 /* TWO ARGUMENTS: int (*xMemError)(void *), void *pUserData */
-#define UNQLITE_LIB_CONFIG_USER_MUTEX             3 /* ONE ARGUMENT: const SyMutexMethods *pMutexMethods */
-#define UNQLITE_LIB_CONFIG_THREAD_LEVEL_SINGLE    4 /* NO ARGUMENTS */
-#define UNQLITE_LIB_CONFIG_THREAD_LEVEL_MULTI     5 /* NO ARGUMENTS */
+#define UNQLITE_LIB_CONFIG_USER_MUTEX             3 /* ONE ARGUMENT: const SyMutexMethods *pMutexMethods */ 
+#define UNQLITE_LIB_CONFIG_THREAD_LEVEL_SINGLE    4 /* NO ARGUMENTS */ 
+#define UNQLITE_LIB_CONFIG_THREAD_LEVEL_MULTI     5 /* NO ARGUMENTS */ 
 #define UNQLITE_LIB_CONFIG_VFS                    6 /* ONE ARGUMENT: const unqlite_vfs *pVfs */
 #define UNQLITE_LIB_CONFIG_STORAGE_ENGINE         7 /* ONE ARGUMENT: unqlite_kv_methods *pStorage */
 #define UNQLITE_LIB_CONFIG_PAGE_SIZE              8 /* ONE ARGUMENT: int iPageSize */
@@ -470,7 +533,7 @@ struct unqlite_file {
  * This object defines the methods used to perform various operations
  * against the open file represented by the [unqlite_file] object.
  *
- * If the xOpen method sets the unqlite_file.pMethods element
+ * If the xOpen method sets the unqlite_file.pMethods element 
  * to a non-NULL pointer, then the unqlite_io_methods.xClose method
  * may be invoked even if the xOpen reported that it failed.  The
  * only way to prevent a call to xClose following a failed xOpen
@@ -489,13 +552,13 @@ struct unqlite_file {
  * UNQLITE_LOCK_RESERVED
  * UNQLITE_LOCK_PENDING
  * UNQLITE_LOCK_EXCLUSIVE
- *
+ * 
  * xLock() increases the lock. xUnlock() decreases the lock.
  * The xCheckReservedLock() method checks whether any database connection,
  * either in this process or in some other process, is holding a RESERVED,
  * PENDING, or EXCLUSIVE lock on the file. It returns true if such a lock exists
  * and false otherwise.
- *
+ * 
  * The xSectorSize() method returns the sector size of the device that underlies
  * the file. The sector size is the minimum write that can be performed without
  * disturbing other bytes in the file.
@@ -533,11 +596,11 @@ struct unqlite_io_methods {
  * must register their own vfs in order to be able to use the UnQLite library.
  *
  * The value of the iVersion field is initially 1 but may be larger in
- * future versions of UnQLite.
+ * future versions of UnQLite. 
  *
  * The szOsFile field is the size of the subclassed [unqlite_file] structure
  * used by this VFS. mxPathname is the maximum length of a pathname in this VFS.
- *
+ * 
  * At least szOsFile bytes of memory are allocated by UnQLite to hold the [unqlite_file]
  * structure passed as the third argument to xOpen. The xOpen method does not have to
  * allocate the structure; it should just fill it in. Note that the xOpen method must
@@ -557,8 +620,6 @@ struct unqlite_vfs {
   int (*xAccess)(unqlite_vfs*, const char *zName, int flags, int *pResOut);
   int (*xFullPathname)(unqlite_vfs*, const char *zName,int buf_len,char *zBuf);
   int (*xTmpDir)(unqlite_vfs*,char *zBuf,int buf_len);
-  int (*xMmap)(const char *, void **, unqlite_int64 *);  /* Read-only memory map of the whole file */
-  void (*xUnmap)(void *, unqlite_int64);                /* Unmap a memory view */
   int (*xSleep)(unqlite_vfs*, int microseconds);
   int (*xCurrentTime)(unqlite_vfs*,Sytm *pOut);
   int (*xGetLastError)(unqlite_vfs*, int, char *);
@@ -584,8 +645,8 @@ struct unqlite_vfs {
  * UnQLite.
  */
 #define UNQLITE_ACCESS_EXISTS    0
-#define UNQLITE_ACCESS_READWRITE 1
-#define UNQLITE_ACCESS_READ      2
+#define UNQLITE_ACCESS_READWRITE 1   
+#define UNQLITE_ACCESS_READ      2 
 /*
  * The type used to represent a page number.  The first page in a file
  * is called page 1.  0 is used to represent "not a page".
@@ -633,7 +694,7 @@ struct unqlite_kv_io
 	int (*xPageSize)(unqlite_kv_handle);
 	int (*xReadOnly)(unqlite_kv_handle);
 	unsigned char * (*xTmpPage)(unqlite_kv_handle);
-	void (*xSetUnpin)(unqlite_kv_handle,void (*xPageUnpin)(void *));
+	void (*xSetUnpin)(unqlite_kv_handle,void (*xPageUnpin)(void *)); 
 	void (*xSetReload)(unqlite_kv_handle,void (*xPageReload)(void *));
 	void (*xErr)(unqlite_kv_handle,const char *);
 };
@@ -666,7 +727,7 @@ struct unqlite_kv_cursor
  * UnQLite come with two built-in KV storage engine: A Virtual Linear Hash (VLH) storage
  * engine is used for persistent on-disk databases with O(1) lookup time and an in-memory
  * hash-table or Red-black tree storage engine is used for in-memory databases.
- * Future versions of UnQLite might add other built-in storage engines (i.e. LSM).
+ * Future versions of UnQLite might add other built-in storage engines (i.e. LSM). 
  * Registration of a Key/Value storage engine at run-time is done via [unqlite_lib_config()]
  * with a configuration verb set to UNQLITE_LIB_CONFIG_STORAGE_ENGINE.
  */
@@ -698,7 +759,7 @@ struct unqlite_kv_methods
 	  unqlite_kv_engine *,
 	  const void *pKey,int nKeyLen,
 	  const void *pData,unqlite_int64 nDataLen
-	  );
+	  ); 
     int (*xAppend)(
 	  unqlite_kv_engine *,
 	  const void *pKey,int nKeyLen,
@@ -726,14 +787,26 @@ struct unqlite_kv_methods
 #define UNQLITE_JOURNAL_FILE_SUFFIX "_unqlite_journal"
 #endif
 /*
- * C-API-REF: Please refer to the official documentation for interfaces
- * purpose and expected parameters.
+ * Call Context - Error Message Serverity Level.
+ *
+ * The following constans are the allowed severity level that can
+ * passed as the second argument to the [unqlite_context_throw_error()] or
+ * [unqlite_context_throw_error_format()] interfaces.
+ * Refer to the official documentation for additional information.
  */
+#define UNQLITE_CTX_ERR       1 /* Call context error such as unexpected number of arguments, invalid types and so on. */
+#define UNQLITE_CTX_WARNING   2 /* Call context Warning */
+#define UNQLITE_CTX_NOTICE    3 /* Call context Notice */
+/* 
+ * C-API-REF: Please refer to the official documentation for interfaces
+ * purpose and expected parameters. 
+ */ 
 
 /* Database Engine Handle */
 UNQLITE_APIEXPORT int unqlite_open(unqlite **ppDB,const char *zFilename,unsigned int iMode);
 UNQLITE_APIEXPORT int unqlite_config(unqlite *pDb,int nOp,...);
 UNQLITE_APIEXPORT int unqlite_close(unqlite *pDb);
+
 
 /* Key/Value (KV) Store Interfaces */
 UNQLITE_APIEXPORT int unqlite_kv_store(unqlite *pDb,const void *pKey,int nKeyLen,const void *pData,unqlite_int64 nDataLen);
@@ -745,6 +818,16 @@ UNQLITE_APIEXPORT int unqlite_kv_fetch_callback(unqlite *pDb,const void *pKey,
 	                    int nKeyLen,int (*xConsumer)(const void *,unsigned int,void *),void *pUserData);
 UNQLITE_APIEXPORT int unqlite_kv_delete(unqlite *pDb,const void *pKey,int nKeyLen);
 UNQLITE_APIEXPORT int unqlite_kv_config(unqlite *pDb,int iOp,...);
+
+/* Document (JSON) Store Interfaces powered by the Jx9 Scripting Language */
+UNQLITE_APIEXPORT int unqlite_compile(unqlite *pDb,const char *zJx9,int nByte,unqlite_vm **ppOut);
+UNQLITE_APIEXPORT int unqlite_compile_file(unqlite *pDb,const char *zPath,unqlite_vm **ppOut);
+UNQLITE_APIEXPORT int unqlite_vm_config(unqlite_vm *pVm,int iOp,...);
+UNQLITE_APIEXPORT int unqlite_vm_exec(unqlite_vm *pVm);
+UNQLITE_APIEXPORT int unqlite_vm_reset(unqlite_vm *pVm);
+UNQLITE_APIEXPORT int unqlite_vm_release(unqlite_vm *pVm);
+UNQLITE_APIEXPORT int unqlite_vm_dump(unqlite_vm *pVm, int (*xConsumer)(const void *, unsigned int, void *), void *pUserData);
+UNQLITE_APIEXPORT unqlite_value * unqlite_vm_extract_variable(unqlite_vm *pVm,const char *zVarname);
 
 /*  Cursor Iterator Interfaces */
 UNQLITE_APIEXPORT int unqlite_kv_cursor_init(unqlite *pDb,unqlite_kv_cursor **ppOut);
@@ -768,8 +851,95 @@ UNQLITE_APIEXPORT int unqlite_commit(unqlite *pDb);
 UNQLITE_APIEXPORT int unqlite_rollback(unqlite *pDb);
 
 /* Utility interfaces */
+UNQLITE_APIEXPORT int unqlite_util_load_mmaped_file(const char *zFile,void **ppMap,unqlite_int64 *pFileSize);
+UNQLITE_APIEXPORT int unqlite_util_release_mmaped_file(void *pMap,unqlite_int64 iFileSize);
 UNQLITE_APIEXPORT int unqlite_util_random_string(unqlite *pDb,char *zBuf,unsigned int buf_size);
 UNQLITE_APIEXPORT unsigned int unqlite_util_random_num(unqlite *pDb);
+
+/* In-process extending interfaces */
+UNQLITE_APIEXPORT int unqlite_create_function(unqlite_vm *pVm,const char *zName,int (*xFunc)(unqlite_context *,int,unqlite_value **),void *pUserData);
+UNQLITE_APIEXPORT int unqlite_delete_function(unqlite_vm *pVm, const char *zName);
+UNQLITE_APIEXPORT int unqlite_create_constant(unqlite_vm *pVm,const char *zName,void (*xExpand)(unqlite_value *, void *),void *pUserData);
+UNQLITE_APIEXPORT int unqlite_delete_constant(unqlite_vm *pVm, const char *zName);
+
+/* On Demand Object allocation interfaces */
+UNQLITE_APIEXPORT unqlite_value * unqlite_vm_new_scalar(unqlite_vm *pVm);
+UNQLITE_APIEXPORT unqlite_value * unqlite_vm_new_array(unqlite_vm *pVm);
+UNQLITE_APIEXPORT int unqlite_vm_release_value(unqlite_vm *pVm,unqlite_value *pValue);
+UNQLITE_APIEXPORT unqlite_value * unqlite_context_new_scalar(unqlite_context *pCtx);
+UNQLITE_APIEXPORT unqlite_value * unqlite_context_new_array(unqlite_context *pCtx);
+UNQLITE_APIEXPORT void unqlite_context_release_value(unqlite_context *pCtx,unqlite_value *pValue);
+
+/* Dynamically Typed Value Object Management Interfaces */
+UNQLITE_APIEXPORT int unqlite_value_int(unqlite_value *pVal, int iValue);
+UNQLITE_APIEXPORT int unqlite_value_int64(unqlite_value *pVal, unqlite_int64 iValue);
+UNQLITE_APIEXPORT int unqlite_value_bool(unqlite_value *pVal, int iBool);
+UNQLITE_APIEXPORT int unqlite_value_null(unqlite_value *pVal);
+UNQLITE_APIEXPORT int unqlite_value_double(unqlite_value *pVal, double Value);
+UNQLITE_APIEXPORT int unqlite_value_string(unqlite_value *pVal, const char *zString, int nLen);
+UNQLITE_APIEXPORT int unqlite_value_string_format(unqlite_value *pVal, const char *zFormat,...);
+UNQLITE_APIEXPORT int unqlite_value_reset_string_cursor(unqlite_value *pVal);
+UNQLITE_APIEXPORT int unqlite_value_resource(unqlite_value *pVal, void *pUserData);
+UNQLITE_APIEXPORT int unqlite_value_release(unqlite_value *pVal);
+
+/* Foreign Function Parameter Values */
+UNQLITE_APIEXPORT int unqlite_value_to_int(unqlite_value *pValue);
+UNQLITE_APIEXPORT int unqlite_value_to_bool(unqlite_value *pValue);
+UNQLITE_APIEXPORT unqlite_int64 unqlite_value_to_int64(unqlite_value *pValue);
+UNQLITE_APIEXPORT double unqlite_value_to_double(unqlite_value *pValue);
+UNQLITE_APIEXPORT const char * unqlite_value_to_string(unqlite_value *pValue, int *pLen);
+UNQLITE_APIEXPORT void * unqlite_value_to_resource(unqlite_value *pValue);
+UNQLITE_APIEXPORT int unqlite_value_compare(unqlite_value *pLeft, unqlite_value *pRight, int bStrict);
+
+/* Setting The Result Of A Foreign Function */
+UNQLITE_APIEXPORT int unqlite_result_int(unqlite_context *pCtx, int iValue);
+UNQLITE_APIEXPORT int unqlite_result_int64(unqlite_context *pCtx, unqlite_int64 iValue);
+UNQLITE_APIEXPORT int unqlite_result_bool(unqlite_context *pCtx, int iBool);
+UNQLITE_APIEXPORT int unqlite_result_double(unqlite_context *pCtx, double Value);
+UNQLITE_APIEXPORT int unqlite_result_null(unqlite_context *pCtx);
+UNQLITE_APIEXPORT int unqlite_result_string(unqlite_context *pCtx, const char *zString, int nLen);
+UNQLITE_APIEXPORT int unqlite_result_string_format(unqlite_context *pCtx, const char *zFormat, ...);
+UNQLITE_APIEXPORT int unqlite_result_value(unqlite_context *pCtx, unqlite_value *pValue);
+UNQLITE_APIEXPORT int unqlite_result_resource(unqlite_context *pCtx, void *pUserData);
+
+/* Dynamically Typed Value Object Query Interfaces */
+UNQLITE_APIEXPORT int unqlite_value_is_int(unqlite_value *pVal);
+UNQLITE_APIEXPORT int unqlite_value_is_float(unqlite_value *pVal);
+UNQLITE_APIEXPORT int unqlite_value_is_bool(unqlite_value *pVal);
+UNQLITE_APIEXPORT int unqlite_value_is_string(unqlite_value *pVal);
+UNQLITE_APIEXPORT int unqlite_value_is_null(unqlite_value *pVal);
+UNQLITE_APIEXPORT int unqlite_value_is_numeric(unqlite_value *pVal);
+UNQLITE_APIEXPORT int unqlite_value_is_callable(unqlite_value *pVal);
+UNQLITE_APIEXPORT int unqlite_value_is_scalar(unqlite_value *pVal);
+UNQLITE_APIEXPORT int unqlite_value_is_json_array(unqlite_value *pVal);
+UNQLITE_APIEXPORT int unqlite_value_is_json_object(unqlite_value *pVal);
+UNQLITE_APIEXPORT int unqlite_value_is_resource(unqlite_value *pVal);
+UNQLITE_APIEXPORT int unqlite_value_is_empty(unqlite_value *pVal);
+
+/* JSON Array/Object Management Interfaces */
+UNQLITE_APIEXPORT unqlite_value * unqlite_array_fetch(unqlite_value *pArray, const char *zKey, int nByte);
+UNQLITE_APIEXPORT int unqlite_array_walk(unqlite_value *pArray, int (*xWalk)(unqlite_value *, unqlite_value *, void *), void *pUserData);
+UNQLITE_APIEXPORT int unqlite_array_add_elem(unqlite_value *pArray, unqlite_value *pKey, unqlite_value *pValue);
+UNQLITE_APIEXPORT int unqlite_array_add_strkey_elem(unqlite_value *pArray, const char *zKey, unqlite_value *pValue);
+UNQLITE_APIEXPORT int unqlite_array_count(unqlite_value *pArray);
+
+/* Call Context Handling Interfaces */
+UNQLITE_APIEXPORT int unqlite_context_output(unqlite_context *pCtx, const char *zString, int nLen);
+UNQLITE_APIEXPORT int unqlite_context_output_format(unqlite_context *pCtx,const char *zFormat, ...);
+UNQLITE_APIEXPORT int unqlite_context_throw_error(unqlite_context *pCtx, int iErr, const char *zErr);
+UNQLITE_APIEXPORT int unqlite_context_throw_error_format(unqlite_context *pCtx, int iErr, const char *zFormat, ...);
+UNQLITE_APIEXPORT unsigned int unqlite_context_random_num(unqlite_context *pCtx);
+UNQLITE_APIEXPORT int unqlite_context_random_string(unqlite_context *pCtx, char *zBuf, int nBuflen);
+UNQLITE_APIEXPORT void * unqlite_context_user_data(unqlite_context *pCtx);
+UNQLITE_APIEXPORT int unqlite_context_push_aux_data(unqlite_context *pCtx, void *pUserData);
+UNQLITE_APIEXPORT void * unqlite_context_peek_aux_data(unqlite_context *pCtx);
+UNQLITE_APIEXPORT unsigned int unqlite_context_result_buf_length(unqlite_context *pCtx);
+UNQLITE_APIEXPORT const char * unqlite_function_name(unqlite_context *pCtx);
+
+/* Call Context Memory Management Interfaces */
+UNQLITE_APIEXPORT void * unqlite_context_alloc_chunk(unqlite_context *pCtx,unsigned int nByte,int ZeroChunk,int AutoRelease);
+UNQLITE_APIEXPORT void * unqlite_context_realloc_chunk(unqlite_context *pCtx,void *pChunk,unsigned int nByte);
+UNQLITE_APIEXPORT void unqlite_context_free_chunk(unqlite_context *pCtx,void *pChunk);
 
 /* Global Library Management Interfaces */
 UNQLITE_APIEXPORT int unqlite_lib_config(int nConfigOp,...);
@@ -780,8 +950,7 @@ UNQLITE_APIEXPORT const char * unqlite_lib_version(void);
 UNQLITE_APIEXPORT const char * unqlite_lib_signature(void);
 UNQLITE_APIEXPORT const char * unqlite_lib_ident(void);
 UNQLITE_APIEXPORT const char * unqlite_lib_copyright(void);
-
 #ifdef __cplusplus
-}
-#endif /* __cplusplus */
+ }
+#endif
 #endif /* _UNQLITE_H_ */
